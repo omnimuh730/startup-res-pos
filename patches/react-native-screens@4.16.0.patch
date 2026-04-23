@@ -1,0 +1,13 @@
+diff --git a/android/build.gradle b/android/build.gradle
+index 114be81b3e887bf10aaac9da1574a2793eca296b..89e284248053548bb3a445af1323cdc83270ba8e 100644
+--- a/android/build.gradle
++++ b/android/build.gradle
+@@ -20,7 +20,7 @@ buildscript {
+         mavenCentral()
+     }
+     dependencies {
+-        classpath('com.android.tools.build:gradle:8.2.1')
++        classpath('com.android.tools.build:gradle:8.11.0')
+         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:${safeExtGet('kotlinVersion', rnsDefaultKotlinVersion)}"
+         classpath "com.diffplug.spotless:spotless-plugin-gradle:6.25.0"
+     }

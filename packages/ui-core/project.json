@@ -1,0 +1,19 @@
+{
+  "name": "ui-core",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "root": "packages/ui-core",
+  "sourceRoot": "packages/ui-core/src",
+  "projectType": "library",
+  "targets": {
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "pnpm run typecheck",
+        "cwd": "packages/ui-core"
+      }
+    }
+  },
+  "tags": [
+    "scope:shared"
+  ]
+}

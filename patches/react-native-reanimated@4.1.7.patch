@@ -1,0 +1,13 @@
+diff --git a/android/build.gradle b/android/build.gradle
+index 6b73a69d82ae9b04dd41e22b2d115019cf7eae14..860355ac665721cd1a30a1d4f8058819ed1e0a10 100644
+--- a/android/build.gradle
++++ b/android/build.gradle
+@@ -142,7 +142,7 @@ buildscript {
+         mavenCentral()
+     }
+     dependencies {
+-        classpath "com.android.tools.build:gradle:8.2.1"
++        classpath "com.android.tools.build:gradle:8.11.0"
+         classpath "de.undercouch:gradle-download-task:5.6.0"
+         classpath "com.diffplug.spotless:spotless-plugin-gradle:6.25.0"
+     }
