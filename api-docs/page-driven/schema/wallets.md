@@ -1,64 +1,53 @@
-# Schema · Wallets, Transactions, Top-Ups, Gifts
+# Schema · Wallets & Wallet Transactions
 
-The customer-app wallet domain. Each customer has three wallets that never auto-convert. All movements go through immutable transactions.
+The wallet domain follows a **cache + ledger** pattern:
+
+- **Cached balance** lives on the customer (`customer_users.wallets.{domestic,foreign,bonus}`) for fast reads on every Profile page load.
+- **Source of truth** is the immutable `wallet_transactions` collection. The cached balance is `SUM(direction × amount)` over the user's transactions in the wallet's pool.
+
+Every customer has three logical wallets that **never auto-convert**: domestic (KRW), foreign (USD), and bonus.
 
 Source READMEs:
 
 - `reservation/Profile/README.md` (wallets, top-up, send gift, history)
 
-## Collections
+## Collection
 
 | Collection | Purpose |
 |---|---|
-| `wallets` | One row per (user, pool). Holds cached balance and a pointer to currency. |
-| `wallet_transactions` | Immutable ledger of every credit/debit. |
-| `wallet_top_ups` | Top-up requests, including bonus calculation and PSP reference. |
-| `wallet_gifts` | Gifts sent between users. |
+| `wallet_transactions` | Immutable ledger of every credit/debit. Append-only. |
+
+`wallets` itself (per-pool balance) is embedded on `customer_users` — see [`users.md`](./users.md).
+
+Top-ups and gifts do **not** have their own collections any more:
+
+- A top-up is a `payments` row (`purpose: "wallet_top_up"`) plus matching `wallet_transactions` rows of `type: "top_up"` (and `top_up_bonus` if applicable).
+- A gift is two `wallet_transactions` rows (a debit on the sender, a credit on the recipient) linked by `giftId`.
 
 ---
 
-## `wallets`
+## Embedded balance shape (recap)
+
+For reference; canonical definition lives in [`users.md`](./users.md).
 
 ```ts
-type Wallet = {
-  _id: ObjectId;
-  userId: ObjectId;
-  pool: "domestic" | "foreign" | "bonus";
-  currency: "KRW" | "USD" | string;
-
-  balance: { amount: Decimal128; currency: string };  // cached, recomputable
-
-  // For foreign wallet only
-  defaultPaymentMethodId?: ObjectId;     // -> customer_payment_methods
-  defaultPaymentMethodLabel?: string;    // "VISA ••4242"
-
-  // Bonus rules
-  rules?: {
-    stacksOnPool?: "domestic" | "foreign";    // bonus stacks on domestic only
-    expiresAt?: Date | null;
-  };
-
-  createdAt: Date;
-  updatedAt: Date;
+customer_users.wallets = {
+  domestic: { currency: "KRW" | string; balance: { amount: Decimal128; currency: string }; defaultPaymentMethodId?: ObjectId };
+  foreign:  { currency: "USD" | string; balance: { amount: Decimal128; currency: string }; defaultPaymentMethodId?: ObjectId };
+  bonus:    { currency: string;          balance: { amount: Decimal128; currency: string }; expiresAt?: Date | null };
 };
 ```
 
-Indexes:
-
-- `{ userId: 1, pool: 1 }` unique
-- `{ defaultPaymentMethodId: 1 }`
+The cache is updated by the worker that consumes new `wallet_transactions` rows. It is recomputable from history at any time.
 
 ---
 
 ## `wallet_transactions`
 
-The single source of truth for balances. Never UPDATE; always INSERT a new transaction. The `balance` on `wallets` is `SUM(direction * amount)`.
-
 ```ts
 type WalletTransaction = {
   _id: ObjectId;
   userId: ObjectId;
-  walletId: ObjectId;               // -> wallets
   pool: "domestic" | "foreign" | "bonus";
   currency: string;
 
@@ -71,6 +60,7 @@ type WalletTransaction = {
     | "gift_sent"
     | "gift_received"
     | "birthday_bonus"
+    | "daily_bonus"
     | "refund"
     | "subscription_charge"
     | "adjustment";
@@ -79,135 +69,59 @@ type WalletTransaction = {
   amount: { amount: Decimal128; currency: string };
   balanceAfter: { amount: Decimal128; currency: string };  // snapshot for audit
 
-  // Cross-references (any may be present)
+  // Cross-references — populate the ones that apply
   paymentId?: ObjectId;             // -> payments
-  topUpId?: ObjectId;               // -> wallet_top_ups
-  giftId?: ObjectId;                // -> wallet_gifts
+  giftId?: ObjectId;                // pairs sender + recipient transactions
   reservationId?: ObjectId;
   orderId?: ObjectId;
-  subscriptionInvoiceId?: ObjectId;
+  subscriptionId?: ObjectId;
+  pointsLedgerId?: ObjectId;        // when reward credit also writes points
+  dailyBonusDate?: string;          // YYYY-MM-DD when type=daily_bonus
+
+  // Gift-specific snapshots (when type in [gift_sent, gift_received])
+  giftCounterpartyUserId?: ObjectId;
+  giftCounterpartyUsernameAtSend?: string;
+  giftMessage?: string;
 
   title: string;                    // "Top Up", "Sakura Omakase", "Reward Earned"
   description?: string;
-  occurredAt: Date;                 // displayed in History
+  occurredAt: Date;                 // displayed in History tab
   createdAt: Date;
 };
 ```
 
-Indexes:
+### Indexes
 
-- `{ userId: 1, occurredAt: -1 }`           // History view
-- `{ walletId: 1, occurredAt: -1 }`
+- `{ userId: 1, occurredAt: -1 }`         // History view
+- `{ userId: 1, pool: 1, occurredAt: -1 }`
 - `{ type: 1, occurredAt: -1 }`
 - `{ paymentId: 1 }`
-- `{ topUpId: 1 }`
 - `{ giftId: 1 }`
-
-Sample (history excerpt):
-
-```json
-[
-  { "type": "top_up",            "direction": "credit", "amount": { "amount": "50.00",  "currency": "USD" }, "title": "Top Up",         "occurredAt": "2026-04-10T..." },
-  { "type": "restaurant_payment","direction": "debit",  "amount": { "amount": "42.50",  "currency": "USD" }, "title": "Sakura Omakase", "occurredAt": "2026-04-08T..." },
-  { "type": "reward_earned",     "direction": "credit", "amount": { "amount": "4.25",   "currency": "USD" }, "title": "Reward Earned",  "occurredAt": "2026-04-08T..." },
-  { "type": "referral_bonus",    "direction": "credit", "amount": { "amount": "10.00",  "currency": "USD" }, "title": "Referral Bonus", "occurredAt": "2026-03-27T..." },
-  { "type": "gift_received",     "direction": "credit", "amount": { "amount": "25.00",  "currency": "USD" }, "title": "Gift Received",  "occurredAt": "2026-03-20T..." }
-]
-```
-
----
-
-## `wallet_top_ups`
-
-```ts
-type WalletTopUp = {
-  _id: ObjectId;
-  userId: ObjectId;
-  walletId: ObjectId;               // target wallet
-  pool: "domestic" | "foreign";
-
-  amount: { amount: Decimal128; currency: string };
-  bonus: { amount: Decimal128; currency: string };  // applied to bonus wallet on success
-
-  paymentMethodKind: "apple_pay" | "google_pay" | "paypal" | "bank_transfer" | "card";
-  paymentMethodId?: ObjectId;        // -> customer_payment_methods
-
-  paymentIntentId?: ObjectId;        // -> payment_intents
-  paymentId?: ObjectId;              // -> payments (set on success)
-
-  status: "requested" | "processing" | "succeeded" | "failed" | "cancelled";
-  failure?: { code: string; message: string };
-
-  createdAt: Date;
-  updatedAt: Date;
-};
-```
-
-Indexes:
-
-- `{ userId: 1, createdAt: -1 }`
-- `{ paymentIntentId: 1 }`
-- `{ status: 1, createdAt: -1 }`
-
-State diagram:
-
-```text
-requested ─intent created─▶ processing ─psp success─▶ succeeded
-                                              ─psp fail────▶ failed
-requested ─user cancels───▶ cancelled
-```
-
-On `succeeded`:
-
-1. Insert `wallet_transactions` of type `top_up` (debit/credit accounting kept consistent).
-2. If `bonus.amount > 0`, insert another `wallet_transactions` of type `top_up_bonus` against the user's bonus wallet.
-3. Recompute and update `wallets.balance` for both wallets.
-
----
-
-## `wallet_gifts`
-
-```ts
-type WalletGift = {
-  _id: ObjectId;
-  senderUserId: ObjectId;
-  recipientUserId: ObjectId;
-  recipientUsernameAtSend: string;  // snapshot for audit (in case username changes)
-
-  sourceWallet: "domestic" | "foreign";
-  amount: { amount: Decimal128; currency: string };
-  message?: string;
-
-  status: "sent" | "received" | "expired" | "refunded";
-
-  // Bookkeeping pointers
-  senderTransactionId?: ObjectId;     // -> wallet_transactions (debit)
-  recipientTransactionId?: ObjectId;  // -> wallet_transactions (credit)
-
-  expiresAt?: Date;
-  receivedAt?: Date;
-  refundedAt?: Date;
-  createdAt: Date;
-  updatedAt: Date;
-};
-```
-
-Indexes:
-
-- `{ senderUserId: 1, createdAt: -1 }`
-- `{ recipientUserId: 1, status: 1, createdAt: -1 }`
-- `{ status: 1, expiresAt: 1 }`           // expiry sweeper
-
-Rules:
-
-- The product enforces "Send Gift" cannot mix domestic and foreign in one gift.
-- Bonus pool is not giftable by default; enforce in service layer.
-- An expired gift is auto-refunded by inserting a credit into the sender's source wallet via `wallet_transactions`.
+- `{ reservationId: 1 }`
+- `{ subscriptionId: 1 }`
 
 ---
 
 ## Cross-document rules
 
-- Wallet balances are derived. The cached `wallets.balance` is rebuilt from `wallet_transactions` and is recomputable from history.
-- Every `wallet_transactions` row points to one source-of-truth row (top-up, payment, gift, reward, etc.) so history rows have audit trails.
-- Currency mismatch between `wallet_transactions.amount.currency` and the wallet's currency must be rejected.
+- **Immutability**: Never UPDATE a `wallet_transactions` row. Corrections are new compensating rows of `type: "adjustment"`.
+- **Currency integrity**: a row's `amount.currency` must equal the wallet pool's currency; the writer rejects mismatches.
+- **Top-up flow** (Profile → Top Up):
+  1. Insert `payments` row (`purpose: "wallet_top_up"`) with intent metadata.
+  2. On PSP success: insert `wallet_transactions` `{ type: "top_up", direction: "credit", paymentId }`.
+  3. If a bonus applies: insert a second `wallet_transactions` `{ type: "top_up_bonus", direction: "credit" }` against the bonus wallet.
+  4. Recompute `customer_users.wallets.{pool}.balance` for both affected wallets.
+- **Gift flow** (Profile → Send Gift):
+  1. Generate a `giftId`.
+  2. Insert sender debit `{ type: "gift_sent", direction: "debit", giftId, giftCounterpartyUserId, giftCounterpartyUsernameAtSend, giftMessage }`.
+  3. Insert recipient credit `{ type: "gift_received", direction: "credit", giftId, ... }`.
+  4. Update both users' `wallets.{pool}.balance`.
+  5. The product enforces: gifts cannot mix domestic and foreign in one transfer; the bonus pool is not giftable.
+- **Restaurant payment via wallet**: `payments.method.kind = "wallet"` row carries `walletTransactionId` for the matching debit. Both are inserted in one transaction.
+- **Refund**: refund of a wallet-funded payment writes a credit `wallet_transactions` of `type: "refund"` referencing `paymentId`.
+- **Daily bonus** that pays into the wallet (vs. points): inserts `{ type: "daily_bonus", direction: "credit", dailyBonusDate }`. The same claim is also written to `customer_users.dailyBonus.history[]` for UI rendering.
+
+## Realtime channels
+
+- `wallet.transaction.created` (per row)
+- `user.wallets.updated` (after balance recomputation)

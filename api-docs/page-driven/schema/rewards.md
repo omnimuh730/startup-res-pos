@@ -1,66 +1,70 @@
-# Schema · Rewards, Points, Daily Bonus, Referrals
+# Schema · Rewards & Points Ledger
 
-Reward-tier configuration, the points ledger, daily bonus claims, and referral codes/redemptions.
+Same **cache + ledger** pattern as wallets:
+
+- **Cached state** lives on the customer (`customer_users.rewards.{tier, points, ...}`) for fast Profile reads.
+- **Source of truth** is the immutable `points_ledger` collection. The cached `points` is `SUM(direction × points)`; the cached `tier` is the highest `metadata.reward_tiers.items[].threshold` ≤ `points`.
+
+Daily-bonus claims are embedded on the user (`customer_users.dailyBonus.history[]`). Referral codes and redemptions are embedded on the user (`customer_users.referral`).
 
 Source READMEs:
 
-- `reservation/Profile/README.md` (Reward Tier)
-- `reservation/Auth/README.md` (Daily Bonus)
-- `reservation/Auth/README.md`, `reservation/Profile/README.md` (Refer a Friend)
+- `reservation/Profile/README.md` (Reward Tier card)
+- `reservation/Auth/README.md` (Daily Bonus, Refer a Friend)
 
-## Collections
+## Collection
 
 | Collection | Purpose |
 |---|---|
-| `reward_tiers` | Catalog of tiers and thresholds. |
 | `points_ledger` | Append-only points credits/debits. Source of truth for `customer_users.rewards.points`. |
-| `daily_bonus_claims` | One row per user per local day. |
-| `referral_codes` | Issued referral codes (one per user; campaigns can have more). |
-| `referral_redemptions` | Records of consumed referral codes. |
+
+The reward-tier catalog (silver/gold/platinum/diamond and their thresholds + benefits) lives in [`metadata`](./metadata.md) under `_id: "reward_tiers"`.
 
 ---
 
-## `reward_tiers`
+## Embedded reward shape (recap)
+
+For reference; canonical definition lives in [`users.md`](./users.md).
 
 ```ts
-type RewardTier = {
-  _id: ObjectId;
-  code: "silver" | "gold" | "platinum" | "diamond" | string;
-  name: string;
-  threshold: number;                // points required (e.g. 1000)
-  color?: string;
-  icon?: string;
-  benefits: Array<{
-    code: string;                   // "early_access", "concierge"
-    label: string;
-    description?: string;
-  }>;
-  sortOrder: number;
-  active: boolean;
+customer_users.rewards = {
+  tier: "silver" | "gold" | "platinum" | "diamond";
+  points: number;
+  nextTier?: "gold" | "platinum" | "diamond" | null;
+  pointsToNextTier?: number;
 };
-```
 
-Indexes:
+customer_users.dailyBonus = {
+  lastClaimedDate?: string;             // YYYY-MM-DD in user's local tz
+  history: Array<{                      // last 30 entries inline
+    localDate: string;
+    selectedBox: 0 | 1 | 2;
+    reward:
+      | { kind: "points"; points: number }
+      | { kind: "bonus_credit"; amount: { amount: Decimal128; currency: string } }
+      | { kind: "coupon"; couponCode: string };
+    pointsLedgerId?: ObjectId;
+    walletTransactionId?: ObjectId;
+    claimedAt: Date;
+  }>;
+};
 
-- `{ code: 1 }` unique
-- `{ threshold: 1 }`
-
-Seed:
-
-```json
-[
-  { "code": "silver",   "name": "Silver",   "threshold": 0,     "sortOrder": 1, "active": true, "benefits": [] },
-  { "code": "gold",     "name": "Gold",     "threshold": 1000,  "sortOrder": 2, "active": true, "benefits": [] },
-  { "code": "platinum", "name": "Platinum", "threshold": 5000,  "sortOrder": 3, "active": true, "benefits": [] },
-  { "code": "diamond",  "name": "Diamond",  "threshold": 10000, "sortOrder": 4, "active": true, "benefits": [] }
-]
+customer_users.referral = {
+  code: string;                         // user's own referral code
+  referredByCode?: string;              // referral code consumed at sign-up
+  redemptions: Array<{                  // people who used this user's code
+    refereeUserId: ObjectId;
+    redeemedAt: Date;
+    reward: { kind: "points" | "wallet"; amount: number; currency?: string };
+  }>;
+};
 ```
 
 ---
 
 ## `points_ledger`
 
-Immutable. The points balance and tier shown on Profile and the Reward Tier card are derived from this.
+Immutable. Every credit and debit is a new row. Compensating rows undo prior credits (e.g. fraud reversal).
 
 ```ts
 type PointsLedgerEntry = {
@@ -72,6 +76,7 @@ type PointsLedgerEntry = {
     | "review_bonus"
     | "birthday_bonus"
     | "referral_bonus"
+    | "daily_bonus"
     | "manual_adjustment"
     | "expiration"              // points expiring (debit)
     | "redemption";             // (future) using points for rewards
@@ -81,7 +86,8 @@ type PointsLedgerEntry = {
   balanceAfter: number;
 
   reservationId?: ObjectId;
-  referralRedemptionId?: ObjectId;
+  giftId?: ObjectId;
+  walletTransactionId?: ObjectId;   // when a single event credits both points and wallet
   notes?: string;
 
   createdBy?: { kind: "system" | "staff"; id?: ObjectId };
@@ -90,125 +96,30 @@ type PointsLedgerEntry = {
 };
 ```
 
-Indexes:
+### Indexes
 
 - `{ userId: 1, occurredAt: -1 }`
 - `{ reservationId: 1 }`
 - `{ type: 1, occurredAt: -1 }`
-
-Whenever a reservation reaches `visited`, the system inserts one `points_ledger` row, updates the cached `customer_users.rewards.points`, recomputes `tier`, and mirrors `pointsEarned` back onto the reservation document.
-
----
-
-## `daily_bonus_claims`
-
-Idempotent per (user, local-date).
-
-```ts
-type DailyBonusClaim = {
-  _id: ObjectId;
-  userId: ObjectId;
-  localDate: string;                // "2026-04-25" in user's local tz
-
-  selectedBox: 0 | 1 | 2;
-  reward:
-    | { kind: "points"; points: number }
-    | { kind: "bonus_credit"; amount: { amount: Decimal128; currency: string } }
-    | { kind: "coupon"; couponCode: string };
-
-  // Pointers to side effects
-  pointsLedgerId?: ObjectId;
-  walletTransactionId?: ObjectId;
-
-  createdAt: Date;
-};
-```
-
-Indexes:
-
-- `{ userId: 1, localDate: 1 }` unique
-
-Behavior:
-
-- The claim endpoint must be idempotent per `(userId, localDate)`.
-- A second claim returns the existing row (or 409 with the same data).
-
----
-
-## `referral_codes`
-
-```ts
-type ReferralCode = {
-  _id: ObjectId;
-  code: string;                     // "ALEX-7421"
-  ownerUserId: ObjectId;            // -> customer_users
-  type: "user" | "campaign";
-
-  rewards: {
-    referrer: { kind: "points" | "wallet"; amount: Decimal128 };
-    referee:  { kind: "points" | "wallet"; amount: Decimal128 };
-    currency?: string;              // when kind="wallet"
-  };
-
-  maxRedemptions?: number;          // null = unlimited
-  redemptionsCount: number;
-  active: boolean;
-
-  validFrom?: Date;
-  validUntil?: Date;
-  createdAt: Date;
-  updatedAt: Date;
-};
-```
-
-Indexes:
-
-- `{ code: 1 }` unique
-- `{ ownerUserId: 1, type: 1 }`
-- `{ active: 1, validUntil: 1 }`
-
----
-
-## `referral_redemptions`
-
-Created when a new sign-up enters a referral code (Auth Sign Up Step 1).
-
-```ts
-type ReferralRedemption = {
-  _id: ObjectId;
-  referralCodeId: ObjectId;
-  refereeUserId: ObjectId;          // the new user
-  referrerUserId: ObjectId;         // owner of code (denormalized)
-
-  status: "redeemed" | "reverted";
-
-  // Side effects
-  refereePointsLedgerId?: ObjectId;
-  refereeWalletTransactionId?: ObjectId;
-  referrerPointsLedgerId?: ObjectId;
-  referrerWalletTransactionId?: ObjectId;
-
-  redeemedAt: Date;
-  revertedAt?: Date;
-  createdAt: Date;
-};
-```
-
-Indexes:
-
-- `{ referralCodeId: 1, refereeUserId: 1 }` unique
-- `{ referrerUserId: 1, redeemedAt: -1 }`
-
-Rules:
-
-- A user cannot redeem their own code.
-- A user can redeem at most one referral code at sign-up.
-- Reversion (e.g. fraud) inserts compensating rows in `points_ledger` / `wallet_transactions` rather than deleting history.
+- `{ userId: 1, type: 1, occurredAt: -1 }`
 
 ---
 
 ## Cross-document rules
 
-- `customer_users.rewards.points` is a cache. Always rebuildable from `points_ledger`.
-- Tier promotion is computed by selecting the highest `reward_tiers.threshold` `<=` current points.
-- Daily bonus, referral, and review bonuses can affect either points or wallet balance; both ledgers must remain immutable.
+- **Reservation visit credit**: when a reservation reaches `visited`, the system inserts one `points_ledger` row of `type: "reservation_completed"`, updates `customer_users.rewards.{points, tier, nextTier, pointsToNextTier}`, and mirrors the credited `points` back onto `reservations.pointsEarned`.
+- **Daily bonus**:
+  - The claim endpoint is idempotent per `(userId, localDate)` enforced by a unique partial index on `customer_users.dailyBonus.history.localDate` — repeated claims read the existing row.
+  - If the chosen box rewards points, insert a `points_ledger` row of `type: "daily_bonus"` and store its `_id` in `dailyBonus.history[].pointsLedgerId`.
+  - If the box rewards wallet credit, insert a `wallet_transactions` row instead and store its `_id` in `dailyBonus.history[].walletTransactionId`.
+- **Referral**:
+  - At sign-up, the referee writes `referral.referredByCode` and an entry is appended to the referrer's `referral.redemptions[]`.
+  - Each side is rewarded with either points (a `points_ledger` row) or wallet credit (a `wallet_transactions` row) as configured in `metadata.reward_tiers` / referral config.
+  - Reverting a referral inserts a compensating `points_ledger` row of `type: "manual_adjustment"` plus a wallet adjustment if applicable; nothing is deleted.
+- **Tier promotion** is computed on every `points_ledger` write: pick the highest tier whose `threshold` ≤ new `points`. The cached `tier`, `nextTier`, `pointsToNextTier` on the user are updated in the same write.
+- **Expiration** policy (if enabled) inserts `direction: "debit"` rows of `type: "expiration"` against points older than the configured age.
+
+## Realtime channels
+
+- `points.ledger.created` (per row)
+- `user.rewards.updated` (after cache recomputation; tier promotion broadcasts here)

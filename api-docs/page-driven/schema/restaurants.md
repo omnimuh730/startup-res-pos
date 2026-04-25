@@ -1,25 +1,24 @@
-# Schema · Restaurants, Floors, Tables, Settings
+# Schema · Restaurants
 
-Tenant root for the POS, plus the layout (floors and tables) and per-restaurant settings.
+The tenant-root document for the POS, with **embedded** settings, floors, menu (categories + items + modifiers), phones, deposit cards, and the pending-staff inbox.
 
 Source READMEs:
 
 - `pos/Floor Plan/README.md`
 - `pos/Settings/README.md`
 - `pos/Auth/README.md` (restaurant sign-up)
+- `pos/Orders/README.md` (menu browsing)
 - `reservation/Discover/README.md`, `reservation/Explorer/README.md` (public discovery fields)
 
-## Collections
+## Collection
 
 | Collection | Purpose |
 |---|---|
-| `restaurants` | Tenant root and public profile data shown across the customer app. |
-| `floors` | A floor (a logical room/area) inside a restaurant. |
-| `tables` | A table on a floor with shape, size, position, and capacity. |
-| `restaurant_settings` | All editable settings: deposit, money type, grace period, hours, ... |
-| `restaurant_phones` | Multiple phone numbers per restaurant. |
-| `restaurant_payment_cards` | Deposit cards used to receive customer payouts. |
-| `amenities` | Catalog of selectable amenities/services. |
+| `restaurants` | Tenant root + public profile + settings + layout (floors) + menu + payment cards + pending staff inbox. |
+
+`tables` lives in its own collection because it carries operational state changed concurrently during service. See [`tables.md`](./tables.md).
+
+`amenities` (catalog of available codes) lives in [`metadata`](./metadata.md).
 
 ---
 
@@ -36,7 +35,7 @@ type Restaurant = {
 
   status: "pending_approval" | "active" | "suspended";
 
-  thumbnailUrl?: string;            // pre-signed upload result
+  thumbnailUrl?: string;
   imageUrls: string[];
 
   address: {
@@ -53,35 +52,165 @@ type Restaurant = {
   };
 
   contact: {
-    primaryPhone?: string;          // duplicated from restaurant_phones for fast read
+    primaryPhone?: string;          // duplicated from phones[isPrimary] for fast read
     websiteUrl?: string;
   };
 
   rating: {
-    average: number;                // cached aggregate
+    average: number;
     count: number;
   };
 
-  amenities: string[];              // amenity codes (see `amenities`)
-
-  // Subscription tier of the restaurant tenant
-  tier: "free" | "pro" | "ultra";
-
-  // Stats used by Discover sections
+  amenities: string[];              // amenity codes (catalog: metadata.amenities)
   flags: {
     isNew?: boolean;
     isCatchOnly?: boolean;
     isEditorChoice?: boolean;
   };
 
-  createdBy: ObjectId;              // -> staff_users (the registering manager)
+  // Subscription tier — sync'd from subscriptions collection.
+  tier: "free" | "pro" | "ultra";
+
+  // ---- Embedded: Settings ----
+  settings: {
+    general: {
+      deposit: {
+        moneyType: "domestic" | "foreign";
+        amountPerGuest: { amount: Decimal128; currency: string };
+      };
+      gracePeriodMinutes: number;
+      operatingHours: Array<{
+        day: 0 | 1 | 2 | 3 | 4 | 5 | 6;  // 0 = Sun
+        open: string;                  // "10:00"
+        close: string;                 // "22:00"
+        closed?: boolean;
+      }>;
+    };
+    security: {
+      passwordPolicy: {
+        minLength: number;
+        requireUppercase: boolean;
+        requireNumber: boolean;
+      };
+      notificationsMuted: boolean;
+    };
+    features: {
+      reservations: boolean;
+      qrPay: boolean;
+      delivery: boolean;
+    };
+  };
+
+  // ---- Embedded: Phones ----
+  phones: Array<{
+    _id: ObjectId;
+    label: "main" | "reservation" | "kitchen" | "support" | "other";
+    phone: string;                  // E.164
+    isPrimary: boolean;
+    addedAt: Date;
+  }>;
+
+  // ---- Embedded: Floors ----
+  floors: Array<{
+    _id: ObjectId;
+    name: string;                   // "Main", "Patio"
+    sortOrder: number;
+    isPublished: boolean;
+    deletedAt?: Date | null;
+  }>;
+
+  // ---- Embedded: Menu ----
+  menu: {
+    categories: Array<{
+      _id: ObjectId;
+      name: string;                 // "Appetizers"
+      iconUrl?: string;
+      sortOrder: number;
+      isActive: boolean;
+      subcategories: Array<{
+        _id: ObjectId;
+        name: string;               // "Cold Appetizers"
+        sortOrder: number;
+        isActive: boolean;
+      }>;
+    }>;
+    items: Array<{
+      _id: ObjectId;                // referenced by order_items as menuItemId
+      categoryId: ObjectId;
+      subcategoryId?: ObjectId | null;
+      name: string;
+      shortName?: string;
+      description?: string;
+      imageUrl?: string;
+      tags?: string[];
+
+      price: { amount: Decimal128; currency: string };
+      pool: "domestic" | "foreign" | "either";
+
+      modifiers: Array<{
+        _id: ObjectId;
+        name: string;
+        priceDelta: { amount: Decimal128; currency: string };
+        group?: string;
+        selectionType: "single" | "multi";
+        isRequired: boolean;
+        sortOrder: number;
+        isActive: boolean;
+      }>;
+
+      availability: {
+        isAvailable: boolean;
+        soldOutUntil?: Date | null;
+      };
+
+      // Per-item analytics caches; rebuilt by jobs from order_items snapshots.
+      stats?: {
+        soldCount30d: number;
+        revenue30d: { amount: Decimal128; currency: string };
+      };
+
+      isActive: boolean;
+      deletedAt?: Date | null;
+      createdAt: Date;
+      updatedAt: Date;
+    }>;
+  };
+
+  // ---- Embedded: Deposit cards (cards the restaurant uses to RECEIVE money) ----
+  depositCards: Array<{
+    _id: ObjectId;
+    pspProvider: "stripe" | "toss" | "adyen" | string;
+    pspExternalId: string;
+    brand: string;
+    last4: string;
+    expMonth: number;
+    expYear: number;
+    isDefault: boolean;
+    registrationMode: "scan" | "type";
+    createdBy: ObjectId;            // staff user
+    addedAt: Date;
+    deletedAt?: Date | null;
+  }>;
+
+  // ---- Embedded: Pending staff sign-ups inbox ----
+  // On approval, a fresh staff_users row is inserted and the entry removed.
+  pendingStaff: Array<{
+    _id: ObjectId;
+    fullName: string;
+    username: string;
+    passwordHash: string;
+    requestedRole: "waiter" | "chef" | "cashier";
+    requestedAt: Date;
+  }>;
+
+  createdBy: ObjectId;              // -> staff_users (registering manager)
   createdAt: Date;
   updatedAt: Date;
   deletedAt?: Date | null;
 };
 ```
 
-Indexes:
+### Indexes
 
 - `{ slug: 1 }` unique
 - `{ status: 1, tier: 1 }`
@@ -90,206 +219,43 @@ Indexes:
 - `{ amenities: 1 }`
 - `{ location: "2dsphere" }` for Explorer map queries
 - text index on `name`, `description` for search suggestions
+- `{ "menu.items._id": 1 }` (multikey, lookup by item id from order snapshots)
+- `{ "menu.items.categoryId": 1 }` (multikey, POS Orders catalog browsing)
+- `{ "menu.items.name": 1 }` (multikey, Menu Analysis cross-restaurant when scoped)
+- `{ "phones.phone": 1 }` (multikey)
 
-State machine:
+### State machine
 
 ```text
 pending_approval ─approve─▶ active ─suspend─▶ suspended ─reactivate─▶ active
 ```
 
----
+### Why menu is embedded
 
-## `floors`
+A restaurant typically has 50–500 menu items × ~500 B = 25–250 KB. Edits are infrequent and usually performed by 1–2 managers, so concurrent-edit conflicts are rare. The trade-off:
 
-```ts
-type Floor = {
-  _id: ObjectId;
-  restaurantId: ObjectId;
-  name: string;                     // "Main", "Patio"
-  sortOrder: number;
-  isPublished: boolean;             // false while edits are still drafts
-  createdAt: Date;
-  updatedAt: Date;
-  deletedAt?: Date | null;
-};
-```
+- **Snapshot stability**: each `menu.items[]._id` is a real `ObjectId` so `order_items` can stably reference (`menuItemId`) and snapshot (`name`, `price`, `pool`) at order time. Live menu mutations never break old order receipts.
+- **Cross-restaurant analytics** (e.g. "top items chain-wide") will need `$unwind` over restaurants. Acceptable for MVP; revisit when the chain feature ships.
 
-Indexes:
+### Why tables are NOT embedded
 
-- `{ restaurantId: 1, sortOrder: 1 }`
-- `{ restaurantId: 1, isPublished: 1 }`
+Tables carry runtime status (`available | reserved | occupied | needs_cleaning | out_of_service`) updated concurrently by waiters and the QR check-in flow. Embedding would cause write contention on the restaurant document and pollute realtime change-stream consumers. See [`tables.md`](./tables.md).
 
 ---
 
-## `tables`
+## Cross-document rules
 
-```ts
-type Table = {
-  _id: ObjectId;
-  restaurantId: ObjectId;
-  floorId: ObjectId;
-  name: string;                     // "P1", "T-3"
-  seats: number;
-  shape: "circle" | "square" | "rect" | "custom";
-  size: { w: number; h: number };
-  position: { x: number; y: number };
-  z: number;                        // stacking order on the floor canvas
+- `restaurants.amenities[]` contains amenity codes from the `metadata` catalog.
+- The default `phones[i].isPrimary === true` mirrors into `contact.primaryPhone` for fast read.
+- The default `depositCards[i].isDefault === true` is the card customer payments settle into.
+- Floor edits replace the floor's contents transactionally; tables not in the request are soft-deleted in the `tables` collection.
+- Staff sign-up appends a row into `pendingStaff[]`; approval atomically inserts a `staff_users` row and removes the pending entry.
+- Menu item soft-delete (`menu.items[i].deletedAt`) keeps the row available for historical order rendering.
+- Restaurant tier is sync'd from the `subscriptions` collection on subscription state change.
 
-  status: "available" | "reserved" | "occupied" | "needs_cleaning" | "out_of_service";
-  occupancy?: {
-    reservationId?: ObjectId;       // -> reservations
-    orderId?: ObjectId;             // -> orders
-    seatedAt?: Date;
-    partySize?: number;
-  };
+## Realtime channels
 
-  qrCodeId?: ObjectId;              // -> table_qr_codes (current)
-  createdAt: Date;
-  updatedAt: Date;
-  deletedAt?: Date | null;
-};
-```
-
-Indexes:
-
-- `{ restaurantId: 1, floorId: 1 }`
-- `{ restaurantId: 1, status: 1 }`
-- `{ "occupancy.reservationId": 1 }`
-- `{ "occupancy.orderId": 1 }`
-
-Realtime channel: `table.updated` (emitted on any field change).
-
----
-
-## `restaurant_settings`
-
-A single settings document per restaurant. Embedded sub-objects mirror the Settings page sections.
-
-```ts
-type RestaurantSettings = {
-  _id: ObjectId;                    // = restaurantId for 1:1
-  restaurantId: ObjectId;
-
-  general: {
-    deposit: {
-      moneyType: "domestic" | "foreign";
-      amountPerGuest: { amount: Decimal128; currency: string };
-    };
-    gracePeriodMinutes: number;     // for late arrivals before no-show
-    operatingHours: Array<{
-      day: 0 | 1 | 2 | 3 | 4 | 5 | 6;  // 0 = Sun
-      open: string;                  // "10:00"
-      close: string;                 // "22:00"
-      closed?: boolean;
-    }>;
-  };
-
-  amenities: string[];              // amenity codes enabled
-
-  security: {
-    passwordPolicy: {
-      minLength: number;
-      requireUppercase: boolean;
-      requireNumber: boolean;
-    };
-    notificationsMuted: boolean;
-  };
-
-  features: {
-    reservations: boolean;
-    qrPay: boolean;
-    delivery: boolean;
-  };
-
-  createdAt: Date;
-  updatedAt: Date;
-};
-```
-
-Indexes:
-
-- `{ restaurantId: 1 }` unique
-
----
-
-## `restaurant_phones`
-
-```ts
-type RestaurantPhone = {
-  _id: ObjectId;
-  restaurantId: ObjectId;
-  label: "main" | "reservation" | "kitchen" | "support" | "other";
-  phone: string;                    // E.164
-  isPrimary: boolean;
-  createdAt: Date;
-  updatedAt: Date;
-};
-```
-
-Indexes:
-
-- `{ restaurantId: 1, isPrimary: -1 }`
-- `{ restaurantId: 1, phone: 1 }` unique
-
-When a row is set as `isPrimary: true`, also mirror it into `restaurants.contact.primaryPhone`.
-
----
-
-## `restaurant_payment_cards`
-
-Deposit/payout cards (the cards a restaurant uses to *receive* money). The card data itself is stored at the PSP; only metadata is kept here.
-
-```ts
-type RestaurantPaymentCard = {
-  _id: ObjectId;
-  restaurantId: ObjectId;
-  pspProvider: "stripe" | "toss" | "adyen" | string;
-  pspExternalId: string;            // psp's card/customer id
-  brand: "visa" | "mastercard" | "amex" | string;
-  last4: string;
-  expMonth: number;
-  expYear: number;
-  isDefault: boolean;
-  registrationMode: "scan" | "type";
-  createdBy: ObjectId;              // staff user
-  createdAt: Date;
-  updatedAt: Date;
-  deletedAt?: Date | null;
-};
-```
-
-Indexes:
-
-- `{ restaurantId: 1, isDefault: -1 }`
-- `{ restaurantId: 1, pspExternalId: 1 }` unique
-
----
-
-## `amenities`
-
-Read-mostly catalog used by Settings, Reservation Flow Step 3, Explorer filters, and reservation app preferences.
-
-```ts
-type Amenity = {
-  _id: ObjectId;
-  code: string;                     // "parking", "kids_welcome"
-  label: string;                    // "Parking"
-  group: "seating" | "cuisine" | "vibe" | "service" | "other";
-  icon?: string;
-  active: boolean;
-  sortOrder: number;
-};
-```
-
-Indexes:
-
-- `{ code: 1 }` unique
-- `{ group: 1, active: 1, sortOrder: 1 }`
-
----
-
-## Cross-document notes
-
-- The `restaurants.amenities` array contains amenity codes, not ObjectIds, so the codes must be stable.
-- Floor edits should be done as a transactional upsert: posted layout replaces table positions for that floor; tables not present in the request are soft-deleted.
-- A reservation that ends in `arrived` flips the matching `tables.status` to `occupied` via the POS Floor Plan websocket event.
+- `restaurant.profile.updated`
+- `restaurant.menu.updated`
+- `restaurant.settings.updated`
+- `restaurant.staff.pending` (when a new sign-up appears)

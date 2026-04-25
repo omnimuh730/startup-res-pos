@@ -1,77 +1,22 @@
-# Schema · Subscriptions & Plans
+# Schema · Subscriptions
 
-Both subscriptions in the product:
+Both subscription products in one collection:
 
-- **Restaurant tier** subscriptions (POS Settings -> Upgrade Plans): `Free`, `Pro`, `Ultra`.
-- **Customer pro** subscriptions (Reservation Profile -> Upgrade to Pro): `Monthly`, `Quarterly`, `Yearly`.
+- **Restaurant tier** (POS Settings → Upgrade Plans): `Free`, `Pro`, `Ultra`.
+- **Customer pro** (Reservation Profile → Upgrade to Pro): `Monthly`, `Quarterly`, `Yearly`.
+
+Plans catalog lives in [`metadata`](./metadata.md) under `_id: "subscription_plans"`. Invoices are **embedded** on the subscription doc; even a 20-year history fits well under 200 KB.
 
 Source READMEs:
 
 - `pos/Settings/README.md` (Upgrade Plans)
 - `reservation/Profile/README.md` (CatchTable Pro)
 
-## Collections
+## Collection
 
 | Collection | Purpose |
 |---|---|
-| `subscription_plans` | Catalog of all plans with pricing and features. |
-| `subscriptions` | Active or historical subscription per subject (restaurant or customer). |
-| `subscription_invoices` | Invoices generated per billing cycle. |
-
----
-
-## `subscription_plans`
-
-```ts
-type SubscriptionPlan = {
-  _id: ObjectId;
-  product: "restaurant_tier" | "catchtable_pro";
-  code: string;                     // "restaurant_pro", "pro_yearly"
-  name: string;                     // "Pro", "Yearly"
-
-  price: { amount: Decimal128; currency: string };
-  billingPeriod: "month" | "quarter" | "year";
-  // optional savings copy shown next to the plan, e.g. "Save 17%"
-  badge?: string;
-  highlight?: "best_value" | "popular" | null;
-
-  features: Array<{
-    code: string;                   // "unlimited_reservations"
-    label: string;
-    description?: string;
-  }>;
-
-  active: boolean;
-  sortOrder: number;
-  createdAt: Date;
-  updatedAt: Date;
-};
-```
-
-Indexes:
-
-- `{ product: 1, code: 1 }` unique
-- `{ product: 1, active: 1, sortOrder: 1 }`
-
-Seed (customer Pro):
-
-```json
-[
-  { "product":"catchtable_pro","code":"pro_monthly",  "name":"Monthly",  "price":{"amount":"9.99","currency":"USD"},"billingPeriod":"month","sortOrder":1,"active":true },
-  { "product":"catchtable_pro","code":"pro_quarterly","name":"Quarterly","price":{"amount":"24.99","currency":"USD"},"billingPeriod":"quarter","badge":"Save 17%","sortOrder":2,"active":true },
-  { "product":"catchtable_pro","code":"pro_yearly",   "name":"Yearly",   "price":{"amount":"79.99","currency":"USD"},"billingPeriod":"year","badge":"Save 33%","highlight":"best_value","sortOrder":3,"active":true }
-]
-```
-
-Seed (restaurant tier):
-
-```json
-[
-  { "product":"restaurant_tier","code":"free", "name":"Free", "price":{"amount":"0","currency":"USD"},"billingPeriod":"month","active":true,"sortOrder":1 },
-  { "product":"restaurant_tier","code":"pro",  "name":"Pro",  "price":{"amount":"49","currency":"USD"},"billingPeriod":"month","active":true,"sortOrder":2 },
-  { "product":"restaurant_tier","code":"ultra","name":"Ultra","price":{"amount":"129","currency":"USD"},"billingPeriod":"month","active":true,"sortOrder":3 }
-]
-```
+| `subscriptions` | Active or historical subscription per subject (customer or restaurant). Embeds full invoice history and lifecycle history. |
 
 ---
 
@@ -86,8 +31,7 @@ type Subscription = {
   customerUserId?: ObjectId;
   restaurantId?: ObjectId;
 
-  planId: ObjectId;                 // -> subscription_plans
-  planCode: string;                 // denormalized
+  planCode: string;                 // "pro_yearly", "ultra", ... (catalog: metadata.subscription_plans)
   status: "trialing" | "active" | "past_due" | "cancelled" | "expired";
 
   // Billing window
@@ -96,12 +40,39 @@ type Subscription = {
   cancelAtPeriodEnd: boolean;
   cancelledAt?: Date | null;
 
-  // Payment
-  paymentMethodId?: ObjectId;       // -> customer_payment_methods | restaurant_deposit_cards
+  // Payment method
+  paymentMethodRef?: {              // resolves at charge time
+    kind: "customer_method" | "restaurant_deposit_card";
+    methodId: ObjectId;             // -> customer_users.paymentMethods[]._id | restaurants.depositCards[]._id
+  };
   pspProvider?: string;
   pspSubscriptionId?: string;
 
-  // Audit / lifecycle
+  // ---- Embedded: Invoices ----
+  // One row per billing cycle. ~12/year. Bounded for the lifetime of the product.
+  invoices: Array<{
+    _id: ObjectId;
+    periodStart: Date;
+    periodEnd: Date;
+
+    amount: { amount: Decimal128; currency: string };
+    taxes?: { amount: Decimal128; currency: string };
+    total:  { amount: Decimal128; currency: string };
+
+    status: "open" | "paid" | "uncollectible" | "voided";
+
+    paymentId?: ObjectId;           // -> payments
+    walletTransactionId?: ObjectId; // -> wallet_transactions when paid from wallet
+
+    attemptCount: number;
+    nextAttemptAt?: Date;
+    failure?: { code: string; message: string };
+
+    createdAt: Date;
+    updatedAt: Date;
+  }>;
+
+  // ---- Embedded: Lifecycle history ----
   history: Array<{
     at: Date;
     type: "created" | "renewed" | "upgraded" | "downgraded" | "cancelled" | "reactivated" | "payment_failed";
@@ -116,15 +87,16 @@ type Subscription = {
 };
 ```
 
-Indexes:
+### Indexes
 
 - `{ customerUserId: 1, product: 1, status: 1 }`
 - `{ restaurantId: 1, product: 1, status: 1 }`
 - `{ planCode: 1, status: 1 }`
 - `{ pspSubscriptionId: 1 }` unique sparse
-- `{ status: 1, currentPeriodEnd: 1 }`     // renewal cron
+- `{ status: 1, currentPeriodEnd: 1 }`           // renewal cron
+- `{ "invoices.status": 1, "invoices.nextAttemptAt": 1 }` (multikey, dunning worker)
 
-State diagram:
+### State diagram
 
 ```text
 trialing ─bill ok─▶ active
@@ -133,60 +105,22 @@ active ─bill fail─▶ past_due ─dunning ok─▶ active
 past_due ─dunning fail─▶ cancelled
 ```
 
-Effect of restaurant tier change on POS:
+### Realtime channels
 
-- Updating `subscriptions` triggers a sync to `restaurants.tier`.
-- Tier-gated features (e.g. analytics, advanced settings) read from `restaurants.tier`.
-
----
-
-## `subscription_invoices`
-
-One row per billing period. Drives the `subscription_charge` debit on customer wallets or PSP charges on the saved card.
-
-```ts
-type SubscriptionInvoice = {
-  _id: ObjectId;
-  subscriptionId: ObjectId;
-  product: "restaurant_tier" | "catchtable_pro";
-
-  // Subject
-  customerUserId?: ObjectId;
-  restaurantId?: ObjectId;
-
-  periodStart: Date;
-  periodEnd: Date;
-
-  amount: { amount: Decimal128; currency: string };
-  taxes?: { amount: Decimal128; currency: string };
-  total: { amount: Decimal128; currency: string };
-
-  status: "open" | "paid" | "uncollectible" | "voided";
-
-  paymentIntentId?: ObjectId;       // -> payment_intents
-  paymentId?: ObjectId;             // -> payments
-  walletTransactionId?: ObjectId;   // -> wallet_transactions when paid from wallet
-
-  attemptCount: number;
-  nextAttemptAt?: Date;
-  failure?: { code: string; message: string };
-
-  createdAt: Date;
-  updatedAt: Date;
-};
-```
-
-Indexes:
-
-- `{ subscriptionId: 1, periodStart: -1 }`
-- `{ status: 1, nextAttemptAt: 1 }`
-- `{ paymentIntentId: 1 }`
+- `subscription.created`
+- `subscription.updated`
+- `subscription.invoice.created`
+- `subscription.invoice.paid`
+- `subscription.invoice.failed`
 
 ---
 
 ## Cross-document rules
 
-- A successful `subscription_invoices.status = "paid"` insert updates the parent `subscriptions.currentPeriodEnd` and writes a `history` entry of type `renewed`.
-- A failed invoice retries with exponential backoff. On final failure, status becomes `uncollectible` and the subscription transitions to `past_due` then `cancelled`.
-- The Restaurant Settings UI shows the current tier and plan price by joining `restaurants.tier` -> `subscription_plans` (where `product = "restaurant_tier"` and `code = restaurants.tier`).
-- The Customer Profile shows Pro state by checking `subscriptions` of `product = "catchtable_pro"` with `status in {active, trialing}`.
+- A successful invoice (`invoices[i].status = "paid"`) updates `currentPeriodStart`/`currentPeriodEnd` and pushes a `renewed` history entry.
+- A failed invoice retries with exponential backoff. On final failure, status becomes `uncollectible`, the subscription transitions to `past_due`, then `cancelled` if dunning fails.
+- **Restaurant tier sync**: a successful subscription change writes `restaurants.tier` to match (`free` | `pro` | `ultra`). Tier-gated POS features read from `restaurants.tier`.
+- **Customer pro sync**: `customer_users.subscription` mirrors the active `catchtable_pro` subscription summary (planCode, status, currentPeriodEnd, cancelAtPeriodEnd) for fast Profile reads.
+- The Settings → Upgrade Plans wizard creates one subscription doc per restaurant and writes the first invoice on the same insert.
+- The Profile → Upgrade to Pro wizard creates one subscription doc per customer and writes the first invoice on the same insert.
+- Plan price/feature changes happen in `metadata.subscription_plans`; existing subscriptions retain their `planCode` reference and re-read the catalog at billing time.

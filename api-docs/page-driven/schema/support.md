@@ -1,18 +1,17 @@
-# Schema · Support Chat & Articles
+# Schema · Support
 
-The CatchTable Helper chat shown in Profile -> Contact Support, plus the help-article catalog used by quick-topic taps.
+Customer or restaurant-staff support chat. Messages are **embedded** on the conversation. Help-center articles live in [`metadata`](./metadata.md) under `_id: "support_articles"`.
 
 Source READMEs:
 
-- `reservation/Profile/README.md` (Contact Support)
+- `reservation/Profile/README.md` (Profile → Help & Support)
+- `pos/Settings/README.md` (Settings → Support; restaurant-side analogue)
 
-## Collections
+## Collection
 
 | Collection | Purpose |
 |---|---|
-| `support_conversations` | One chat thread per user-initiated support session. |
-| `support_messages` | Messages inside a conversation; user, bot, or human agent. |
-| `support_articles` | Help articles linked to quick-topic chips. |
+| `support_conversations` | A single chat thread between one user (customer or staff) and the support team. Embeds messages. |
 
 ---
 
@@ -21,139 +20,101 @@ Source READMEs:
 ```ts
 type SupportConversation = {
   _id: ObjectId;
-  customerUserId: ObjectId;
 
-  source: "profile" | "discover" | "dining" | "booking" | "auth";
-  topicAtStart?: "booking" | "qr_pay" | "password" | "cancel" | "live_agent" | string;
+  subjectKind: "customer" | "staff";
+  customerUserId?: ObjectId;
+  staffUserId?: ObjectId;
+  restaurantId?: ObjectId;          // populated for staff or for tenant-tagged customer issues
 
-  status: "open" | "with_bot" | "with_agent" | "resolved" | "closed";
-  assignedAgentId?: ObjectId;       // -> staff_users (support role) or external agent id
+  topic?: string;                   // captured from "How can we help today?"
+  subject?: string;                 // first message subject line, optional
 
-  // Cached preview for the conversations list
-  lastMessage?: {
-    body: string;
-    sender: "user" | "bot" | "agent";
-    sentAt: Date;
+  status: "open" | "pending_user" | "pending_agent" | "resolved" | "closed";
+  priority?: "low" | "normal" | "high" | "urgent";
+
+  // Channel
+  channel: "in_app_chat" | "email" | "phone";
+
+  // Assigned support agent (internal team; modeled in your CRM, not here)
+  assignedAgentId?: string;
+
+  // Linked context (for "what is this about?")
+  context?: {
+    reservationId?: ObjectId;
+    orderId?: ObjectId;
+    paymentId?: ObjectId;
+    articleSlug?: string;           // metadata.support_articles.items[].slug
   };
-  unreadCountForUser: number;
-  unreadCountForAgent: number;
 
+  // Counters for fast list rendering
+  messageCount: number;
+  unreadByUser: number;
+  unreadByAgent: number;
+  lastMessageAt: Date;
+  lastMessagePreview?: string;
+
+  // ---- Embedded: Messages ----
+  // Bounded by support reality (typical thread: 5–50 messages).
+  // If a thread approaches 500+, archive older messages to a cold collection.
+  messages: Array<{
+    _id: ObjectId;
+    senderKind: "user" | "agent" | "system";
+    senderId?: ObjectId;            // user id or internal agent id (string at storage time)
+    body: string;
+    attachments?: Array<{
+      kind: "image" | "file";
+      url: string;
+      mime?: string;
+      size?: number;
+      filename?: string;
+    }>;
+    readByUserAt?: Date;
+    readByAgentAt?: Date;
+    sentAt: Date;
+  }>;
+
+  // Audit
+  openedAt: Date;
+  resolvedAt?: Date | null;
   closedAt?: Date | null;
-  rating?: number | null;           // CSAT 1-5
-  ratingComment?: string | null;
+  rating?: 1 | 2 | 3 | 4 | 5;       // optional CSAT
+  ratingComment?: string;
 
   createdAt: Date;
   updatedAt: Date;
 };
 ```
 
-Indexes:
+### Indexes
 
-- `{ customerUserId: 1, status: 1, updatedAt: -1 }`
-- `{ status: 1, updatedAt: -1 }`         // agent queue
-- `{ assignedAgentId: 1, status: 1, updatedAt: -1 }`
+- `{ customerUserId: 1, status: 1, lastMessageAt: -1 }`
+- `{ staffUserId: 1, status: 1, lastMessageAt: -1 }`
+- `{ restaurantId: 1, status: 1, lastMessageAt: -1 }`
+- `{ status: 1, priority: 1, lastMessageAt: -1 }`        // agent queue
+- `{ assignedAgentId: 1, status: 1 }`
+- `{ "context.reservationId": 1 }`
+- `{ "context.orderId": 1 }`
 
-State diagram:
+### State diagram
 
 ```text
-open ─bot greets─▶ with_bot ─quick_topic─▶ with_bot
-with_bot ─talk to a human─▶ with_agent ─resolve─▶ resolved ─close─▶ closed
+open ─agent reply─▶ pending_user ─user reply─▶ pending_agent ─agent reply─▶ pending_user
+any ─resolve──▶ resolved ─reopen──▶ pending_agent
+any ─close (auto-after 7d)──▶ closed
 ```
 
-Realtime channels: `support.message.created`, `support.agent.assigned`, `support.conversation.closed`.
+### Realtime channels
 
----
-
-## `support_messages`
-
-```ts
-type SupportMessage = {
-  _id: ObjectId;
-  conversationId: ObjectId;
-  customerUserId: ObjectId;         // denormalized for fan-out
-
-  sender: "user" | "bot" | "agent" | "system";
-  agentId?: ObjectId;               // present when sender="agent"
-
-  body?: string;
-  attachments?: Array<{
-    kind: "image" | "file";
-    url: string;
-    name?: string;
-    sizeBytes?: number;
-  }>;
-
-  // For bot messages with quick-reply chips
-  quickTopics?: Array<{
-    code: string;                   // "book_table", "qr_pay", "save_heart", "forgot_password", "cancel_booking", "talk_human"
-    label: string;
-  }>;
-
-  // For typed user messages, the bot may attach a recommended article
-  articleId?: ObjectId;             // -> support_articles
-
-  readByUserAt?: Date | null;
-  readByAgentAt?: Date | null;
-
-  sentAt: Date;
-  createdAt: Date;
-};
-```
-
-Indexes:
-
-- `{ conversationId: 1, sentAt: 1 }`
-- `{ customerUserId: 1, sentAt: -1 }`
-- `{ articleId: 1 }`
-
-The Contact Support modal renders the welcome bot message, the quick-topic chips, and the bottom topic chips (`Live agent`, `Booking`, `QR Pay`) by inserting predefined `support_messages` rows when the conversation is created.
-
----
-
-## `support_articles`
-
-Help articles served by topic chips and bot quick-reply buttons. The Profile Help & Guide row routes to the same catalog.
-
-```ts
-type SupportArticle = {
-  _id: ObjectId;
-  topic: string;                    // "qr_pay", "booking"...
-  slug: string;                     // url-safe
-  title: string;
-  bodyMarkdown: string;
-  steps?: Array<{ title: string; body: string; imageUrl?: string }>;
-
-  locale: string;                   // "en-US"
-  active: boolean;
-  publishedAt?: Date;
-  updatedAt: Date;
-  createdAt: Date;
-};
-```
-
-Indexes:
-
-- `{ slug: 1 }` unique
-- `{ topic: 1, active: 1 }`
-- `{ locale: 1, active: 1 }`
-- text index on `title`, `bodyMarkdown` for in-chat search
-
-Quick-topic chip mapping (used both in `support_messages.quickTopics` and to look up articles):
-
-| Code | Label | Default article topic |
-|---|---|---|
-| `book_table` | How do I book a table? | `booking` |
-| `qr_pay` | How does QR Pay work? | `qr_pay` |
-| `save_heart` | Save to Heart list | `saved` |
-| `forgot_password` | I forgot my password | `password_recovery` |
-| `cancel_booking` | Cancel a booking | `cancel_booking` |
-| `talk_human` | Talk to a human | (escalates: sets conversation to `with_agent`) |
+- `support.conversation.created`
+- `support.message.created` (per row)
+- `support.conversation.updated` (status, assignment)
 
 ---
 
 ## Cross-document rules
 
-- A new conversation always starts with a system "user opened chat" message, then a bot greeting plus the quick-topic message.
-- Tapping `Talk to a human` flips `support_conversations.status` to `with_agent` and routes to the agent queue.
-- Mark-as-read updates patch the corresponding `readByUserAt`/`readByAgentAt` and reset the matching unread counter on the conversation.
-- Resolving a conversation prompts the user for a rating; the rating is stored back on `support_conversations.rating`.
+- A new message updates `messageCount`, `lastMessageAt`, `lastMessagePreview`, and the appropriate `unreadByUser`/`unreadByAgent` counter atomically with the `$push` to `messages[]`.
+- `messages[].body` should be capped (e.g. ≤ 8 KB) to keep the conversation document well under the 16 MB limit even at 1000+ messages with attachments referenced by URL.
+- Help-center search reads from `metadata.support_articles` (no separate collection); selecting an article and tapping "Contact Support" opens a new `support_conversations` row with `context.articleSlug` set.
+- `Mark as read` from the user side sets `readByUserAt` on each message ≤ the latest message and zeroes `unreadByUser`.
+- `assignedAgentId` is a foreign reference to your internal CRM/agent system — not modeled in MongoDB here.
