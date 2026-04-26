@@ -1,0 +1,36 @@
+name: Branch Name Check
+
+on:
+  pull_request:
+    branches:
+      - master
+      - main
+      - develop
+      - staging
+    types: [opened, synchronize, reopened, edited, ready_for_review]
+
+permissions:
+  contents: read
+
+jobs:
+  validate-branch-name:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate branch naming convention
+        shell: bash
+        run: |
+          BRANCH_NAME="${{ github.head_ref }}"
+
+          # Explicitly allow long-lived branches if they are ever used as source branches.
+          if [[ "$BRANCH_NAME" =~ ^(master|main|develop|staging)$ ]]; then
+            echo "Skipping validation for long-lived branch: $BRANCH_NAME"
+            exit 0
+          fi
+
+          BRANCH_REGEX='^(feature|fix|hotfix|release|chore|docs|refactor|test|ci)\/[a-z0-9._-]+$'
+          if [[ ! "$BRANCH_NAME" =~ $BRANCH_REGEX ]]; then
+            echo "::error::Invalid branch name '$BRANCH_NAME'."
+            echo "Use one of:"
+            echo "  feature/*, fix/*, hotfix/*, release/*, chore/*, docs/*, refactor/*, test/*, ci/*"
+            exit 1
+          fi

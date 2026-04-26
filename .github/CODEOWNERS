@@ -1,0 +1,22 @@
+# --------------------------------------------------------------------
+# Replace all placeholder teams below with your real GitHub org teams.
+# Example: @your-org/frontend-team -> @acme/frontend
+# --------------------------------------------------------------------
+
+# Default owner fallback for the whole monorepo.
+* @your-org/platform-team
+
+# CI and repository governance.
+/.github/ @your-org/platform-team
+
+# Application surfaces (Ionic/React Native apps).
+/apps/ @your-org/frontend-team @your-org/mobile-team
+
+# Shared packages and design system.
+/packages/ @your-org/frontend-team @your-org/design-system-team
+
+# Demo projects and prototypes.
+/demos/ @your-org/frontend-team
+
+# API/docs and architecture docs.
+/docs/ @your-org/backend-team @your-org/architecture-team

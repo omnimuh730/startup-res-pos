@@ -1,0 +1,114 @@
+name: Security Checks
+
+on:
+  pull_request:
+    branches:
+      - master
+      - main
+      - develop
+      - staging
+  push:
+    branches:
+      - master
+      - main
+      - develop
+      - staging
+  schedule:
+    - cron: "0 5 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  codeql:
+    name: CodeQL Analysis
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [javascript-typescript]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v3
+
+      - name: Analyze
+        uses: github/codeql-action/analyze@v3
+
+  dependency-review:
+    name: Dependency Review (PR)
+    if: ${{ github.event_name == 'pull_request' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Dependency review
+        uses: actions/dependency-review-action@v4
+        with:
+          # Fails the check only for high/critical findings by default.
+          fail-on-severity: high
+
+  npm-audit:
+    name: Package Audit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        if: ${{ hashFiles('pnpm-lock.yaml') != '' }}
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: |
+            **/pnpm-lock.yaml
+            **/package-lock.json
+            **/yarn.lock
+
+      - name: Install dependencies
+        shell: bash
+        run: |
+          if [[ -f "pnpm-lock.yaml" ]]; then
+            pnpm install --frozen-lockfile
+          elif [[ -f "package-lock.json" ]]; then
+            npm ci
+          elif [[ -f "yarn.lock" ]]; then
+            yarn install --immutable
+          else
+            echo "No supported JS lockfile found; skipping install."
+            exit 0
+          fi
+
+      - name: Run audit
+        shell: bash
+        run: |
+          if [[ -f "pnpm-lock.yaml" ]]; then
+            pnpm audit --audit-level high
+          elif [[ -f "package-lock.json" ]]; then
+            npm audit --audit-level=high
+          elif [[ -f "yarn.lock" ]]; then
+            yarn npm audit --severity high
+          else
+            echo "No supported JS lockfile found; skipping audit."
+            exit 0
+          fi
+
+      # Optional hardening:
+      # - Add Gitleaks secret scanning with gitleaks/gitleaks-action (third-party action).
+      # - Enable GitHub Advanced Security features (Secret Scanning, Push Protection) at org/repo level.

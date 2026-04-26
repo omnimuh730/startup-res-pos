@@ -1,0 +1,32 @@
+name: PR Title Check
+
+on:
+  pull_request:
+    branches:
+      - master
+      - main
+      - develop
+      - staging
+    types: [opened, edited, synchronize, reopened, ready_for_review]
+
+permissions:
+  contents: read
+
+jobs:
+  validate-pr-title:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate Conventional Commit PR title
+        shell: bash
+        run: |
+          TITLE="${{ github.event.pull_request.title }}"
+          REGEX='^(feat|fix|chore|docs|refactor|test|ci|build|perf|revert)(\([a-z0-9._/-]+\))?!?: .+'
+
+          if [[ ! "$TITLE" =~ $REGEX ]]; then
+            echo "::error::PR title must follow Conventional Commits."
+            echo "Examples:"
+            echo "  feat(auth): add refresh token rotation"
+            echo "  fix(api): handle timeout retries"
+            echo "Current title: $TITLE"
+            exit 1
+          fi

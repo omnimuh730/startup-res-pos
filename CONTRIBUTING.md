@@ -1,10 +1,12 @@
 # Contributing Guide
 
+Thanks for contributing to this monorepo. This document explains what to do, what not to do, and what CI enforces.
+
 ## Branching Strategy
 
-- Base branch: `master`
+- Target branch is usually `master` (or `main`/`develop`/`staging` when those flows are used).
 - Keep branches short-lived and focused on one concern.
-- Rebase or merge `master` regularly to reduce conflicts.
+- Sync with the target base branch regularly to reduce conflicts.
 
 ## Branch Name Rules
 
@@ -13,6 +15,31 @@ Use this format:
 `<type>/<kebab-case-description>`
 
 Allowed `<type>` values:
+
+- `feature`
+- `fix`
+- `hotfix`
+- `release`
+- `chore`
+- `docs`
+- `refactor`
+- `test`
+- `ci`
+
+Examples:
+
+- `feature/pos-receipt-sharing`
+- `fix/reservation-date-picker-crash`
+- `chore/update-eslint-config`
+
+## PR Title Rules
+
+PR titles must follow Conventional Commits:
+
+- `type(scope): description`
+- `type: description`
+
+Allowed `type` values:
 
 - `feat`
 - `fix`
@@ -24,21 +51,6 @@ Allowed `<type>` values:
 - `build`
 - `perf`
 - `revert`
-- `hotfix`
-
-Examples:
-
-- `feat/pos-receipt-sharing`
-- `fix/reservation-date-picker-crash`
-- `chore/update-eslint-config`
-
-## Pull Request Rules
-
-- PR title must follow Conventional Commits:
-  - `type(scope): description`
-  - `type: description`
-- Minimum description length in title body after colon is 10 characters.
-- Draft PRs are allowed; quality checks run when PR is marked ready.
 
 Examples:
 
@@ -47,27 +59,52 @@ Examples:
 
 ## Required Quality Gates
 
-The PR workflow enforces:
+GitHub Actions checks for:
 
 - Branch naming policy
 - PR title policy
-- `pnpm lint`
-- `pnpm typecheck`
-- `pnpm build`
+- Security checks (CodeQL, dependency review, package audit)
+- Quality scripts when present in root `package.json`:
+  - `lint`
+  - `typecheck`
+  - `test`
+  - `build`
+
+## Do and Don’t
+
+### Do
+
+- Use `pnpm` from the repository root.
+- Keep PRs small and reviewable.
+- Fill out the PR template completely.
+- Add or update tests when behavior changes.
+- Update docs when changing APIs, flows, or setup.
+- Follow CODEOWNERS review paths.
+
+### Don’t
+
+- Don’t commit secrets, tokens, or private keys.
+- Don’t bypass CI or merge with failing required checks.
+- Don’t force-push shared long-lived branches.
+- Don’t install dependencies ad hoc with `npm` or `yarn` in subfolders.
+- Don’t mix unrelated refactors into feature/bugfix PRs.
 
 ## Local Verification
 
 Run from workspace root:
 
 ```bash
-pnpm install
+pnpm install --frozen-lockfile
 pnpm lint
 pnpm typecheck
+pnpm test
 pnpm build
 ```
 
-## Monorepo Package Manager Rules
+If `test` is not defined at root, run the relevant app/package tests directly before opening a PR.
 
-- Use `pnpm` only.
+## Monorepo Rules
+
+- Package manager: `pnpm` (workspace-managed).
 - Install dependencies only from workspace root.
-- Do not run `npm install` in app/package folders.
+- Prefer workspace-aware scripts (Nx targets and root scripts) over ad hoc per-package commands.
