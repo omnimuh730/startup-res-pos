@@ -1,0 +1,647 @@
+openapi: 3.1.0
+info:
+  title: 03 — Reservations API
+  version: "1.0"
+  description: |
+    OpenAPI for **folder 03 — Reservations** only, aligned with the Postman collection
+    `Reservation + POS Platform — v1` (guest `/reservation/...` and POS `/pos/restaurants/{restaurant_id}/...`).
+
+    Conventions: JSON, `snake_case`, bearer auth, `Idempotency-Key` on writes,
+    `If-Match` on versioned aggregates, `X-Client-Identity` / `X-Staff-Identity` headers
+    plus matching body actor fields for audit.
+
+    Postman Spec Hub: **03 — Reservations API (v1)** — id `7040c59b-fe64-41b8-97de-46b45e5d3fd8`.
+    MongoDB persistence models are documented in the collection request
+    **00 — 03 Reservations — overview & schema (read description)**.
+servers:
+  - url: "{baseUrl}/{apiVersion}"
+    variables:
+      baseUrl:
+        default: https://api.example.com
+      apiVersion:
+        default: v1
+tags:
+  - name: Guest — Discovery
+  - name: Guest — Me & reservations
+  - name: Guest — Availability
+  - name: POS — Restaurant reservations
+paths:
+  /reservation/venues:
+    get:
+      tags: [Guest — Discovery]
+      summary: List restaurants (venues)
+      operationId: listReservationVenues
+      parameters:
+        - in: query
+          name: city
+          schema: { type: string }
+        - in: query
+          name: country
+          schema: { type: string }
+        - in: query
+          name: limit
+          schema: { type: integer, default: 50 }
+        - in: query
+          name: cursor
+          schema: { type: string }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EnvelopeList" }
+  /reservation/venues/{restaurant_id}:
+    get:
+      tags: [Guest — Discovery]
+      summary: Get restaurant (venue) detail
+      operationId: getReservationVenue
+      parameters:
+        - $ref: "#/components/parameters/RestaurantId"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EnvelopeReservationVenue" }
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EnvelopeError" }
+  /reservation/venues/{restaurant_id}/availability:
+    get:
+      tags: [Guest — Discovery]
+      summary: GET availability (advisory slots)
+      operationId: getReservationVenueAvailability
+      parameters:
+        - $ref: "#/components/parameters/RestaurantId"
+        - in: query
+          name: date
+          required: true
+          schema: { type: string, format: date }
+        - in: query
+          name: party_size
+          required: true
+          schema: { type: integer, minimum: 1 }
+        - in: query
+          name: limit
+          schema: { type: integer, default: 10 }
+      responses:
+        "200":
+          description: OK
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EnvelopeError" }
+  /reservation/me/reservations:
+    get:
+      tags: [Guest — Me & reservations]
+      summary: Reservation history (lifecycle bucket)
+      operationId: listMyReservations
+      parameters:
+        - in: query
+          name: lifecycle_bucket
+          required: true
+          schema:
+            type: string
+            enum: [scheduled, visited, cancelled]
+        - in: query
+          name: client_identity_username
+          required: true
+          schema: { type: string }
+        - in: query
+          name: limit
+          schema: { type: integer, default: 50 }
+        - in: query
+          name: cursor
+          schema: { type: string }
+      responses:
+        "200":
+          description: OK
+        "401": { description: Unauthorized }
+        "403":
+          description: Identity mismatch
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EnvelopeError" }
+  /reservation/reservations:
+    post:
+      tags: [Guest — Me & reservations]
+      summary: Create reservation
+      operationId: createReservation
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CreateReservationBody" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EnvelopeReservation" }
+        "402": { description: Payment declined }
+        "409": { description: Slot full / conflict }
+        "422":
+          description: Validation error
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EnvelopeError" }
+  /reservation/reservations/{reservation_id}:
+    get:
+      tags: [Guest — Me & reservations]
+      summary: Get reservation (guest owner)
+      operationId: getGuestReservation
+      parameters:
+        - $ref: "#/components/parameters/ReservationId"
+        - in: query
+          name: confirmation_code
+          schema: { type: string }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EnvelopeReservation" }
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EnvelopeError" }
+    patch:
+      tags: [Guest — Me & reservations]
+      summary: Manage reservation (guest PATCH / modification proposal)
+      operationId: patchGuestReservation
+      parameters:
+        - $ref: "#/components/parameters/ReservationId"
+        - $ref: "#/components/parameters/IdempotencyKey"
+        - $ref: "#/components/parameters/IfMatch"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PatchReservationBody" }
+      responses:
+        "200":
+          description: OK
+        "403":
+          description: Invalid confirmation code
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EnvelopeError" }
+        "409":
+          description: Bad state / modification pending / slot full
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EnvelopeError" }
+        "412":
+          description: Stale version
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EnvelopeError" }
+  /reservation/reservations/{reservation_id}/cancel:
+    post:
+      tags: [Guest — Me & reservations]
+      summary: Cancel scheduled reservation (guest)
+      operationId: cancelGuestReservation
+      parameters:
+        - $ref: "#/components/parameters/ReservationId"
+        - $ref: "#/components/parameters/IdempotencyKey"
+        - $ref: "#/components/parameters/IfMatch"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CancelReservationBody" }
+      responses:
+        "200":
+          description: OK
+        "404": { description: Not found }
+        "409": { description: Invalid transition }
+        "412": { description: Stale version }
+  /reservation/reservations/{reservation_id}/invitations:
+    post:
+      tags: [Guest — Me & reservations]
+      summary: Invite friends to reservation
+      operationId: inviteFriendsToReservation
+      parameters:
+        - $ref: "#/components/parameters/ReservationId"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/InviteFriendsBody" }
+      responses:
+        "200": { description: OK }
+        "422": { description: Invalid invitees }
+  /reservation/reservations/{reservation_id}/arrival/verify:
+    post:
+      tags: [Guest — Me & reservations]
+      summary: Verify arrival (guest, confirmation code)
+      operationId: verifyGuestArrival
+      parameters:
+        - $ref: "#/components/parameters/ReservationId"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ArrivalVerifyBodyGuest" }
+      responses:
+        "200":
+          description: Verified or soft-fail payload
+        "403": { description: Hard invalid code }
+  /reservation/availability/query-one:
+    post:
+      tags: [Guest — Availability]
+      summary: Find availability (single restaurant)
+      operationId: queryAvailabilityOne
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AvailabilityQueryOneBody" }
+      responses:
+        "200": { description: OK }
+        "404": { description: Restaurant not found }
+  /reservation/availability/query-many:
+    post:
+      tags: [Guest — Availability]
+      summary: Find availability (multiple restaurants)
+      operationId: queryAvailabilityMany
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AvailabilityQueryManyBody" }
+      responses:
+        "200": { description: OK }
+  /pos/restaurants/{restaurant_id}/reservations:
+    get:
+      tags: [POS — Restaurant reservations]
+      summary: List reservations for restaurant (staff)
+      operationId: listPosReservations
+      parameters:
+        - $ref: "#/components/parameters/RestaurantId"
+        - in: query
+          name: state
+          schema: { type: string }
+        - in: query
+          name: slot_start.ge
+          schema: { type: string, format: date-time }
+        - in: query
+          name: slot_start.le
+          schema: { type: string, format: date-time }
+        - in: query
+          name: limit
+          schema: { type: integer, default: 50 }
+        - in: query
+          name: cursor
+          schema: { type: string }
+      responses:
+        "200": { description: OK }
+        "403": { description: Forbidden }
+  /pos/restaurants/{restaurant_id}/reservations/{reservation_id}:
+    get:
+      tags: [POS — Restaurant reservations]
+      summary: Get reservation (staff)
+      operationId: getPosReservation
+      parameters:
+        - $ref: "#/components/parameters/RestaurantId"
+        - $ref: "#/components/parameters/ReservationId"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EnvelopeReservation" }
+  /pos/restaurants/{restaurant_id}/reservations/summary:
+    get:
+      tags: [POS — Restaurant reservations]
+      summary: Day summary (staff)
+      operationId: getPosReservationSummary
+      parameters:
+        - $ref: "#/components/parameters/RestaurantId"
+        - in: query
+          name: date
+          required: true
+          schema: { type: string, format: date }
+      responses:
+        "200": { description: OK }
+  /pos/restaurants/{restaurant_id}/reservations/requests:
+    get:
+      tags: [POS — Restaurant reservations]
+      summary: List inbound reservation requests
+      operationId: listInboundReservationRequests
+      parameters:
+        - $ref: "#/components/parameters/RestaurantId"
+        - in: query
+          name: status
+          schema: { type: string, default: PENDING }
+        - in: query
+          name: limit
+          schema: { type: integer, default: 50 }
+        - in: query
+          name: cursor
+          schema: { type: string }
+      responses:
+        "200": { description: OK }
+  /pos/restaurants/{restaurant_id}/reservations/requests/{reservation_request_id}/accept:
+    post:
+      tags: [POS — Restaurant reservations]
+      summary: Accept reservation request
+      operationId: acceptReservationRequest
+      parameters:
+        - $ref: "#/components/parameters/RestaurantId"
+        - in: path
+          name: reservation_request_id
+          required: true
+          schema: { type: string }
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/StaffActionBody" }
+      responses:
+        "200": { description: OK }
+        "409": { description: Conflict }
+  /pos/restaurants/{restaurant_id}/reservations/requests/{reservation_request_id}/reject:
+    post:
+      tags: [POS — Restaurant reservations]
+      summary: Reject reservation request
+      operationId: rejectReservationRequest
+      parameters:
+        - $ref: "#/components/parameters/RestaurantId"
+        - in: path
+          name: reservation_request_id
+          required: true
+          schema: { type: string }
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/RejectReservationBody" }
+      responses:
+        "200": { description: OK }
+  /pos/restaurants/{restaurant_id}/reservations/{reservation_id}/modifications/{reservation_modification_id}/approve:
+    post:
+      tags: [POS — Restaurant reservations]
+      summary: Approve guest modification
+      operationId: approveReservationModification
+      parameters:
+        - $ref: "#/components/parameters/RestaurantId"
+        - $ref: "#/components/parameters/ReservationId"
+        - in: path
+          name: reservation_modification_id
+          required: true
+          schema: { type: string }
+        - $ref: "#/components/parameters/IdempotencyKey"
+        - $ref: "#/components/parameters/IfMatch"
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/StaffActionBody" }
+      responses:
+        "200": { description: OK }
+        "412": { description: Stale version }
+  /pos/restaurants/{restaurant_id}/reservations/{reservation_id}/arrival/verify:
+    post:
+      tags: [POS — Restaurant reservations]
+      summary: Verify guest arrival (host)
+      operationId: verifyHostArrival
+      parameters:
+        - $ref: "#/components/parameters/RestaurantId"
+        - $ref: "#/components/parameters/ReservationId"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ArrivalVerifyBodyStaff" }
+      responses:
+        "200": { description: OK }
+  /pos/restaurants/{restaurant_id}/reservations/{reservation_id}/seat:
+    post:
+      tags: [POS — Restaurant reservations]
+      summary: Seat reservation
+      operationId: seatReservation
+      parameters:
+        - $ref: "#/components/parameters/RestaurantId"
+        - $ref: "#/components/parameters/ReservationId"
+        - $ref: "#/components/parameters/IdempotencyKey"
+        - $ref: "#/components/parameters/IfMatch"
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SeatReservationBody" }
+      responses:
+        "200": { description: OK }
+  /pos/restaurants/{restaurant_id}/reservations/{reservation_id}/complete:
+    post:
+      tags: [POS — Restaurant reservations]
+      summary: Complete reservation
+      operationId: completeReservation
+      parameters:
+        - $ref: "#/components/parameters/RestaurantId"
+        - $ref: "#/components/parameters/ReservationId"
+        - $ref: "#/components/parameters/IdempotencyKey"
+        - $ref: "#/components/parameters/IfMatch"
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/StaffActionBody" }
+      responses:
+        "200": { description: OK }
+  /pos/restaurants/{restaurant_id}/reservations/{reservation_id}/no-show:
+    post:
+      tags: [POS — Restaurant reservations]
+      summary: Mark no-show
+      operationId: markReservationNoShow
+      parameters:
+        - $ref: "#/components/parameters/RestaurantId"
+        - $ref: "#/components/parameters/ReservationId"
+        - $ref: "#/components/parameters/IdempotencyKey"
+        - $ref: "#/components/parameters/IfMatch"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/NoShowBody" }
+      responses:
+        "200": { description: OK }
+components:
+  parameters:
+    RestaurantId:
+      name: restaurant_id
+      in: path
+      required: true
+      schema: { type: string }
+    ReservationId:
+      name: reservation_id
+      in: path
+      required: true
+      schema: { type: string }
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      schema: { type: string }
+    IfMatch:
+      name: If-Match
+      in: header
+      required: true
+      schema: { type: string }
+  schemas:
+    Meta:
+      type: object
+      properties:
+        request_id: { type: string }
+    ErrorBody:
+      type: object
+      properties:
+        code: { type: string }
+        message: { type: string }
+        details: { type: object, additionalProperties: true }
+    EnvelopeError:
+      type: object
+      properties:
+        meta: { $ref: "#/components/schemas/Meta" }
+        error: { $ref: "#/components/schemas/ErrorBody" }
+    EnvelopeList:
+      type: object
+      properties:
+        meta: { $ref: "#/components/schemas/Meta" }
+        data:
+          type: object
+          properties:
+            items: { type: array, items: { type: object } }
+            next_cursor: { type: string, nullable: true }
+    EnvelopeReservation:
+      type: object
+      properties:
+        meta: { $ref: "#/components/schemas/Meta" }
+        data: { $ref: "#/components/schemas/Reservation" }
+    EnvelopeReservationVenue:
+      type: object
+      properties:
+        meta: { $ref: "#/components/schemas/Meta" }
+        data: { type: object, additionalProperties: true }
+    Reservation:
+      type: object
+      description: API projection of a reservation (maps to Mongo `reservations` + joins).
+      properties:
+        id: { type: string }
+        restaurant_id: { type: string }
+        owner_user_id: { type: string }
+        confirmation_code: { type: string, description: Returned on create only in some policies }
+        state: { type: string }
+        party_size: { type: integer }
+        slot_start: { type: string, format: date-time }
+        slot_end: { type: string, format: date-time, nullable: true }
+        guest_message: { type: string, nullable: true }
+        metadata: { type: object, additionalProperties: true }
+        version: { type: integer }
+        payment_method_token: { type: string, nullable: true }
+        friends_invited_user_ids:
+          type: array
+          items: { type: string }
+        modification: { type: object, additionalProperties: true }
+        arrival: { type: object, additionalProperties: true }
+    CreateReservationBody:
+      type: object
+      required: [client_identity_username, restaurant_id, slot_start, party_size, payment_method_token]
+      properties:
+        client_identity_username: { type: string }
+        restaurant_id: { type: string }
+        slot_start: { type: string, format: date-time }
+        party_size: { type: integer, minimum: 1 }
+        payment_method_token: { type: string }
+        guest_message: { type: string }
+        metadata: { type: object, additionalProperties: true }
+        source: { type: string }
+    PatchReservationBody:
+      type: object
+      required: [confirmation_code, client_identity_username]
+      properties:
+        confirmation_code: { type: string }
+        client_identity_username: { type: string }
+        party_size: { type: integer }
+        slot_start: { type: string, format: date-time }
+        guest_message: { type: string }
+        metadata: { type: object, additionalProperties: true }
+    CancelReservationBody:
+      type: object
+      required: [confirmation_code, client_identity_username]
+      properties:
+        confirmation_code: { type: string }
+        client_identity_username: { type: string }
+        reason: { type: string }
+    InviteFriendsBody:
+      type: object
+      required: [confirmation_code, client_identity_username, friend_user_ids]
+      properties:
+        confirmation_code: { type: string }
+        client_identity_username: { type: string }
+        friend_user_ids:
+          type: array
+          items: { type: string }
+    ArrivalVerifyBodyGuest:
+      type: object
+      required: [confirmation_code, client_identity_username]
+      properties:
+        confirmation_code: { type: string }
+        client_identity_username: { type: string }
+    ArrivalVerifyBodyStaff:
+      type: object
+      required: [confirmation_code, staff_actor_username]
+      properties:
+        confirmation_code: { type: string }
+        staff_actor_username: { type: string }
+    StaffActionBody:
+      type: object
+      properties:
+        staff_actor_username: { type: string }
+        internal_note: { type: string }
+    RejectReservationBody:
+      type: object
+      required: [staff_actor_username, reason_code]
+      properties:
+        staff_actor_username: { type: string }
+        reason_code: { type: string }
+        message: { type: string }
+    SeatReservationBody:
+      type: object
+      properties:
+        staff_actor_username: { type: string }
+        assigned_table_ids:
+          type: array
+          items: { type: string }
+    NoShowBody:
+      type: object
+      required: [staff_actor_username, reason]
+      properties:
+        staff_actor_username: { type: string }
+        reason: { type: string }
+    AvailabilityQueryOneBody:
+      type: object
+      required: [client_identity_username, restaurant_id, party_size, local_date]
+      properties:
+        client_identity_username: { type: string }
+        restaurant_id: { type: string }
+        party_size: { type: integer }
+        local_date: { type: string, format: date }
+    AvailabilityQueryManyBody:
+      type: object
+      required: [client_identity_username, restaurant_ids, party_size, local_date]
+      properties:
+        client_identity_username: { type: string }
+        restaurant_ids:
+          type: array
+          items: { type: string }
+        party_size: { type: integer }
+        local_date: { type: string, format: date }
