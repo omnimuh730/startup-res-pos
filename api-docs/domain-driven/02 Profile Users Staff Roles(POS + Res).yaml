@@ -1,0 +1,846 @@
+openapi: 3.1.0
+info:
+  title: Profile / Users / Staff / Roles API (POS + Reservation)
+  version: 1.1.0
+  summary: Tenantized profile/settings and staff-role management APIs.
+  description: |
+    Updated to username-only identity model (no email fields).
+    Token issuance remains in Auth/Session APIs (spec 01).
+    Profile surfaces only session context metadata (expiry/session status), not raw tokens.
+servers:
+  - url: https://api.internal/{version}
+    variables:
+      version:
+        default: v1
+        enum: [v1]
+security:
+  - bearerAuth: []
+tags:
+  - name: Reservation Profile
+  - name: Reservation Wallet
+  - name: Reservation Social
+  - name: POS Settings
+  - name: POS Menu
+  - name: POS Staff
+  - name: POS Security
+paths:
+  /reservation/me/profile:
+    get:
+      tags: [Reservation Profile]
+      summary: Get reservation user profile
+      operationId: getReservationProfile
+      responses:
+        '200':
+          description: Profile
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ReservationProfileResponse' }
+    patch:
+      tags: [Reservation Profile]
+      summary: Update reservation user profile
+      operationId: updateReservationProfile
+      parameters:
+        - $ref: '#/components/parameters/IfMatch'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ReservationProfileUpdateRequest' }
+      responses:
+        '200':
+          description: Updated profile
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ReservationProfileResponse' }
+        '412': { $ref: '#/components/responses/StaleVersion' }
+  /reservation/me/security/session:
+    get:
+      tags: [Reservation Profile]
+      summary: Session context for profile UI
+      operationId: reservationSessionContext
+      responses:
+        '200':
+          description: Session context (no raw tokens)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SessionContextResponse' }
+  /reservation/me/password:
+    post:
+      tags: [Reservation Profile]
+      summary: Change reservation account password
+      operationId: reservationChangePassword
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [current_password, new_password]
+              properties:
+                current_password: { type: string }
+                new_password: { type: string, minLength: 8 }
+      responses:
+        '204': { description: Password changed }
+  /reservation/me/account:
+    delete:
+      tags: [Reservation Profile]
+      summary: Initiate reservation account deletion
+      operationId: reservationDeleteAccount
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [current_password]
+              properties:
+                current_password: { type: string }
+      responses:
+        '204': { description: Deletion initiated }
+  /reservation/me/wallet:
+    get:
+      tags: [Reservation Wallet]
+      summary: Get wallet overview
+      operationId: reservationWalletOverview
+      responses:
+        '200':
+          description: Wallet overview
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/WalletOverviewResponse' }
+  /reservation/me/wallet/top-up:
+    post:
+      tags: [Reservation Wallet]
+      summary: Top up wallet
+      operationId: reservationTopUpWallet
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [amount, unit, payment_method_id]
+              properties:
+                amount: { type: number, exclusiveMinimum: 0 }
+                unit: { type: string, enum: [usd, won] }
+                payment_method_id: { type: string }
+      responses:
+        '200':
+          description: Top up accepted
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SimpleAckResponse' }
+  /reservation/me/wallet/send-gift:
+    post:
+      tags: [Reservation Wallet]
+      summary: Send gift to another user
+      operationId: reservationSendGift
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [receiver_username, amount, unit]
+              properties:
+                receiver_username: { type: string }
+                amount: { type: number, exclusiveMinimum: 0 }
+                unit: { type: string, enum: [usd, won] }
+      responses:
+        '200':
+          description: Gift sent
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SimpleAckResponse' }
+  /reservation/me/transactions:
+    get:
+      tags: [Reservation Wallet]
+      summary: List wallet transactions
+      operationId: reservationTransactions
+      parameters:
+        - in: query
+          name: limit
+          schema: { type: integer, minimum: 1, maximum: 200, default: 50 }
+        - in: query
+          name: cursor
+          schema: { type: string }
+        - in: query
+          name: type
+          schema: { type: string, enum: [credit, debit] }
+        - in: query
+          name: unit
+          schema: { type: string, enum: [usd, won] }
+      responses:
+        '200':
+          description: Transactions
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TransactionListResponse' }
+  /reservation/me/rewards/progress:
+    get:
+      tags: [Reservation Wallet]
+      summary: Reward tier progress
+      operationId: reservationRewardProgress
+      responses:
+        '200':
+          description: Reward progress
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RewardProgressResponse' }
+  /reservation/me/referrals/stats:
+    get:
+      tags: [Reservation Wallet]
+      summary: Referral stats
+      operationId: reservationReferralStats
+      responses:
+        '200':
+          description: Referral stats
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ReferralStatsResponse' }
+  /reservation/me/friends:
+    get:
+      tags: [Reservation Social]
+      summary: List friends and pending requests
+      operationId: reservationListFriends
+      parameters:
+        - in: query
+          name: include_pending
+          schema: { type: boolean, default: true }
+        - in: query
+          name: limit
+          schema: { type: integer, default: 50 }
+        - in: query
+          name: cursor
+          schema: { type: string }
+      responses:
+        '200':
+          description: Friends and pending
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/FriendsListResponse' }
+  /reservation/me/friends/requests:
+    post:
+      tags: [Reservation Social]
+      summary: Send friend request
+      operationId: reservationAddFriend
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username]
+              properties:
+                username: { type: string }
+      responses:
+        '200':
+          description: Request created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SimpleAckResponse' }
+  /reservation/me/friends/requests/respond:
+    post:
+      tags: [Reservation Social]
+      summary: Approve/reject friend request
+      operationId: reservationRespondFriendRequest
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username, action]
+              properties:
+                username: { type: string }
+                action: { type: string, enum: [approve, reject] }
+      responses:
+        '200':
+          description: Request processed
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SimpleAckResponse' }
+  /reservation/me/friends/{username}:
+    delete:
+      tags: [Reservation Social]
+      summary: Remove friend
+      operationId: reservationRemoveFriend
+      parameters:
+        - in: path
+          name: username
+          required: true
+          schema: { type: string }
+      responses:
+        '204': { description: Friend removed }
+  /reservation/me/subscription/upgrade:
+    post:
+      tags: [Reservation Profile]
+      summary: Upgrade reservation user to Pro
+      operationId: reservationUpgradePro
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [billing_cycle]
+              properties:
+                billing_cycle: { type: string, enum: [monthly, quarterly, yearly] }
+      responses:
+        '200':
+          description: Upgraded
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SimpleAckResponse' }
+  /pos/me/security/session:
+    get:
+      tags: [POS Security]
+      summary: Session context for profile UI
+      operationId: posSessionContext
+      responses:
+        '200':
+          description: Session context (no raw tokens)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SessionContextResponse' }
+  /pos/me/settings/general:
+    get:
+      tags: [POS Settings]
+      summary: Get POS general settings
+      operationId: getPosGeneralSettings
+      responses:
+        '200':
+          description: Settings
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PosGeneralSettingsResponse' }
+    patch:
+      tags: [POS Settings]
+      summary: Update POS general settings
+      operationId: updatePosGeneralSettings
+      parameters:
+        - $ref: '#/components/parameters/IfMatch'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PosGeneralSettingsUpdateRequest' }
+      responses:
+        '200':
+          description: Settings updated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PosGeneralSettingsResponse' }
+  /pos/me/menu/catalog:
+    get:
+      tags: [POS Menu]
+      summary: Get menu catalog (read only categories/sub-categories)
+      operationId: posGetMenuCatalog
+      responses:
+        '200':
+          description: Catalog
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PosMenuCatalogResponse' }
+  /pos/me/menu/items/{item_id}:
+    patch:
+      tags: [POS Menu]
+      summary: Update menu item
+      operationId: posUpdateMenuItem
+      parameters:
+        - in: path
+          name: item_id
+          required: true
+          schema: { type: string }
+        - $ref: '#/components/parameters/IfMatch'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                price: { type: number, minimum: 0 }
+                price_unit: { type: string }
+                is_active: { type: boolean }
+      responses:
+        '200':
+          description: Item updated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SimpleAckResponse' }
+  /pos/me/menu/sub-categories/{sub_category_id}/assign-items:
+    post:
+      tags: [POS Menu]
+      summary: Assign items to sub-category
+      operationId: posAssignItemsToSubCategory
+      parameters:
+        - in: path
+          name: sub_category_id
+          required: true
+          schema: { type: string }
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [item_ids]
+              properties:
+                item_ids:
+                  type: array
+                  minItems: 1
+                  items: { type: string }
+      responses:
+        '200':
+          description: Assigned
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SimpleAckResponse' }
+  /pos/me/attributes:
+    get:
+      tags: [POS Settings]
+      summary: Get amenities/cuisine/vibe/seating
+      operationId: posGetAttributes
+      responses:
+        '200':
+          description: Attributes
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PosAttributesResponse' }
+    patch:
+      tags: [POS Settings]
+      summary: Update amenities/cuisine/vibe/seating
+      operationId: posUpdateAttributes
+      parameters:
+        - $ref: '#/components/parameters/IfMatch'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PosAttributesUpdateRequest' }
+      responses:
+        '200':
+          description: Attributes updated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PosAttributesResponse' }
+  /pos/me/security/password:
+    post:
+      tags: [POS Security]
+      summary: Update POS admin password
+      operationId: posUpdateAdminPassword
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [new_password, confirm_password]
+              properties:
+                new_password: { type: string }
+                confirm_password: { type: string }
+      responses:
+        '204': { description: Password updated }
+  /pos/me/security/payment-methods:
+    get:
+      tags: [POS Security]
+      summary: List payment methods
+      operationId: posListPaymentMethods
+      responses:
+        '200':
+          description: Masked cards
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PaymentMethodListResponse' }
+    post:
+      tags: [POS Security]
+      summary: Add payment method
+      operationId: posAddPaymentMethod
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [card_number]
+              properties:
+                card_number: { type: string }
+      responses:
+        '201':
+          description: Added
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SimpleAckResponse' }
+    delete:
+      tags: [POS Security]
+      summary: Remove payment method
+      operationId: posRemovePaymentMethod
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [card_number]
+              properties:
+                card_number: { type: string }
+      responses:
+        '204': { description: Removed }
+  /pos/me/staff:
+    get:
+      tags: [POS Staff]
+      summary: List staff and pending requests
+      operationId: posListStaff
+      parameters:
+        - in: query
+          name: state
+          schema: { type: string, enum: [active, inactive, pending] }
+        - in: query
+          name: limit
+          schema: { type: integer, default: 50 }
+        - in: query
+          name: cursor
+          schema: { type: string }
+      responses:
+        '200':
+          description: Staff list
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PosStaffListResponse' }
+  /pos/me/staff/{staff_id}/requests/respond:
+    post:
+      tags: [POS Staff]
+      summary: Approve/reject pending staff request
+      operationId: posRespondStaffRequest
+      parameters:
+        - in: path
+          name: staff_id
+          required: true
+          schema: { type: string }
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [action]
+              properties:
+                action: { type: string, enum: [approve, reject] }
+      responses:
+        '200':
+          description: Processed
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SimpleAckResponse' }
+  /pos/me/staff/{staff_id}/permissions:
+    patch:
+      tags: [POS Staff]
+      summary: Update staff permissions
+      operationId: posUpdateStaffPermissions
+      parameters:
+        - in: path
+          name: staff_id
+          required: true
+          schema: { type: string }
+        - $ref: '#/components/parameters/IfMatch'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [permissions]
+              properties:
+                permissions:
+                  type: array
+                  items:
+                    type: string
+                    enum: [floor-plan, orders, kitchen, reservations, take-orders, process-payment, menu-management]
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SimpleAckResponse' }
+  /pos/me/staff/{staff_id}/actions:
+    post:
+      tags: [POS Staff]
+      summary: Staff lifecycle action
+      operationId: posStaffLifecycleAction
+      parameters:
+        - in: path
+          name: staff_id
+          required: true
+          schema: { type: string }
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [action]
+              properties:
+                action: { type: string, enum: [deactivate, remove, reset-password] }
+                reason: { type: string }
+      responses:
+        '200':
+          description: Action completed
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SimpleAckResponse' }
+  /pos/me/subscription/upgrade:
+    post:
+      tags: [POS Settings]
+      summary: Upgrade POS plan
+      operationId: posUpgradePlan
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [plan]
+              properties:
+                plan: { type: string, enum: [Pro, Ultra] }
+      responses:
+        '200':
+          description: Upgraded
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SimpleAckResponse' }
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    IdempotencyKey:
+      in: header
+      name: Idempotency-Key
+      required: true
+      schema: { type: string }
+    IfMatch:
+      in: header
+      name: If-Match
+      required: false
+      schema: { type: string }
+  responses:
+    StaleVersion:
+      description: If-Match version conflict
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
+  schemas:
+    Meta:
+      type: object
+      required: [request_id]
+      properties:
+        request_id: { type: string }
+    ErrorBody:
+      type: object
+      required: [code, message, retryable]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        details:
+          type: object
+          additionalProperties: true
+        retryable: { type: boolean }
+    ErrorResponse:
+      type: object
+      required: [error, meta]
+      properties:
+        error: { $ref: '#/components/schemas/ErrorBody' }
+        meta: { $ref: '#/components/schemas/Meta' }
+    SimpleAckResponse:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: object
+          additionalProperties: true
+        meta: { $ref: '#/components/schemas/Meta' }
+    SessionContextResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            session_id: { type: string }
+            session_state: { type: string, enum: [active, revoked, expired] }
+            access_token_expires_at: { type: string, format: date-time }
+            refresh_token_expires_at: { type: string, format: date-time }
+        meta: { $ref: '#/components/schemas/Meta' }
+    ReservationProfile:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        username: { type: string }
+        phone_number: { type: string }
+        plan_status: { type: string, enum: [FREE, PRO] }
+    ReservationProfileResponse:
+      type: object
+      properties:
+        data: { $ref: '#/components/schemas/ReservationProfile' }
+        meta: { $ref: '#/components/schemas/Meta' }
+    ReservationProfileUpdateRequest:
+      type: object
+      properties:
+        name: { type: string }
+        username: { type: string }
+        phone_number: { type: string }
+    WalletOverviewResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            total_balance_usd_eq: { type: number }
+            domestic_balance: { type: number }
+            foreign_balance: { type: number }
+            bonus_balance: { type: number }
+            current_tier: { type: string }
+        meta: { $ref: '#/components/schemas/Meta' }
+    TransactionListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            type: object
+            properties:
+              reference: { type: string }
+              amount: { type: number }
+              unit: { type: string }
+              type: { type: string, enum: [credit, debit] }
+              date: { type: string, format: date-time }
+        meta: { $ref: '#/components/schemas/Meta' }
+    RewardProgressResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            current_points: { type: integer }
+            points_to_next_level: { type: integer }
+            current_tier: { type: string }
+        meta: { $ref: '#/components/schemas/Meta' }
+    ReferralStatsResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            total_referred: { type: integer }
+            total_earned: { type: number }
+        meta: { $ref: '#/components/schemas/Meta' }
+    FriendsListResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            friends:
+              type: array
+              items: { type: string }
+            pending_requests:
+              type: array
+              items: { type: string }
+        meta: { $ref: '#/components/schemas/Meta' }
+    PosGeneralSettingsResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            deposit_money: { type: number, minimum: 0 }
+            deposit_money_unit: { type: string, enum: [usd, won] }
+            grace_period: { type: integer, minimum: 0 }
+            opening_hours:
+              type: object
+              additionalProperties: true
+        meta: { $ref: '#/components/schemas/Meta' }
+    PosGeneralSettingsUpdateRequest:
+      type: object
+      properties:
+        deposit_money: { type: number, minimum: 0 }
+        deposit_money_unit: { type: string, enum: [usd, won] }
+        grace_period: { type: integer, minimum: 0 }
+        opening_hours:
+          type: object
+          additionalProperties: true
+    PosMenuCatalogResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          additionalProperties: true
+        meta: { $ref: '#/components/schemas/Meta' }
+    PosAttributesUpdateRequest:
+      type: object
+      properties:
+        amenities:
+          type: array
+          items: { type: string }
+        cuisines:
+          type: array
+          items: { type: string }
+        occasions:
+          type: array
+          items: { type: string }
+        seating:
+          type: array
+          items: { type: string }
+    PosAttributesResponse:
+      type: object
+      properties:
+        data: { $ref: '#/components/schemas/PosAttributesUpdateRequest' }
+        meta: { $ref: '#/components/schemas/Meta' }
+    PaymentMethodListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            type: object
+            properties:
+              card_number_masked: { type: string }
+              brand: { type: string }
+        meta: { $ref: '#/components/schemas/Meta' }
+    PosStaffListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            type: object
+            properties:
+              staff_id: { type: string }
+              full_name: { type: string }
+              status: { type: string }
+              permissions:
+                type: array
+                items: { type: string }
+        meta: { $ref: '#/components/schemas/Meta' }

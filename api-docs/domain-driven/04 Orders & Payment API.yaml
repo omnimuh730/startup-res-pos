@@ -1,0 +1,1044 @@
+openapi: 3.1.0
+info:
+  title: 04 — Orders & Payment API
+  version: "1.0"
+  description: |
+    OpenAPI for **folder 04 — Orders & Payment**.
+    Covers wallet balance/top-up, transaction history, gifting/rewards, subscriptions,
+    diner-side reservation/order payments, and POS-side dual-currency order settlement.
+
+    Conventions: JSON, `snake_case`, bearer auth, `Idempotency-Key` on write/payment flows,
+    `If-Match` for optimistic concurrency on order updates, and tenant-specific route groups.
+servers:
+  - url: "{baseUrl}/{apiVersion}"
+    variables:
+      baseUrl:
+        default: https://api.example.com
+      apiVersion:
+        default: v1
+security:
+  - bearerAuth: []
+tags:
+  - name: Wallet — Profile & Top-Up
+  - name: Wallet — Transactions
+  - name: Wallet — Gifts, Rewards, Bonuses
+  - name: Wallet — Subscription
+  - name: Diner — Order Payments
+  - name: POS — Menu & Orders
+  - name: POS — Checkout & Payments
+paths:
+  /reservation/me/wallet:
+    get:
+      tags: [Wallet — Profile & Top-Up]
+      summary: Fetch dual-wallet profile
+      operationId: getMyDualWallet
+      responses:
+        "200":
+          description: Wallet profile
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EnvelopeWalletProfile" }
+  /reservation/wallet/exchange-rate:
+    get:
+      tags: [Wallet — Profile & Top-Up]
+      summary: Fetch live USD/KRW exchange rate
+      operationId: getWalletExchangeRate
+      responses:
+        "200":
+          description: Exchange rate
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EnvelopeExchangeRate" }
+  /reservation/me/wallet/top-up/options:
+    get:
+      tags: [Wallet — Profile & Top-Up]
+      summary: Get currency-specific top-up tiers and bonus rules
+      operationId: listTopUpOptions
+      parameters:
+        - in: query
+          name: currency
+          required: true
+          schema: { type: string, enum: [KRW, USD] }
+      responses:
+        "200":
+          description: Available top-up options
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EnvelopeTopUpOptions" }
+  /reservation/me/wallet/top-ups:
+    post:
+      tags: [Wallet — Profile & Top-Up]
+      summary: Initiate external top-up transaction
+      operationId: initiateExternalTopUp
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/InitiateTopUpBody" }
+      responses:
+        "202":
+          description: Pending provider authorization
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EnvelopeTopUpTransaction" }
+        "402": { description: Provider declined }
+  /reservation/me/wallet/top-ups/{top_up_id}/confirm:
+    post:
+      tags: [Wallet — Profile & Top-Up]
+      summary: Confirm external top-up completion
+      operationId: confirmExternalTopUp
+      parameters:
+        - $ref: "#/components/parameters/TopUpId"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ConfirmTopUpBody" }
+      responses:
+        "200":
+          description: Top-up confirmed and balance credited
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EnvelopeWalletProfile" }
+        "409": { description: Already confirmed / invalid state }
+  /reservation/me/transactions:
+    get:
+      tags: [Wallet — Transactions]
+      summary: List wallet transactions
+      operationId: listWalletTransactions
+      parameters:
+        - in: query
+          name: currency
+          schema: { type: string, enum: [KRW, USD, BONUS] }
+        - in: query
+          name: type
+          schema: { type: string, enum: [top_up, payment, reward, referral, gift_send, gift_receive, subscription] }
+        - in: query
+          name: limit
+          schema: { type: integer, default: 50, minimum: 1, maximum: 200 }
+        - in: query
+          name: cursor
+          schema: { type: string }
+      responses:
+        "200":
+          description: Transaction list
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EnvelopeTransactionList" }
+  /reservation/me/transactions/{transaction_id}:
+    get:
+      tags: [Wallet — Transactions]
+      summary: Get single transaction details
+      operationId: getWalletTransaction
+      parameters:
+        - $ref: "#/components/parameters/TransactionId"
+      responses:
+        "200":
+          description: Transaction detail
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EnvelopeTransaction" }
+        "404": { description: Not found }
+  /reservation/me/bonuses/daily/claim:
+    post:
+      tags: [Wallet — Gifts, Rewards, Bonuses]
+      summary: Claim daily bonus into bonus bucket
+      operationId: claimDailyBonus
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      responses:
+        "200":
+          description: Bonus claimed
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EnvelopeBonusClaim" }
+        "409": { description: Already claimed today }
+  /reservation/users/search:
+    get:
+      tags: [Wallet — Gifts, Rewards, Bonuses]
+      summary: Search recipient by username
+      operationId: searchGiftRecipient
+      parameters:
+        - in: query
+          name: username
+          required: true
+          schema: { type: string, minLength: 2 }
+      responses:
+        "200":
+          description: Search result
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EnvelopeUserSearchResult" }
+  /reservation/me/gifts:
+    post:
+      tags: [Wallet — Gifts, Rewards, Bonuses]
+      summary: Send currency-specific gift
+      operationId: sendGift
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SendGiftBody" }
+      responses:
+        "201":
+          description: Gift transfer completed
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EnvelopeGiftTransfer" }
+        "402": { description: Insufficient funds }
+  /internal/wallet/bonuses/trigger:
+    post:
+      tags: [Wallet — Gifts, Rewards, Bonuses]
+      summary: Trigger automated bonus (system use)
+      operationId: triggerAutomatedBonus
+      security:
+        - serviceTokenAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/TriggerBonusBody" }
+      responses:
+        "202":
+          description: Accepted for processing
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EnvelopeAck" }
+  /reservation/subscription/plans:
+    get:
+      tags: [Wallet — Subscription]
+      summary: List subscription plans and discounts
+      operationId: listSubscriptionPlans
+      responses:
+        "200":
+          description: Subscription plans
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EnvelopeSubscriptionPlans" }
+  /reservation/me/subscription/purchase:
+    post:
+      tags: [Wallet — Subscription]
+      summary: Purchase/upgrade subscription plan from wallet
+      operationId: purchaseSubscriptionPlan
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PurchaseSubscriptionBody" }
+      responses:
+        "200":
+          description: Subscription activated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EnvelopeSubscriptionPurchase" }
+        "402": { description: Insufficient funds }
+  /reservation/reservations/{reservation_id}/deposit/pay:
+    post:
+      tags: [Diner — Order Payments]
+      summary: Pay reservation deposit from wallet
+      operationId: payReservationDeposit
+      parameters:
+        - $ref: "#/components/parameters/ReservationId"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/WalletPaymentBody" }
+      responses:
+        "200":
+          description: Deposit paid
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EnvelopeOrderPayment" }
+        "402": { description: Insufficient balance }
+  /reservation/orders/{order_id}/pay:
+    post:
+      tags: [Diner — Order Payments]
+      summary: Pay dining bill from wallet
+      operationId: payDiningBill
+      parameters:
+        - $ref: "#/components/parameters/OrderId"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/WalletPaymentBody" }
+      responses:
+        "200":
+          description: Bill paid
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EnvelopeOrderPayment" }
+        "402": { description: Insufficient balance }
+  /reservation/reservations/{reservation_id}/order:
+    get:
+      tags: [Diner — Order Payments]
+      summary: Get order by reservation
+      operationId: getOrderByReservation
+      parameters:
+        - $ref: "#/components/parameters/ReservationId"
+      responses:
+        "200":
+          description: Order detail
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EnvelopeOrder" }
+        "404": { description: Not found }
+  /reservation/transactions/{transaction_id}/order:
+    get:
+      tags: [Diner — Order Payments]
+      summary: Get order receipt from transaction history entry
+      operationId: getOrderByTransaction
+      parameters:
+        - $ref: "#/components/parameters/TransactionId"
+      responses:
+        "200":
+          description: Order receipt
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EnvelopeOrderReceipt" }
+        "404": { description: Not found }
+  /pos/restaurants/{restaurant_id}/menu:
+    get:
+      tags: [POS — Menu & Orders]
+      summary: Load current menu and base prices
+      operationId: getPosRestaurantMenu
+      parameters:
+        - $ref: "#/components/parameters/RestaurantId"
+      responses:
+        "200":
+          description: Menu
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EnvelopeMenu" }
+  /pos/restaurants/{restaurant_id}/orders:
+    get:
+      tags: [POS — Menu & Orders]
+      summary: List restaurant orders
+      operationId: listPosOrders
+      parameters:
+        - $ref: "#/components/parameters/RestaurantId"
+        - in: query
+          name: status
+          schema: { type: string, enum: [open, ready_to_pay, paid, cancelled] }
+        - in: query
+          name: limit
+          schema: { type: integer, default: 50, minimum: 1, maximum: 200 }
+        - in: query
+          name: cursor
+          schema: { type: string }
+      responses:
+        "200":
+          description: Orders
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EnvelopeOrderList" }
+    post:
+      tags: [POS — Menu & Orders]
+      summary: Create open order for table/reservation/walk-in
+      operationId: createPosOrder
+      parameters:
+        - $ref: "#/components/parameters/RestaurantId"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CreateOrderBody" }
+      responses:
+        "201":
+          description: Order created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EnvelopeOrder" }
+  /pos/restaurants/{restaurant_id}/orders/{order_id}:
+    get:
+      tags: [POS — Menu & Orders]
+      summary: Get single order
+      operationId: getPosOrder
+      parameters:
+        - $ref: "#/components/parameters/RestaurantId"
+        - $ref: "#/components/parameters/OrderId"
+      responses:
+        "200":
+          description: Order detail
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EnvelopeOrder" }
+    patch:
+      tags: [POS — Menu & Orders]
+      summary: Add or remove items in open order
+      operationId: patchPosOrderItems
+      parameters:
+        - $ref: "#/components/parameters/RestaurantId"
+        - $ref: "#/components/parameters/OrderId"
+        - $ref: "#/components/parameters/IfMatch"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PatchOrderBody" }
+      responses:
+        "200":
+          description: Order updated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EnvelopeOrder" }
+        "412": { description: Stale order version }
+  /pos/restaurants/{restaurant_id}/orders/{order_id}/status:
+    post:
+      tags: [POS — Menu & Orders]
+      summary: Update order status
+      operationId: updatePosOrderStatus
+      parameters:
+        - $ref: "#/components/parameters/RestaurantId"
+        - $ref: "#/components/parameters/OrderId"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/UpdateOrderStatusBody" }
+      responses:
+        "200":
+          description: Status updated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EnvelopeOrder" }
+  /pos/restaurants/{restaurant_id}/orders/{order_id}/totals/dual-currency:
+    get:
+      tags: [POS — Checkout & Payments]
+      summary: Calculate dual-currency subtotal, tax, and total
+      operationId: calculateDualCurrencyTotals
+      parameters:
+        - $ref: "#/components/parameters/RestaurantId"
+        - $ref: "#/components/parameters/OrderId"
+      responses:
+        "200":
+          description: Totals in KRW and USD
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EnvelopeDualCurrencyTotals" }
+  /pos/restaurants/{restaurant_id}/orders/{order_id}/checkout/app:
+    post:
+      tags: [POS — Checkout & Payments]
+      summary: Initiate app checkout and generate QR payload
+      operationId: initiateAppCheckout
+      parameters:
+        - $ref: "#/components/parameters/RestaurantId"
+        - $ref: "#/components/parameters/OrderId"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/InitiateAppCheckoutBody" }
+      responses:
+        "201":
+          description: Checkout session created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EnvelopeCheckoutSession" }
+  /pos/restaurants/{restaurant_id}/orders/{order_id}/checkout/app/{checkout_session_id}/pay:
+    post:
+      tags: [POS — Checkout & Payments]
+      summary: Process app payment after QR scan
+      operationId: processAppCheckoutPayment
+      parameters:
+        - $ref: "#/components/parameters/RestaurantId"
+        - $ref: "#/components/parameters/OrderId"
+        - $ref: "#/components/parameters/CheckoutSessionId"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ProcessAppPaymentBody" }
+      responses:
+        "200":
+          description: Payment completed
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EnvelopeOrderPayment" }
+        "402":
+          description: Insufficient balance in selected bucket
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EnvelopeInsufficientFunds" }
+  /pos/restaurants/{restaurant_id}/orders/{order_id}/payments/manual-cash:
+    post:
+      tags: [POS — Checkout & Payments]
+      summary: Confirm pure cash payment (single currency)
+      operationId: confirmPureCashPayment
+      parameters:
+        - $ref: "#/components/parameters/RestaurantId"
+        - $ref: "#/components/parameters/OrderId"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ManualCashPaymentBody" }
+      responses:
+        "200":
+          description: Order closed as paid
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EnvelopeOrderPayment" }
+  /pos/restaurants/{restaurant_id}/orders/{order_id}/payments/manual-mixed:
+    post:
+      tags: [POS — Checkout & Payments]
+      summary: Confirm mixed multi-currency payment
+      operationId: confirmMixedPayment
+      parameters:
+        - $ref: "#/components/parameters/RestaurantId"
+        - $ref: "#/components/parameters/OrderId"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ManualMixedPaymentBody" }
+      responses:
+        "200":
+          description: Order closed as paid
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EnvelopeOrderPayment" }
+        "422": { description: Breakdown does not satisfy debt }
+  /pos/restaurants/{restaurant_id}/orders/{order_id}/payments/manual-confirm:
+    post:
+      tags: [POS — Checkout & Payments]
+      summary: Manual payment confirmation (cash/card/split)
+      operationId: manualConfirmPayment
+      parameters:
+        - $ref: "#/components/parameters/RestaurantId"
+        - $ref: "#/components/parameters/OrderId"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ManualConfirmPaymentBody" }
+      responses:
+        "200":
+          description: Order closed as paid
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EnvelopeOrderPayment" }
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    serviceTokenAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: ServiceToken
+  parameters:
+    RestaurantId:
+      in: path
+      name: restaurant_id
+      required: true
+      schema: { type: string }
+    ReservationId:
+      in: path
+      name: reservation_id
+      required: true
+      schema: { type: string }
+    OrderId:
+      in: path
+      name: order_id
+      required: true
+      schema: { type: string }
+    TransactionId:
+      in: path
+      name: transaction_id
+      required: true
+      schema: { type: string }
+    TopUpId:
+      in: path
+      name: top_up_id
+      required: true
+      schema: { type: string }
+    CheckoutSessionId:
+      in: path
+      name: checkout_session_id
+      required: true
+      schema: { type: string }
+    IdempotencyKey:
+      in: header
+      name: Idempotency-Key
+      required: true
+      schema: { type: string }
+    IfMatch:
+      in: header
+      name: If-Match
+      required: true
+      schema: { type: string }
+  schemas:
+    Meta:
+      type: object
+      properties:
+        request_id: { type: string }
+    ErrorBody:
+      type: object
+      properties:
+        code: { type: string }
+        message: { type: string }
+        details: { type: object, additionalProperties: true }
+    EnvelopeError:
+      type: object
+      properties:
+        meta: { $ref: "#/components/schemas/Meta" }
+        error: { $ref: "#/components/schemas/ErrorBody" }
+    EnvelopeAck:
+      type: object
+      properties:
+        meta: { $ref: "#/components/schemas/Meta" }
+        data:
+          type: object
+          properties:
+            accepted: { type: boolean }
+    Money:
+      type: object
+      required: [amount, currency]
+      properties:
+        amount: { type: number }
+        currency: { type: string, enum: [KRW, USD, BONUS] }
+    WalletProfile:
+      type: object
+      properties:
+        user_id: { type: string }
+        domestic_balance: { $ref: "#/components/schemas/Money" }
+        foreign_balance: { $ref: "#/components/schemas/Money" }
+        bonus_balance: { $ref: "#/components/schemas/Money" }
+        total_equivalent_balance:
+          type: object
+          properties:
+            amount: { type: number }
+            currency: { type: string, enum: [KRW, USD] }
+            based_on_rate: { type: number }
+    EnvelopeWalletProfile:
+      type: object
+      properties:
+        meta: { $ref: "#/components/schemas/Meta" }
+        data: { $ref: "#/components/schemas/WalletProfile" }
+    ExchangeRate:
+      type: object
+      properties:
+        base_currency: { type: string, enum: [USD] }
+        quote_currency: { type: string, enum: [KRW] }
+        rate: { type: number }
+        effective_at: { type: string, format: date-time }
+    EnvelopeExchangeRate:
+      type: object
+      properties:
+        meta: { $ref: "#/components/schemas/Meta" }
+        data: { $ref: "#/components/schemas/ExchangeRate" }
+    TopUpOption:
+      type: object
+      properties:
+        amount: { type: number }
+        currency: { type: string, enum: [KRW, USD] }
+        bonus_amount: { type: number }
+        bonus_currency: { type: string, enum: [BONUS, KRW, USD] }
+        label: { type: string }
+    EnvelopeTopUpOptions:
+      type: object
+      properties:
+        meta: { $ref: "#/components/schemas/Meta" }
+        data:
+          type: object
+          properties:
+            options:
+              type: array
+              items: { $ref: "#/components/schemas/TopUpOption" }
+    TopUpTransaction:
+      type: object
+      properties:
+        top_up_id: { type: string }
+        provider: { type: string, enum: [apple_pay, google_pay, paypal, bank_transfer] }
+        status: { type: string, enum: [pending, succeeded, failed] }
+        target_currency: { type: string, enum: [KRW, USD] }
+        amount: { type: number }
+        provider_reference: { type: string }
+    EnvelopeTopUpTransaction:
+      type: object
+      properties:
+        meta: { $ref: "#/components/schemas/Meta" }
+        data: { $ref: "#/components/schemas/TopUpTransaction" }
+    WalletTransaction:
+      type: object
+      properties:
+        transaction_id: { type: string }
+        type: { type: string }
+        direction: { type: string, enum: [credit, debit] }
+        amount: { $ref: "#/components/schemas/Money" }
+        bucket: { type: string, enum: [domestic, foreign, bonus] }
+        order_id: { type: string, nullable: true }
+        reservation_id: { type: string, nullable: true }
+        note: { type: string, nullable: true }
+        created_at: { type: string, format: date-time }
+    EnvelopeTransaction:
+      type: object
+      properties:
+        meta: { $ref: "#/components/schemas/Meta" }
+        data: { $ref: "#/components/schemas/WalletTransaction" }
+    EnvelopeTransactionList:
+      type: object
+      properties:
+        meta: { $ref: "#/components/schemas/Meta" }
+        data:
+          type: object
+          properties:
+            items:
+              type: array
+              items: { $ref: "#/components/schemas/WalletTransaction" }
+            next_cursor: { type: string, nullable: true }
+    BonusClaim:
+      type: object
+      properties:
+        bonus_transaction_id: { type: string }
+        amount: { $ref: "#/components/schemas/Money" }
+        claimed_at: { type: string, format: date-time }
+    EnvelopeBonusClaim:
+      type: object
+      properties:
+        meta: { $ref: "#/components/schemas/Meta" }
+        data: { $ref: "#/components/schemas/BonusClaim" }
+    UserSearchResult:
+      type: object
+      properties:
+        user_id: { type: string }
+        username: { type: string }
+        display_name: { type: string }
+        is_active: { type: boolean }
+    EnvelopeUserSearchResult:
+      type: object
+      properties:
+        meta: { $ref: "#/components/schemas/Meta" }
+        data:
+          type: object
+          properties:
+            items:
+              type: array
+              items: { $ref: "#/components/schemas/UserSearchResult" }
+    GiftTransfer:
+      type: object
+      properties:
+        transfer_id: { type: string }
+        sender_user_id: { type: string }
+        recipient_user_id: { type: string }
+        amount: { $ref: "#/components/schemas/Money" }
+        message: { type: string, nullable: true }
+        created_at: { type: string, format: date-time }
+    EnvelopeGiftTransfer:
+      type: object
+      properties:
+        meta: { $ref: "#/components/schemas/Meta" }
+        data: { $ref: "#/components/schemas/GiftTransfer" }
+    SubscriptionPlan:
+      type: object
+      properties:
+        plan_code: { type: string, enum: [pro, ultimate] }
+        billing_cycle: { type: string, enum: [monthly, quarterly, yearly] }
+        price: { $ref: "#/components/schemas/Money" }
+        discount_percent: { type: number }
+    EnvelopeSubscriptionPlans:
+      type: object
+      properties:
+        meta: { $ref: "#/components/schemas/Meta" }
+        data:
+          type: object
+          properties:
+            plans:
+              type: array
+              items: { $ref: "#/components/schemas/SubscriptionPlan" }
+    SubscriptionPurchase:
+      type: object
+      properties:
+        subscription_id: { type: string }
+        plan_code: { type: string }
+        billing_cycle: { type: string }
+        charged_amount: { $ref: "#/components/schemas/Money" }
+        valid_until: { type: string, format: date-time }
+    EnvelopeSubscriptionPurchase:
+      type: object
+      properties:
+        meta: { $ref: "#/components/schemas/Meta" }
+        data: { $ref: "#/components/schemas/SubscriptionPurchase" }
+    OrderItem:
+      type: object
+      properties:
+        item_id: { type: string }
+        name: { type: string }
+        quantity: { type: integer, minimum: 1 }
+        unit_price: { $ref: "#/components/schemas/Money" }
+    Order:
+      type: object
+      properties:
+        order_id: { type: string }
+        restaurant_id: { type: string }
+        reservation_id: { type: string, nullable: true }
+        table_id: { type: string, nullable: true }
+        status: { type: string, enum: [open, ready_to_pay, paid, cancelled] }
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/OrderItem" }
+        totals: { $ref: "#/components/schemas/DualCurrencyTotals" }
+        version: { type: integer }
+    EnvelopeOrder:
+      type: object
+      properties:
+        meta: { $ref: "#/components/schemas/Meta" }
+        data: { $ref: "#/components/schemas/Order" }
+    EnvelopeOrderList:
+      type: object
+      properties:
+        meta: { $ref: "#/components/schemas/Meta" }
+        data:
+          type: object
+          properties:
+            items:
+              type: array
+              items: { $ref: "#/components/schemas/Order" }
+            next_cursor: { type: string, nullable: true }
+    OrderReceipt:
+      type: object
+      properties:
+        order_id: { type: string }
+        receipt_number: { type: string }
+        paid_at: { type: string, format: date-time }
+        lines:
+          type: array
+          items: { $ref: "#/components/schemas/OrderItem" }
+        totals: { $ref: "#/components/schemas/DualCurrencyTotals" }
+        payment_breakdown: { type: object, additionalProperties: true }
+    EnvelopeOrderReceipt:
+      type: object
+      properties:
+        meta: { $ref: "#/components/schemas/Meta" }
+        data: { $ref: "#/components/schemas/OrderReceipt" }
+    Menu:
+      type: object
+      properties:
+        restaurant_id: { type: string }
+        currency: { type: string, enum: [KRW] }
+        items:
+          type: array
+          items:
+            type: object
+            properties:
+              item_id: { type: string }
+              name: { type: string }
+              base_price: { $ref: "#/components/schemas/Money" }
+              is_active: { type: boolean }
+    EnvelopeMenu:
+      type: object
+      properties:
+        meta: { $ref: "#/components/schemas/Meta" }
+        data: { $ref: "#/components/schemas/Menu" }
+    DualCurrencyTotals:
+      type: object
+      properties:
+        fx_rate_locked: { type: number }
+        subtotal_krw: { type: number }
+        tax_krw: { type: number }
+        total_krw: { type: number }
+        subtotal_usd: { type: number }
+        tax_usd: { type: number }
+        total_usd: { type: number }
+    EnvelopeDualCurrencyTotals:
+      type: object
+      properties:
+        meta: { $ref: "#/components/schemas/Meta" }
+        data: { $ref: "#/components/schemas/DualCurrencyTotals" }
+    CheckoutSession:
+      type: object
+      properties:
+        checkout_session_id: { type: string }
+        order_id: { type: string }
+        qr_code_payload: { type: string }
+        totals: { $ref: "#/components/schemas/DualCurrencyTotals" }
+        expires_at: { type: string, format: date-time }
+    EnvelopeCheckoutSession:
+      type: object
+      properties:
+        meta: { $ref: "#/components/schemas/Meta" }
+        data: { $ref: "#/components/schemas/CheckoutSession" }
+    OrderPayment:
+      type: object
+      properties:
+        payment_id: { type: string }
+        order_id: { type: string }
+        method: { type: string }
+        status: { type: string, enum: [succeeded, failed] }
+        paid_amounts:
+          type: object
+          properties:
+            app_wallet_krw: { type: number, default: 0 }
+            app_wallet_usd: { type: number, default: 0 }
+            app_wallet_bonus: { type: number, default: 0 }
+            cash_krw: { type: number, default: 0 }
+            cash_usd: { type: number, default: 0 }
+            card_krw: { type: number, default: 0 }
+            card_usd: { type: number, default: 0 }
+        settled_at: { type: string, format: date-time }
+    EnvelopeOrderPayment:
+      type: object
+      properties:
+        meta: { $ref: "#/components/schemas/Meta" }
+        data: { $ref: "#/components/schemas/OrderPayment" }
+    EnvelopeInsufficientFunds:
+      type: object
+      properties:
+        meta: { $ref: "#/components/schemas/Meta" }
+        error:
+          allOf:
+            - $ref: "#/components/schemas/ErrorBody"
+            - type: object
+              properties:
+                code: { type: string, enum: [INSUFFICIENT_FUNDS] }
+                details:
+                  type: object
+                  properties:
+                    required_krw: { type: number }
+                    required_usd: { type: number }
+                    available_domestic_krw: { type: number }
+                    available_foreign_usd: { type: number }
+    InitiateTopUpBody:
+      type: object
+      required: [target_currency, amount, provider, provider_payment_token]
+      properties:
+        target_currency: { type: string, enum: [KRW, USD] }
+        amount: { type: number, exclusiveMinimum: 0 }
+        provider: { type: string, enum: [apple_pay, google_pay, paypal, bank_transfer] }
+        provider_payment_token: { type: string }
+    ConfirmTopUpBody:
+      type: object
+      required: [provider_reference, provider_status]
+      properties:
+        provider_reference: { type: string }
+        provider_status: { type: string, enum: [succeeded, failed] }
+    SendGiftBody:
+      type: object
+      required: [recipient_username, amount, currency_bucket]
+      properties:
+        recipient_username: { type: string }
+        amount: { type: number, exclusiveMinimum: 0 }
+        currency_bucket: { type: string, enum: [domestic, foreign] }
+        message: { type: string, maxLength: 200 }
+    TriggerBonusBody:
+      type: object
+      required: [user_id, reason_code, amount, currency]
+      properties:
+        user_id: { type: string }
+        reason_code: { type: string, enum: [daily_login, referral, dining_reward, birthday_bonus, campaign] }
+        amount: { type: number, exclusiveMinimum: 0 }
+        currency: { type: string, enum: [BONUS, KRW, USD] }
+        metadata: { type: object, additionalProperties: true }
+    PurchaseSubscriptionBody:
+      type: object
+      required: [plan_code, billing_cycle, pay_from_bucket]
+      properties:
+        plan_code: { type: string, enum: [pro, ultimate] }
+        billing_cycle: { type: string, enum: [monthly, quarterly, yearly] }
+        pay_from_bucket: { type: string, enum: [domestic, foreign] }
+    WalletPaymentBody:
+      type: object
+      required: [pay_from_bucket]
+      properties:
+        pay_from_bucket: { type: string, enum: [domestic, foreign, bonus] }
+        note: { type: string }
+    CreateOrderBody:
+      type: object
+      required: [staff_actor_username]
+      properties:
+        staff_actor_username: { type: string }
+        table_id: { type: string }
+        reservation_id: { type: string }
+        walk_in_label: { type: string }
+        items:
+          type: array
+          items:
+            type: object
+            required: [item_id, quantity]
+            properties:
+              item_id: { type: string }
+              quantity: { type: integer, minimum: 1 }
+    PatchOrderBody:
+      type: object
+      required: [staff_actor_username, operations]
+      properties:
+        staff_actor_username: { type: string }
+        operations:
+          type: array
+          minItems: 1
+          items:
+            type: object
+            required: [op, item_id]
+            properties:
+              op: { type: string, enum: [add, remove, set_quantity] }
+              item_id: { type: string }
+              quantity: { type: integer, minimum: 1 }
+    UpdateOrderStatusBody:
+      type: object
+      required: [staff_actor_username, status]
+      properties:
+        staff_actor_username: { type: string }
+        status: { type: string, enum: [open, ready_to_pay, paid, cancelled] }
+        reason: { type: string }
+    InitiateAppCheckoutBody:
+      type: object
+      required: [staff_actor_username]
+      properties:
+        staff_actor_username: { type: string }
+        ttl_seconds: { type: integer, minimum: 60, default: 300 }
+    ProcessAppPaymentBody:
+      type: object
+      required: [payer_user_id, pay_from_bucket]
+      properties:
+        payer_user_id: { type: string }
+        pay_from_bucket: { type: string, enum: [domestic, foreign, bonus] }
+    ManualCashPaymentBody:
+      type: object
+      required: [staff_actor_username, cash_currency, cash_amount]
+      properties:
+        staff_actor_username: { type: string }
+        cash_currency: { type: string, enum: [KRW, USD] }
+        cash_amount: { type: number, exclusiveMinimum: 0 }
+    ManualMixedPaymentBody:
+      type: object
+      required: [staff_actor_username]
+      properties:
+        staff_actor_username: { type: string }
+        app_wallet_krw: { type: number, minimum: 0, default: 0 }
+        app_wallet_usd: { type: number, minimum: 0, default: 0 }
+        app_wallet_bonus: { type: number, minimum: 0, default: 0 }
+        cash_krw: { type: number, minimum: 0, default: 0 }
+        cash_usd: { type: number, minimum: 0, default: 0 }
+    ManualConfirmPaymentBody:
+      type: object
+      required: [staff_actor_username, method]
+      properties:
+        staff_actor_username: { type: string }
+        method: { type: string, enum: [cash, card, split] }
+        card_reference: { type: string }
+        app_wallet_krw: { type: number, minimum: 0, default: 0 }
+        app_wallet_usd: { type: number, minimum: 0, default: 0 }
+        app_wallet_bonus: { type: number, minimum: 0, default: 0 }
+        cash_krw: { type: number, minimum: 0, default: 0 }
+        cash_usd: { type: number, minimum: 0, default: 0 }
+        card_krw: { type: number, minimum: 0, default: 0 }
+        card_usd: { type: number, minimum: 0, default: 0 }
