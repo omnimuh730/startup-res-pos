@@ -2,23 +2,25 @@
 
 Single-file reference for every MongoDB collection in the system. For per-domain context, sample documents, and state diagrams, see the individual files in this directory.
 
-| # | Collection | Purpose | Detail |
-|---|---|---|---|
-| 1 | `customer_users`        | End users of the reservation app; embeds wallet balances cache, rewards cache, social, devices, payment methods, daily-bonus, referral, subscription summary. | [`users.md`](./users.md) |
-| 2 | `staff_users`           | POS users tied to a single restaurant; embeds devices.                                  | [`users.md`](./users.md) |
-| 3 | `restaurants`           | Tenant root; embeds settings, floors, menu, phones, deposit cards, pending-staff inbox. | [`restaurants.md`](./restaurants.md) |
-| 4 | `tables`                | Per-floor operational state with QR; separate from `restaurants` to avoid contention.    | [`tables.md`](./tables.md) |
-| 5 | `reservations`          | Customer ↔ restaurant bridge; embeds invites and timeline.                              | [`reservations.md`](./reservations.md) |
-| 6 | `orders`                | POS order; embeds items with chef batches via `sendBatchId`.                            | [`orders.md`](./orders.md) |
-| 7 | `payments`              | Append-only payments; embeds `refunds[]` and PSP intent metadata.                       | [`payments.md`](./payments.md) |
-| 8 | `wallet_transactions`   | Append-only wallet ledger across domestic, foreign, bonus pools.                        | [`wallets.md`](./wallets.md) |
-| 9 | `points_ledger`         | Append-only loyalty points ledger.                                                       | [`rewards.md`](./rewards.md) |
-| 10 | `notifications`         | One row per delivered in-app notification (customer or staff).                          | [`notifications.md`](./notifications.md) |
-| 11 | `subscriptions`         | Subscription per subject (customer pro or restaurant tier); embeds invoices and history.| [`subscriptions.md`](./subscriptions.md) |
-| 12 | `support_conversations` | Support thread; embeds messages.                                                        | [`support.md`](./support.md) |
-| 13 | `metadata`              | One doc per static catalog (security questions, plans, tiers, amenities, articles, ...).| [`metadata.md`](./metadata.md) |
 
-Auxiliary auth-infra (TTL'd, not part of the 13): `sessions`, `password_reset_sessions` — see [`users.md`](./users.md).
+| #   | Collection              | Purpose                                                                                                                                              | Detail                                   |
+| --- | ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
+| 1   | `customer_users`        | End users of the reservation app; embeds wallet amounts cache, rewards cache, social, payment methods, daily-bonus, referral, subscription summary. | `[users.md](./users.md)`                 |
+| 2   | `staff_users`           | POS users tied to a single restaurant.                                                                                                               | `[users.md](./users.md)`                 |
+| 3   | `restaurants`           | Tenant root; embeds settings, floors, menu, phones, deposit cards, pending-staff inbox.                                                              | `[restaurants.md](./restaurants.md)`     |
+| 4   | `tables`                | Per-floor operational state with QR; separate from `restaurants` to avoid contention.                                                                | `[tables.md](./tables.md)`               |
+| 5   | `reservations`          | Customer ↔ restaurant bridge; embeds invites and timeline.                                                                                           | `[reservations.md](./reservations.md)`   |
+| 6   | `orders`                | POS order; embeds items with chef batches via `sendBatchId`.                                                                                         | `[orders.md](./orders.md)`               |
+| 7   | `payments`              | Append-only payments; embeds `refunds[]` and PSP intent metadata.                                                                                    | `[payments.md](./payments.md)`           |
+| 8   | `wallet_transactions`   | Append-only wallet ledger across domestic, foreign, bonus pools.                                                                                     | `[wallets.md](./wallets.md)`             |
+| 9   | `points_ledger`         | Append-only loyalty points ledger.                                                                                                                   | `[rewards.md](./rewards.md)`             |
+| 10  | `notifications`         | One row per delivered in-app notification (customer or staff).                                                                                       | `[notifications.md](./notifications.md)` |
+| 11  | `subscriptions`         | Subscription per subject (customer pro or restaurant tier); embeds invoices and history.                                                             | `[subscriptions.md](./subscriptions.md)` |
+| 12  | `support_conversations` | Support thread; embeds messages.                                                                                                                     | `[support.md](./support.md)`             |
+| 13  | `metadata`              | One doc per static catalog (security questions, plans, tiers, amenities, articles, ...).                                                             | `[metadata.md](./metadata.md)`           |
+
+
+Auxiliary auth-infra (TTL'd, not part of the 13): `sessions`, `password_reset_sessions` — see `[users.md](./users.md)`.
 
 ## Conventions (recap)
 
@@ -41,18 +43,10 @@ type CustomerUser = {
   username: string;
   passwordHash: string;
   fullName: string;
-  displayName?: string;
-  email?: string;
   phone?: string;
-  avatarUrl?: string;
+  avatarImg?: string;               // base64 image data
 
   status: "active" | "deactivated" | "deleted";
-
-  preferences: {
-    theme: "airbnb" | "ocean" | "forest" | "midnight";
-    locale?: string;
-    location?: { areaId?: ObjectId; lat?: number; lng?: number; label?: string };
-  };
 
   securityAnswers: Array<{
     questionId: string;             // metadata.security_questions.items[].code
@@ -60,9 +54,9 @@ type CustomerUser = {
   }>;
 
   wallets: {
-    domestic: { currency: "KRW" | string; balance: { amount: Decimal128; currency: string }; defaultPaymentMethodId?: ObjectId };
-    foreign:  { currency: "USD" | string; balance: { amount: Decimal128; currency: string }; defaultPaymentMethodId?: ObjectId };
-    bonus:    { currency: string;          balance: { amount: Decimal128; currency: string }; expiresAt?: Date | null };
+    domestic: { currency: "KRW" | string; amount: Decimal128 };
+    foreign:  { currency: "USD" | string; amount: Decimal128 };
+    bonus:    { currency: string;          amount: Decimal128 };
   };
 
   rewards: {
@@ -85,43 +79,18 @@ type CustomerUser = {
     addedAt: Date;
   }>;
 
-  devices: Array<{
-    _id: ObjectId;
-    provider: "fcm" | "apns" | "web_push";
-    token: string;
-    platform: "ios" | "android" | "web";
-    appVersion?: string;
-    deviceId?: string;
-    isActive: boolean;
-    lastSeenAt: Date;
-  }>;
-
   savedItems: Array<{
     _id: ObjectId;
     itemType: "restaurant" | "food";
     restaurantId?: ObjectId;
     foodId?: ObjectId;
-    display: { name: string; imageUrl?: string; cuisine?: string; rating?: number };
     savedAt: Date;
   }>;
 
-  recentSearches: Array<{
-    kind: "restaurant" | "cuisine" | "location" | "freeform";
-    query: string;
-    restaurantId?: ObjectId;
-    cuisineCode?: string;
-    locationId?: ObjectId;
-    lastUsedAt: Date;
-  }>;                                // capped to last 20
-
   friends: Array<{
-    _id: ObjectId;
-    otherUserId?: ObjectId;
-    otherUsername?: string;
-    otherDisplayName?: string;
-    phone?: string;
+    friendId: ObjectId;
     status: "pending_outgoing" | "pending_incoming" | "accepted" | "blocked";
-    source: "request" | "phone_invite" | "import";
+    source: "request" | "import";
     requestedAt: Date;
     acceptedAt?: Date;
   }>;
@@ -129,10 +98,10 @@ type CustomerUser = {
   referral: {
     code: string;
     referredByCode?: string;
+    reward?: { amount: Decimal128; currency: string };
     redemptions: Array<{
       refereeUserId: ObjectId;
-      redeemedAt: Date;
-      reward: { kind: "points" | "wallet"; amount: number; currency?: string };
+      redeemedAt?: Date;
     }>;
   };
 
@@ -140,31 +109,10 @@ type CustomerUser = {
     lastClaimedDate?: string;
     history: Array<{
       localDate: string;
-      selectedBox: 0 | 1 | 2;
-      reward:
-        | { kind: "points"; points: number }
-        | { kind: "bonus_credit"; amount: { amount: Decimal128; currency: string } }
-        | { kind: "coupon"; couponCode: string };
-      pointsLedgerId?: ObjectId;
-      walletTransactionId?: ObjectId;
+      selectedBox: number;
+      reward?: { amount: Decimal128; currency: string };
       claimedAt: Date;
     }>;
-  };
-
-  activeDraft?: {
-    restaurantId: ObjectId;
-    step: 1 | 2 | 3 | 4;
-    partySize?: number;
-    date?: string;
-    time?: string;
-    seating?: string;
-    occasion?: string;
-    specialRequests?: string;
-    preferences?: { seating: string[]; cuisine: string[]; vibe: string[]; amenities: string[] };
-    contact?: { fullName: string; phone: string };
-    paymentIntentId?: string;
-    expiresAt: Date;
-    updatedAt: Date;
   };
 
   subscription?: {
@@ -175,15 +123,13 @@ type CustomerUser = {
     cancelAtPeriodEnd: boolean;
   };
 
-  unreadNotifications: number;
-
   createdAt: Date;
   updatedAt: Date;
   deletedAt?: Date | null;
 };
 ```
 
-Indexes: `{username:1}`u, `{email:1}`us, `{phone:1}`us, `{"referral.code":1}`u, `{status:1, createdAt:-1}`, `{"savedItems.restaurantId":1}`mk, `{"friends.otherUserId":1, "friends.status":1}`mk, `{"devices.token":1}`us-mk, `{"activeDraft.expiresAt":1}`s.
+Indexes: `{username:1}`u, `{phone:1}`us, `{"referral.code":1}`u, `{status:1, createdAt:-1}`, `{"savedItems.restaurantId":1}`mk, `{"friends.friendId":1, "friends.status":1}`mk.
 
 ---
 
@@ -200,16 +146,6 @@ type StaffUser = {
   role: "manager" | "waiter" | "chef" | "cashier";
   permissions: string[];
   status: "pending_approval" | "active" | "inactive" | "rejected";
-  devices: Array<{
-    _id: ObjectId;
-    provider: "fcm" | "apns" | "web_push";
-    token: string;
-    platform: "ios" | "android" | "web";
-    appVersion?: string;
-    deviceId?: string;
-    isActive: boolean;
-    lastSeenAt: Date;
-  }>;
   approvedBy?: ObjectId; approvedAt?: Date;
   rejectedBy?: ObjectId; rejectedAt?: Date;
   inactivatedAt?: Date | null;
@@ -218,7 +154,7 @@ type StaffUser = {
 };
 ```
 
-Indexes: `{restaurantId:1, username:1}`u, `{restaurantId:1, role:1, status:1}`, `{status:1, createdAt:-1}`, `{"devices.token":1}`us.
+Indexes: `{restaurantId:1, username:1}`u, `{restaurantId:1, role:1, status:1}`, `{status:1, createdAt:-1}`.
 
 ---
 
@@ -694,3 +630,4 @@ Default `_id` index is sufficient.
 - `us` = unique sparse
 - `mk` = multikey (array path)
 - `us-mk` = unique sparse multikey
+

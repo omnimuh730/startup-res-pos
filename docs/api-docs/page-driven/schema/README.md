@@ -18,7 +18,7 @@ This schema follows a **simplified 13-collection design**: aggressive embedding 
 | 5 | `reservations` | [`reservations.md`](./reservations.md) | Bridge between users and restaurants; embeds invites and timeline. |
 | 6 | `orders` | [`orders.md`](./orders.md) | Embeds `order_items[]`; chef batches expressed via `sendBatchId` field. |
 | 7 | `payments` | [`payments.md`](./payments.md) | Append-only; embeds `refunds[]` and method/intent metadata. |
-| 8 | `wallet_transactions` | [`wallets.md`](./wallets.md) | Append-only ledger; balances on user are derived. |
+| 8 | `wallet_transactions` | [`wallets.md`](./wallets.md) | Append-only ledger; wallet amounts on user are derived. |
 | 9 | `points_ledger` | [`rewards.md`](./rewards.md) | Append-only ledger; tier/points cache lives on user. |
 | 10 | `notifications` | [`notifications.md`](./notifications.md) | High-write fan-out; push tokens live on user devices. |
 | 11 | `subscriptions` | [`subscriptions.md`](./subscriptions.md) | Embeds `invoices[]`; plan catalog lives in metadata. |
@@ -48,7 +48,6 @@ The deliberate choice is to embed where data is **bounded, mostly read with the 
 | `customer_payment_methods` | `customer_users.paymentMethods[]` |
 | `friend_requests`, `friends` | `customer_users.friends[]` |
 | `saved_items` | `customer_users.savedItems[]` |
-| `recent_searches` | `customer_users.recentSearches[]` (capped to 20) |
 | `daily_bonus_claims` | `customer_users.dailyBonus.history[]` (capped, archive older) |
 | `referral_codes`, `referral_redemptions` | `customer_users.referral` |
 | `reward_tiers` | `metadata` doc `_id: "reward_tiers"` |
@@ -57,7 +56,6 @@ The deliberate choice is to embed where data is **bounded, mostly read with the 
 | `amenities` | `metadata` doc `_id: "amenities"` |
 | `reservation_preferences_catalog` | `metadata` doc `_id: "reservation_preferences"` |
 | `support_articles` | `metadata` doc `_id: "support_articles"` |
-| `reservation_drafts` | `customer_users.activeDraft` (one at a time) |
 | `reservation_invites` | `reservations.invites[]` |
 | `table_qr_codes` | `tables.qrCode` (current) |
 | `subscription_invoices` | `subscriptions.invoices[]` |
@@ -65,7 +63,6 @@ The deliberate choice is to embed where data is **bounded, mostly read with the 
 | `chef_tickets`, `chef_ticket_items` | `orders.items[].chefStatus` and `orders.items[].sendBatchId` |
 | `payment_intents` | `payments.intent` (latest intent state) |
 | `support_messages` | `support_conversations.messages[]` |
-| `push_tokens` | `customer_users.devices[]`, `staff_users.devices[]` |
 
 ### Stayed separate (with reason)
 
@@ -126,7 +123,7 @@ Each file lists `Indexes:` blocks. Defaults:
 
 ### Money-related integrity rules
 
-- Wallet balances on `customer_users` are derived from `wallet_transactions` and recomputable.
+- Wallet amounts on `customer_users` are derived from `wallet_transactions` and recomputable.
 - Reward points/tier on `customer_users` are derived from `points_ledger` and recomputable.
 - Payments are append-only. Refunds are embedded rows on the parent payment, not mutations.
 

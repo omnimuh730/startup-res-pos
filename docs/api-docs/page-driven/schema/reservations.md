@@ -1,6 +1,6 @@
 # Schema · Reservations
 
-The bridge entity between customers and restaurants. Carries both `userId` and `restaurantId` and drives the booking → arrival → dining → payment lifecycle. Drafts live on `customer_users.activeDraft`, invites and timeline are embedded.
+The bridge entity between customers and restaurants. Carries both `userId` and `restaurantId` and drives the booking → arrival → dining → payment lifecycle. Invites and timeline are embedded.
 
 Source READMEs:
 
@@ -14,7 +14,7 @@ Source READMEs:
 |---|---|
 | `reservations` | A confirmed-or-pending booking. Single source of truth between the customer app and POS. |
 
-Related catalogs (`reservation_preferences`) live in [`metadata`](./metadata.md). Drafts are embedded on the customer (`customer_users.activeDraft`). Table assignment and QR validation use the `tables` collection.
+Related catalogs (`reservation_preferences`) live in [`metadata`](./metadata.md). Table assignment and QR validation use the `tables` collection.
 
 ---
 
@@ -154,7 +154,7 @@ dining ─request bill─▶ bill_requested ─finalize─▶ bill ─pay─▶ 
 
 ## Cross-document rules
 
-- The booking wizard state lives on `customer_users.activeDraft` until Step 4 succeeds; on success the draft is deleted and a `reservations` row is inserted.
+- The booking wizard state is maintained client-side until Step 4 succeeds; then a `reservations` row is inserted.
 - A reservation moving from `requested` → `declined` triggers a refund (embedded on the parent `payments` row) and sets `refundId`.
 - A reservation moving to `arrived` sets `tableId`, opens an `orders` row (`orderId`), and flips the `tables` row's `status` to `occupied`.
 - A reservation that ends in `visited` triggers a points credit recorded in `points_ledger`; `pointsEarned` mirrors the credited points.
