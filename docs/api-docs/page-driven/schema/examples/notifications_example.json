@@ -6,18 +6,13 @@
     "type": "reservation_confirmed",
     "title": "Reservation Confirmed",
     "body": "Your table at Sakura Omakase on Apr 25, 11:00 is confirmed.",
-    "iconHint": "R",
-    "target": {
-      "kind": "reservation",
-      "id": { "$oid": "65f0000000000000000e0001" },
-      "deepLink": "catchtable://reservation/65f0000000000000000e0001"
-    },
+    "iconHint": "success",
+    "deepLink": "catchtable://reservation/65f0000000000000000e0001",
     "read": false,
     "deletedAt": null,
     "deliveredChannels": ["in_app", "push"],
     "pushDelivery": {
-      "sentAt": { "$date": "2026-04-22T17:51:02.000Z" },
-      "deviceIds": [ { "$oid": "65f0000000000000000c1201" } ]
+      "sentAt": { "$date": "2026-04-22T17:51:02.000Z" }
     },
     "createdAt": { "$date": "2026-04-22T17:51:02.000Z" },
     "updatedAt": { "$date": "2026-04-22T17:51:02.000Z" }
@@ -29,11 +24,8 @@
     "type": "you_earned_points",
     "title": "+50 points",
     "body": "Thanks for visiting Sakura Omakase! You earned 50 points.",
-    "iconHint": "P",
-    "target": {
-      "kind": "reservation",
-      "id": { "$oid": "65f0000000000000000e0002" }
-    },
+    "iconHint": "notify",
+    "deepLink": "catchtable://reservation/65f0000000000000000e0002",
     "read": true,
     "readAt": { "$date": "2026-04-18T13:00:00.000Z" },
     "deletedAt": null,
@@ -48,8 +40,8 @@
     "type": "gift_received",
     "title": "Mike sent you a gift",
     "body": "$10.00 has been added to your USD wallet.",
-    "iconHint": "W",
-    "target": { "kind": "wallet", "deepLink": "catchtable://profile/wallets" },
+    "iconHint": "notify",
+    "deepLink": "catchtable://profile/wallets",
     "read": false,
     "deletedAt": null,
     "deliveredChannels": ["in_app", "push"],
@@ -64,14 +56,14 @@
     "type": "new_reservation",
     "title": "New reservation",
     "body": "Sarah K. - 2 guests on Apr 25, 11:00.",
-    "target": { "kind": "reservation", "id": { "$oid": "65f0000000000000000e0001" } },
+    "iconHint": "notify",
+    "deepLink": "catchtable://pos/reservations/65f0000000000000000e0001",
     "read": true,
     "readAt": { "$date": "2026-04-22T17:55:00.000Z" },
     "deletedAt": null,
     "deliveredChannels": ["in_app", "push"],
     "pushDelivery": {
-      "sentAt": { "$date": "2026-04-22T17:50:10.000Z" },
-      "deviceIds": [ { "$oid": "65f0000000000000000a0001d1" } ]
+      "sentAt": { "$date": "2026-04-22T17:50:10.000Z" }
     },
     "createdAt": { "$date": "2026-04-22T17:50:10.000Z" },
     "updatedAt": { "$date": "2026-04-22T17:55:00.000Z" }
@@ -81,16 +73,16 @@
     "recipientKind": "staff",
     "staffUserId":   { "$oid": "65f0000000000000000a0002" },
     "restaurantId":  { "$oid": "65f0000000000000000b0001" },
-    "type": "chef_batch_received",
-    "title": "Kitchen: 2 items in",
-    "body": "Table P1 sent: Edamame x1, Toro Tartare x1.",
-    "target": { "kind": "order", "id": { "$oid": "65f0000000000000000a1001" } },
+    "type": "update_reservation",
+    "title": "Reservation updated",
+    "body": "Apr 25, 11:00 reservation changed to 3 guests.",
+    "iconHint": "notify",
+    "deepLink": "catchtable://pos/reservations/65f0000000000000000e0001",
     "read": false,
     "deletedAt": null,
     "deliveredChannels": ["in_app", "push"],
     "pushDelivery": {
-      "sentAt": { "$date": "2026-04-25T11:03:05.000Z" },
-      "deviceIds": [ { "$oid": "65f0000000000000000a0002d1" } ]
+      "sentAt": { "$date": "2026-04-25T11:03:05.000Z" }
     },
     "createdAt": { "$date": "2026-04-25T11:03:05.000Z" },
     "updatedAt": { "$date": "2026-04-25T11:03:05.000Z" }

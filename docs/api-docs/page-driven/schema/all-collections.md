@@ -1,24 +1,25 @@
-# All Collections (13)
+# All Collections (12)
 
 Single-file reference for every MongoDB collection in the system. For per-domain context, sample documents, and state diagrams, see the individual files in this directory.
 
-| # | Collection | Purpose | Detail |
-|---|---|---|---|
-| 1 | `customer_users`        | End users of the reservation app; embeds wallet balances cache, rewards cache, social, devices, payment methods, daily-bonus, referral, subscription summary. | [`users.md`](./users.md) |
-| 2 | `staff_users`           | POS users tied to a single restaurant; embeds devices.                                  | [`users.md`](./users.md) |
-| 3 | `restaurants`           | Tenant root; embeds settings, floors, menu, phones, deposit cards, pending-staff inbox. | [`restaurants.md`](./restaurants.md) |
-| 4 | `tables`                | Per-floor operational state with QR; separate from `restaurants` to avoid contention.    | [`tables.md`](./tables.md) |
-| 5 | `reservations`          | Customer ↔ restaurant bridge; embeds invites and timeline.                              | [`reservations.md`](./reservations.md) |
-| 6 | `orders`                | POS order; embeds items with chef batches via `sendBatchId`.                            | [`orders.md`](./orders.md) |
-| 7 | `payments`              | Append-only payments; embeds `refunds[]` and PSP intent metadata.                       | [`payments.md`](./payments.md) |
-| 8 | `wallet_transactions`   | Append-only wallet ledger across domestic, foreign, bonus pools.                        | [`wallets.md`](./wallets.md) |
-| 9 | `points_ledger`         | Append-only loyalty points ledger.                                                       | [`rewards.md`](./rewards.md) |
-| 10 | `notifications`         | One row per delivered in-app notification (customer or staff).                          | [`notifications.md`](./notifications.md) |
-| 11 | `subscriptions`         | Subscription per subject (customer pro or restaurant tier); embeds invoices and history.| [`subscriptions.md`](./subscriptions.md) |
-| 12 | `support_conversations` | Support thread; embeds messages.                                                        | [`support.md`](./support.md) |
-| 13 | `metadata`              | One doc per static catalog (security questions, plans, tiers, amenities, articles, ...).| [`metadata.md`](./metadata.md) |
 
-Auxiliary auth-infra (TTL'd, not part of the 13): `sessions`, `password_reset_sessions` — see [`users.md`](./users.md).
+| #   | Collection              | Purpose                                                                                                                                              | Detail                                   |
+| --- | ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
+| 1   | `customer_users`        | End users of the reservation app; embeds wallet amounts cache, rewards cache, social, payment methods, daily-bonus, referral, subscription summary. | `[users.md](./users.md)`                 |
+| 2   | `staff_users`           | POS users tied to a single restaurant.                                                                                                               | `[users.md](./users.md)`                 |
+| 3   | `restaurants`           | Tenant root; embeds settings, floors, simplified menu, deposit cards, pending-staff inbox.                                                             | `[restaurants.md](./restaurants.md)`     |
+| 4   | `tables`                | Per-floor operational state with QR; separate from `restaurants` to avoid contention.                                                                | `[tables.md](./tables.md)`               |
+| 5   | `reservations`          | Customer ↔ restaurant bridge; embeds invites and timeline.                                                                                           | `[reservations.md](./reservations.md)`   |
+| 6   | `orders`                | POS order; embeds items with chef batches via `sendBatchId`.                                                                                         | `[orders.md](./orders.md)`               |
+| 7   | `payments`              | Append-only payments; embeds `refunds[]` and PSP intent metadata.                                                                                    | `[payments.md](./payments.md)`           |
+| 8   | `wallet_transactions`   | Append-only wallet ledger across domestic, foreign, bonus pools.                                                                                     | `[wallets.md](./wallets.md)`             |
+| 9   | `points_ledger`         | Append-only loyalty points ledger.                                                                                                                   | `[rewards.md](./rewards.md)`             |
+| 10  | `notifications`         | One row per delivered in-app notification (customer or staff).                                                                                       | `[notifications.md](./notifications.md)` |
+| 11  | `support_conversations` | Support thread; embeds messages.                                                                                                                     | `[support.md](./support.md)`             |
+| 12  | `metadata`              | One doc per static catalog (security questions, plans, tiers, amenities, articles, ...).                                                             | `[metadata.md](./metadata.md)`           |
+
+
+Auxiliary auth-infra (TTL'd, not part of the 12): `sessions`, `password_reset_sessions` — see `[users.md](./users.md)`.
 
 ## Conventions (recap)
 
@@ -41,18 +42,10 @@ type CustomerUser = {
   username: string;
   passwordHash: string;
   fullName: string;
-  displayName?: string;
-  email?: string;
   phone?: string;
-  avatarUrl?: string;
+  avatarImg?: string;               // base64 image data
 
   status: "active" | "deactivated" | "deleted";
-
-  preferences: {
-    theme: "airbnb" | "ocean" | "forest" | "midnight";
-    locale?: string;
-    location?: { areaId?: ObjectId; lat?: number; lng?: number; label?: string };
-  };
 
   securityAnswers: Array<{
     questionId: string;             // metadata.security_questions.items[].code
@@ -60,9 +53,9 @@ type CustomerUser = {
   }>;
 
   wallets: {
-    domestic: { currency: "KRW" | string; balance: { amount: Decimal128; currency: string }; defaultPaymentMethodId?: ObjectId };
-    foreign:  { currency: "USD" | string; balance: { amount: Decimal128; currency: string }; defaultPaymentMethodId?: ObjectId };
-    bonus:    { currency: string;          balance: { amount: Decimal128; currency: string }; expiresAt?: Date | null };
+    domestic: { currency: "KRW" | string; amount: Decimal128 };
+    foreign:  { currency: "USD" | string; amount: Decimal128 };
+    bonus:    { currency: string;          amount: Decimal128 };
   };
 
   rewards: {
@@ -85,43 +78,18 @@ type CustomerUser = {
     addedAt: Date;
   }>;
 
-  devices: Array<{
-    _id: ObjectId;
-    provider: "fcm" | "apns" | "web_push";
-    token: string;
-    platform: "ios" | "android" | "web";
-    appVersion?: string;
-    deviceId?: string;
-    isActive: boolean;
-    lastSeenAt: Date;
-  }>;
-
   savedItems: Array<{
     _id: ObjectId;
     itemType: "restaurant" | "food";
     restaurantId?: ObjectId;
     foodId?: ObjectId;
-    display: { name: string; imageUrl?: string; cuisine?: string; rating?: number };
     savedAt: Date;
   }>;
 
-  recentSearches: Array<{
-    kind: "restaurant" | "cuisine" | "location" | "freeform";
-    query: string;
-    restaurantId?: ObjectId;
-    cuisineCode?: string;
-    locationId?: ObjectId;
-    lastUsedAt: Date;
-  }>;                                // capped to last 20
-
   friends: Array<{
-    _id: ObjectId;
-    otherUserId?: ObjectId;
-    otherUsername?: string;
-    otherDisplayName?: string;
-    phone?: string;
+    friendId: ObjectId;
     status: "pending_outgoing" | "pending_incoming" | "accepted" | "blocked";
-    source: "request" | "phone_invite" | "import";
+    source: "request" | "import";
     requestedAt: Date;
     acceptedAt?: Date;
   }>;
@@ -129,10 +97,10 @@ type CustomerUser = {
   referral: {
     code: string;
     referredByCode?: string;
+    reward?: { amount: Decimal128; currency: string };
     redemptions: Array<{
       refereeUserId: ObjectId;
-      redeemedAt: Date;
-      reward: { kind: "points" | "wallet"; amount: number; currency?: string };
+      redeemedAt?: Date;
     }>;
   };
 
@@ -140,42 +108,21 @@ type CustomerUser = {
     lastClaimedDate?: string;
     history: Array<{
       localDate: string;
-      selectedBox: 0 | 1 | 2;
-      reward:
-        | { kind: "points"; points: number }
-        | { kind: "bonus_credit"; amount: { amount: Decimal128; currency: string } }
-        | { kind: "coupon"; couponCode: string };
-      pointsLedgerId?: ObjectId;
-      walletTransactionId?: ObjectId;
+      selectedBox: number;
+      reward?: { amount: Decimal128; currency: string };
       claimedAt: Date;
     }>;
   };
 
-  activeDraft?: {
-    restaurantId: ObjectId;
-    step: 1 | 2 | 3 | 4;
-    partySize?: number;
-    date?: string;
-    time?: string;
-    seating?: string;
-    occasion?: string;
-    specialRequests?: string;
-    preferences?: { seating: string[]; cuisine: string[]; vibe: string[]; amenities: string[] };
-    contact?: { fullName: string; phone: string };
-    paymentIntentId?: string;
-    expiresAt: Date;
-    updatedAt: Date;
-  };
-
   subscription?: {
-    subscriptionId: ObjectId;
-    planCode: "pro_monthly" | "pro_quarterly" | "pro_yearly";
+    tier: "pro";
+    billingCycle: "monthly" | "quarterly" | "yearly";
     status: "trialing" | "active" | "past_due" | "cancelled" | "expired";
+    issueDate: Date;
+    expireDate: Date;
     currentPeriodEnd: Date;
     cancelAtPeriodEnd: boolean;
   };
-
-  unreadNotifications: number;
 
   createdAt: Date;
   updatedAt: Date;
@@ -183,7 +130,7 @@ type CustomerUser = {
 };
 ```
 
-Indexes: `{username:1}`u, `{email:1}`us, `{phone:1}`us, `{"referral.code":1}`u, `{status:1, createdAt:-1}`, `{"savedItems.restaurantId":1}`mk, `{"friends.otherUserId":1, "friends.status":1}`mk, `{"devices.token":1}`us-mk, `{"activeDraft.expiresAt":1}`s.
+Indexes: `{username:1}`u, `{phone:1}`us, `{"referral.code":1}`u, `{status:1, createdAt:-1}`, `{"savedItems.restaurantId":1}`mk, `{"friends.friendId":1, "friends.status":1}`mk.
 
 ---
 
@@ -200,16 +147,6 @@ type StaffUser = {
   role: "manager" | "waiter" | "chef" | "cashier";
   permissions: string[];
   status: "pending_approval" | "active" | "inactive" | "rejected";
-  devices: Array<{
-    _id: ObjectId;
-    provider: "fcm" | "apns" | "web_push";
-    token: string;
-    platform: "ios" | "android" | "web";
-    appVersion?: string;
-    deviceId?: string;
-    isActive: boolean;
-    lastSeenAt: Date;
-  }>;
   approvedBy?: ObjectId; approvedAt?: Date;
   rejectedBy?: ObjectId; rejectedAt?: Date;
   inactivatedAt?: Date | null;
@@ -218,7 +155,7 @@ type StaffUser = {
 };
 ```
 
-Indexes: `{restaurantId:1, username:1}`u, `{restaurantId:1, role:1, status:1}`, `{status:1, createdAt:-1}`, `{"devices.token":1}`us.
+Indexes: `{restaurantId:1, username:1}`u, `{restaurantId:1, role:1, status:1}`, `{status:1, createdAt:-1}`.
 
 ---
 
@@ -228,7 +165,6 @@ Indexes: `{restaurantId:1, username:1}`u, `{restaurantId:1, role:1, status:1}`, 
 type Restaurant = {
   _id: ObjectId;
   name: string;
-  slug: string;
   cuisine: string[];
   priceLevel: 1 | 2 | 3 | 4;
   description?: string;
@@ -237,26 +173,32 @@ type Restaurant = {
   imageUrls: string[];
   address: { line1: string; line2?: string; city: string; state?: string; country: string; postalCode?: string };
   location: { type: "Point"; coordinates: [number, number] };
-  contact: { primaryPhone?: string; websiteUrl?: string };
-  rating: { average: number; count: number };
+  primaryPhone?: string;
+  secondaryPhone?: string;
+  rating: {
+    reviewCount: number;
+    overall: Decimal128;
+    taste: Decimal128;
+    ambience: Decimal128;
+    service: Decimal128;
+    valueOfPrice: Decimal128;
+  };
   amenities: string[];
-  flags: { isNew?: boolean; isCatchOnly?: boolean; isEditorChoice?: boolean };
-  tier: "free" | "pro" | "ultra";
+  flags: { isNew?: boolean };
+  subscription: {
+    tier: "free" | "pro" | "ultra";
+    issueDate: Date;
+    expireDate: Date;
+    status: "active" | "expired" | "cancelled" | "past_due" | "trialing";
+  };
 
   settings: {
     general: {
-      deposit: { moneyType: "domestic" | "foreign"; amountPerGuest: { amount: Decimal128; currency: string } };
+      deposit: { moneyType: "domestic" | "foreign"; amount: Decimal128 };
       gracePeriodMinutes: number;
       operatingHours: Array<{ day: 0|1|2|3|4|5|6; open: string; close: string; closed?: boolean }>;
     };
-    security: {
-      passwordPolicy: { minLength: number; requireUppercase: boolean; requireNumber: boolean };
-      notificationsMuted: boolean;
-    };
-    features: { reservations: boolean; qrPay: boolean; delivery: boolean };
   };
-
-  phones: Array<{ _id: ObjectId; label: "main"|"reservation"|"kitchen"|"support"|"other"; phone: string; isPrimary: boolean; addedAt: Date }>;
 
   floors: Array<{ _id: ObjectId; name: string; sortOrder: number; isPublished: boolean; deletedAt?: Date | null }>;
 
@@ -269,13 +211,6 @@ type Restaurant = {
       _id: ObjectId; categoryId: ObjectId; subcategoryId?: ObjectId | null;
       name: string; shortName?: string; description?: string; imageUrl?: string; tags?: string[];
       price: { amount: Decimal128; currency: string };
-      pool: "domestic" | "foreign" | "either";
-      modifiers: Array<{
-        _id: ObjectId; name: string; priceDelta: { amount: Decimal128; currency: string };
-        group?: string; selectionType: "single" | "multi"; isRequired: boolean; sortOrder: number; isActive: boolean;
-      }>;
-      availability: { isAvailable: boolean; soldOutUntil?: Date | null };
-      stats?: { soldCount30d: number; revenue30d: { amount: Decimal128; currency: string } };
       isActive: boolean; deletedAt?: Date | null;
       createdAt: Date; updatedAt: Date;
     }>;
@@ -298,7 +233,7 @@ type Restaurant = {
 };
 ```
 
-Indexes: `{slug:1}`u, `{status:1, tier:1}`, `{"rating.average":-1}`, `{cuisine:1}`, `{amenities:1}`, `{location:"2dsphere"}`, text(`name, description`), `{"menu.items._id":1}`mk, `{"menu.items.categoryId":1}`mk, `{"phones.phone":1}`mk.
+Indexes: `{status:1, "subscription.tier":1}`, `{"rating.overall":-1}`, `{cuisine:1}`, `{amenities:1}`, `{location:"2dsphere"}`, text(`name, description`), `{"menu.items._id":1}`mk, `{"menu.items.categoryId":1}`mk.
 
 ---
 
@@ -311,30 +246,22 @@ type Table = {
   floorId: ObjectId;
   name: string;
   seats: number;
-  shape: "circle" | "square" | "rect" | "custom";
+  shape: "circle" | "square" | "rect";
   size: { w: number; h: number };
   position: { x: number; y: number };
   z: number;
   status: "available" | "reserved" | "occupied" | "needs_cleaning" | "out_of_service";
   occupancy?: {
-    reservationId?: ObjectId;
-    orderId?: ObjectId;
-    seatedAt?: Date;
+    reservationId?: ObjectId | null;
+    orderId?: ObjectId | null;
+    seatedAt: Date;
     partySize?: number;
-  };
-  qrCode?: {
-    payload: string;
-    payloadHash: string;
-    rotationVersion: number;
-    validFrom: Date;
-    validUntil?: Date | null;
-    issuedBy?: ObjectId;
   };
   createdAt: Date; updatedAt: Date; deletedAt?: Date | null;
 };
 ```
 
-Indexes: `{restaurantId:1, floorId:1}`, `{restaurantId:1, status:1}`, `{"occupancy.reservationId":1}`, `{"occupancy.orderId":1}`, `{"qrCode.payloadHash":1}`us.
+Indexes: `{restaurantId:1, floorId:1}`, `{restaurantId:1, status:1}`, `{"occupancy.reservationId":1}`, `{"occupancy.orderId":1}`.
 
 ---
 
@@ -346,19 +273,15 @@ type Reservation = {
   restaurantId: ObjectId;
   userId: ObjectId;
   confirmationCode: string;
-  source: "explorer_map" | "discover" | "dining_book_again" | "restaurant_pos" | "other";
   partySize: number;
   date: string;
   time: string;
-  scheduledFor: Date;
   seating?: string;
   contact: { fullName: string; phone: string };
   occasion: "anniversary" | "birthday" | "date_night" | "business" | "casual" | "celebration";
   specialRequests?: string;
   preferences: { seating: string[]; cuisine: string[]; vibe: string[]; amenities: string[] };
   deposit:    { amount: Decimal128; currency: string };
-  serviceFee: { amount: Decimal128; currency: string };
-  total:      { amount: Decimal128; currency: string };
   paymentId?: ObjectId | null;
   refundId?: ObjectId | null;
   tableId?: ObjectId | null;
@@ -369,10 +292,8 @@ type Reservation = {
     | "visited" | "cancelled" | "no_show";
   invites: Array<{
     _id: ObjectId;
-    inviteeUserId?: ObjectId;
-    inviteePhone?: string;
+    inviteeUserId: ObjectId;
     status: "pending" | "accepted" | "declined" | "expired";
-    shareLink: string;
     invitedAt: Date; decidedAt?: Date; expiresAt: Date;
   }>;
   timeline: Array<{
@@ -383,13 +304,21 @@ type Reservation = {
     actor?: { kind: "customer" | "staff" | "system"; id?: ObjectId };
     note?: string;
   }>;
-  rating?: number | null; ratingComment?: string | null; pointsEarned?: number;
+  rating?: {
+    overall?: number | null;
+    taste?: number | null;
+    ambience?: number | null;
+    service?: number | null;
+    valueOfPrice?: number | null;
+  } | null;
+  ratingComment?: string | null;
+  pointsEarned?: number;
   createdAt: Date; updatedAt: Date;
   cancelledAt?: Date | null; cancelReason?: string | null;
 };
 ```
 
-Indexes: `{confirmationCode:1}`u, `{userId:1, status:1, scheduledFor:-1}`, `{restaurantId:1, status:1, scheduledFor:1}`, `{tableId:1}`, `{orderId:1}`, `{paymentId:1}`, `{status:1, scheduledFor:1}`, `{"invites.shareLink":1}`us-mk, `{"invites.inviteeUserId":1, "invites.status":1}`mk.
+Indexes: `{confirmationCode:1}`u, `{userId:1, status:1, date:-1, time:-1}`, `{restaurantId:1, status:1, date:1, time:1}`, `{tableId:1}`, `{orderId:1}`, `{paymentId:1}`, `{status:1, date:1, time:1}`, `{"invites.inviteeUserId":1, "invites.status":1}`mk.
 
 ---
 
@@ -561,66 +490,27 @@ type Notification = {
     | "table_ready" | "bill_finalized" | "payment_succeeded" | "payment_failed"
     | "review_reply" | "flash_deal" | "weekly_picks" | "you_earned_points" | "tier_promoted"
     | "gift_received" | "friend_request"
-    | "new_reservation" | "reservation_cancelled" | "new_order" | "order_ready_for_payment"
-    | "chef_batch_received" | "subscription_renewal" | "staff_join_request" | string;
-  title: string; body: string; iconHint?: string;
-  target?: { kind: string; id?: ObjectId; deepLink?: string };
+    | "new_reservation" | "reservation_cancelled" | "update_reservation"
+    | "subscription_renewal" | "staff_join_request" | string;
+  title: string; body: string;
+  iconHint: "success" | "notify" | "warning" | "error";
+  deepLink: string;
   read: boolean; readAt?: Date | null;
   deletedAt?: Date | null;
-  deliveredChannels: Array<"in_app" | "push" | "email" | "sms">;
+  deliveredChannels: Array<"in_app" | "push">;
   pushDelivery?: {
-    sentAt?: Date; deviceIds: ObjectId[];
-    failures?: Array<{ deviceId: ObjectId; reason: string }>;
+    sentAt?: Date;
+    failures?: Array<{ reason: string }>;
   };
   createdAt: Date; updatedAt: Date;
 };
 ```
 
-Indexes: `{customerUserId:1, deletedAt:1, createdAt:-1}`, `{staffUserId:1, deletedAt:1, createdAt:-1}`, `{customerUserId:1, read:1}`, `{staffUserId:1, read:1}`, `{restaurantId:1, type:1, createdAt:-1}`, `{"target.kind":1, "target.id":1}`.
+Indexes: `{customerUserId:1, deletedAt:1, createdAt:-1}`, `{staffUserId:1, deletedAt:1, createdAt:-1}`, `{customerUserId:1, read:1}`, `{staffUserId:1, read:1}`, `{restaurantId:1, type:1, createdAt:-1}`.
 
 ---
 
-## 11) `subscriptions`
-
-```ts
-type Subscription = {
-  _id: ObjectId;
-  product: "restaurant_tier" | "catchtable_pro";
-  customerUserId?: ObjectId; restaurantId?: ObjectId;
-  planCode: string;
-  status: "trialing" | "active" | "past_due" | "cancelled" | "expired";
-  currentPeriodStart: Date; currentPeriodEnd: Date;
-  cancelAtPeriodEnd: boolean; cancelledAt?: Date | null;
-  paymentMethodRef?: { kind: "customer_method" | "restaurant_deposit_card"; methodId: ObjectId };
-  pspProvider?: string; pspSubscriptionId?: string;
-  invoices: Array<{
-    _id: ObjectId;
-    periodStart: Date; periodEnd: Date;
-    amount: { amount: Decimal128; currency: string };
-    taxes?: { amount: Decimal128; currency: string };
-    total:  { amount: Decimal128; currency: string };
-    status: "open" | "paid" | "uncollectible" | "voided";
-    paymentId?: ObjectId; walletTransactionId?: ObjectId;
-    attemptCount: number; nextAttemptAt?: Date;
-    failure?: { code: string; message: string };
-    createdAt: Date; updatedAt: Date;
-  }>;
-  history: Array<{
-    at: Date;
-    type: "created" | "renewed" | "upgraded" | "downgraded" | "cancelled" | "reactivated" | "payment_failed";
-    fromPlan?: string; toPlan?: string;
-    actor?: { kind: "customer" | "staff" | "system"; id?: ObjectId };
-    note?: string;
-  }>;
-  createdAt: Date; updatedAt: Date;
-};
-```
-
-Indexes: `{customerUserId:1, product:1, status:1}`, `{restaurantId:1, product:1, status:1}`, `{planCode:1, status:1}`, `{pspSubscriptionId:1}`us, `{status:1, currentPeriodEnd:1}`, `{"invoices.status":1, "invoices.nextAttemptAt":1}`mk.
-
----
-
-## 12) `support_conversations`
+## 11) `support_conversations`
 
 ```ts
 type SupportConversation = {
@@ -658,7 +548,7 @@ Indexes: `{customerUserId:1, status:1, lastMessageAt:-1}`, `{staffUserId:1, stat
 
 ---
 
-## 13) `metadata`
+## 12) `metadata`
 
 ```ts
 type MetadataDoc<TItem = unknown> = {
@@ -675,7 +565,7 @@ type MetadataDoc<TItem = unknown> = {
 Documents stored in this collection (one per `_id`):
 
 - `security_questions`     — list of selectable security questions
-- `subscription_plans`     — restaurant tiers and catchtable_pro plans
+- `subscription_plans`     — subscription plan matrix for restaurant and customer subjects
 - `reward_tiers`           — silver/gold/platinum/diamond + thresholds + benefits
 - `amenities`              — amenity codes with labels and icons
 - `reservation_preferences`— seating, cuisine, vibe, amenity preference codes
@@ -694,3 +584,4 @@ Default `_id` index is sufficient.
 - `us` = unique sparse
 - `mk` = multikey (array path)
 - `us-mk` = unique sparse multikey
+

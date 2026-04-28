@@ -53,7 +53,7 @@ paths:
     delete: { $ref: '#/x-operations/CancelInvite' }
 
 x-operations:
-  # Reservation lifecycle (customer + POS shared) + drafts + invites + ratings.
+  # Reservation lifecycle (customer + POS shared) + drafts + invites + detailed ratings.
 
   # ---------- Customer-side ----------
 
@@ -279,7 +279,7 @@ x-operations:
   RateReservation:
     tags: [Reservations]
     operationId: rateReservation
-    summary: Submit a post-visit rating + comment (Dining → past tab).
+    summary: Submit post-visit category ratings + comment (Dining → past tab).
     parameters:
       - $ref: '../components/common.yaml#/components/parameters/ReservationIdPath'
     requestBody:
@@ -290,7 +290,15 @@ x-operations:
             type: object
             required: [rating]
             properties:
-              rating:  { type: number, minimum: 1, maximum: 5 }
+              rating:
+                type: object
+                required: [overall, taste, ambience, service, valueOfPrice]
+                properties:
+                  overall:      { type: number, minimum: 1, maximum: 5 }
+                  taste:        { type: number, minimum: 1, maximum: 5 }
+                  ambience:     { type: number, minimum: 1, maximum: 5 }
+                  service:      { type: number, minimum: 1, maximum: 5 }
+                  valueOfPrice: { type: number, minimum: 1, maximum: 5 }
               comment: { type: string, maxLength: 2000 }
     responses:
       '200':
@@ -387,9 +395,9 @@ x-operations:
   AcceptInvite:
     tags: [Reservations]
     operationId: acceptReservationInvite
-    summary: Accept a reservation invite via shareLink.
+    summary: Accept a reservation invite via invite token.
     description: |
-      Token comes from the invite's `shareLink`. The invitee must be authenticated;
+      Token is obtained from the invite delivery channel. The invitee must be authenticated;
       if they are not yet a friend of the host they remain unchanged.
     parameters:
       - $ref: '../components/common.yaml#/components/parameters/InviteTokenPath'
@@ -423,7 +431,7 @@ x-operations:
   DeclineInvite:
     tags: [Reservations]
     operationId: declineReservationInvite
-    summary: Decline a reservation invite via shareLink.
+    summary: Decline a reservation invite via invite token.
     parameters:
       - $ref: '../components/common.yaml#/components/parameters/InviteTokenPath'
     responses:
@@ -445,7 +453,7 @@ x-operations:
         * `rotationVersion` matches (rotated QR returns `qr_rotated`)
         * Current time within `validFrom`/`validUntil`
         * Reservation belongs to the same restaurant
-        * Reservation `scheduledFor` is within the restaurant's grace window
+        * Reservation `(date, time)` is within the restaurant's grace window
     parameters:
       - $ref: '../components/common.yaml#/components/parameters/ReservationIdPath'
     requestBody:

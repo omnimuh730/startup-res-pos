@@ -2,7 +2,6 @@
   {
     "_id": { "$oid": "65f0000000000000000b0001" },
     "name": "Sakura Omakase",
-    "slug": "sakura-omakase-gangnam",
     "cuisine": ["japanese", "omakase"],
     "priceLevel": 4,
     "description": "12-course omakase from chef Hiro. Hinoki counter, 14 seats.",
@@ -20,19 +19,29 @@
       "postalCode": "06010"
     },
     "location": { "type": "Point", "coordinates": [127.0473, 37.5172] },
-    "contact": {
-      "primaryPhone": "+8225551234",
-      "websiteUrl": "https://sakura-omakase.example"
+    "primaryPhone": "+8225551234",
+    "secondaryPhone": "+8225551236",
+    "rating": {
+      "reviewCount": 412,
+      "overall": { "$numberDecimal": "4.80" },
+      "taste": { "$numberDecimal": "4.90" },
+      "ambience": { "$numberDecimal": "4.70" },
+      "service": { "$numberDecimal": "4.85" },
+      "valueOfPrice": { "$numberDecimal": "4.60" }
     },
-    "rating": { "average": 4.8, "count": 412 },
     "amenities": ["wifi", "private", "vegan"],
-    "flags": { "isEditorChoice": true },
-    "tier": "pro",
+    "flags": { "isNew": true },
+    "subscription": {
+      "tier": "pro",
+      "issueDate": { "$date": "2026-04-01T00:00:00.000Z" },
+      "expireDate": { "$date": "2026-05-01T00:00:00.000Z" },
+      "status": "active"
+    },
     "settings": {
       "general": {
         "deposit": {
           "moneyType": "domestic",
-          "amountPerGuest": { "amount": { "$numberDecimal": "30000" }, "currency": "KRW" }
+          "amount": { "$numberDecimal": "30000" }
         },
         "gracePeriodMinutes": 15,
         "operatingHours": [
@@ -44,18 +53,8 @@
           { "day": 5, "open": "18:00", "close": "00:00" },
           { "day": 6, "open": "12:00", "close": "00:00" }
         ]
-      },
-      "security": {
-        "passwordPolicy": { "minLength": 10, "requireUppercase": true, "requireNumber": true },
-        "notificationsMuted": false
-      },
-      "features": { "reservations": true, "qrPay": true, "delivery": false }
+      }
     },
-    "phones": [
-      { "_id": { "$oid": "65f0000000000000000b0101" }, "label": "main",       "phone": "+8225551234", "isPrimary": true,  "addedAt": { "$date": "2025-08-01T00:00:00.000Z" } },
-      { "_id": { "$oid": "65f0000000000000000b0102" }, "label": "kitchen",    "phone": "+8225551235", "isPrimary": false, "addedAt": { "$date": "2025-08-02T00:00:00.000Z" } },
-      { "_id": { "$oid": "65f0000000000000000b0103" }, "label": "reservation","phone": "+8225551236", "isPrimary": false, "addedAt": { "$date": "2025-08-02T00:00:00.000Z" } }
-    ],
     "floors": [
       { "_id": { "$oid": "65f0000000000000000f0001" }, "name": "Main",  "sortOrder": 0, "isPublished": true, "deletedAt": null },
       { "_id": { "$oid": "65f0000000000000000f0002" }, "name": "Patio", "sortOrder": 1, "isPublished": true, "deletedAt": null }
@@ -95,13 +94,6 @@
           "imageUrl": "https://cdn.example/m/edamame.jpg",
           "tags": ["vegan", "starter"],
           "price": { "amount": { "$numberDecimal": "9000" }, "currency": "KRW" },
-          "pool": "domestic",
-          "modifiers": [
-            { "_id": { "$oid": "65f0000000000000000b3001" }, "name": "Extra salt",   "priceDelta": { "amount": { "$numberDecimal": "0" },    "currency": "KRW" }, "selectionType": "single", "isRequired": false, "sortOrder": 0, "isActive": true },
-            { "_id": { "$oid": "65f0000000000000000b3002" }, "name": "Spicy mix",    "priceDelta": { "amount": { "$numberDecimal": "1000" }, "currency": "KRW" }, "selectionType": "single", "isRequired": false, "sortOrder": 1, "isActive": true }
-          ],
-          "availability": { "isAvailable": true, "soldOutUntil": null },
-          "stats": { "soldCount30d": 412, "revenue30d": { "amount": { "$numberDecimal": "3708000" }, "currency": "KRW" } },
           "isActive": true,
           "deletedAt": null,
           "createdAt": { "$date": "2025-08-10T00:00:00.000Z" },
@@ -115,10 +107,6 @@
           "description": "Bluefin tuna belly tartare, yuzu kosho, nori chip.",
           "imageUrl": "https://cdn.example/m/toro.jpg",
           "price": { "amount": { "$numberDecimal": "32.00" }, "currency": "USD" },
-          "pool": "foreign",
-          "modifiers": [],
-          "availability": { "isAvailable": true, "soldOutUntil": null },
-          "stats": { "soldCount30d": 88, "revenue30d": { "amount": { "$numberDecimal": "2816.00" }, "currency": "USD" } },
           "isActive": true,
           "deletedAt": null,
           "createdAt": { "$date": "2025-08-10T00:00:00.000Z" },
@@ -131,9 +119,6 @@
           "name": "Otoro Nigiri",
           "shortName": "Otoro",
           "price": { "amount": { "$numberDecimal": "18.00" }, "currency": "USD" },
-          "pool": "foreign",
-          "modifiers": [],
-          "availability": { "isAvailable": true, "soldOutUntil": null },
           "isActive": true,
           "deletedAt": null,
           "createdAt": { "$date": "2025-08-10T00:00:00.000Z" },

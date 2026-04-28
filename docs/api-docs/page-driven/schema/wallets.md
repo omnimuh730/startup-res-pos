@@ -2,8 +2,8 @@
 
 The wallet domain follows a **cache + ledger** pattern:
 
-- **Cached balance** lives on the customer (`customer_users.wallets.{domestic,foreign,bonus}`) for fast reads on every Profile page load.
-- **Source of truth** is the immutable `wallet_transactions` collection. The cached balance is `SUM(direction × amount)` over the user's transactions in the wallet's pool.
+- **Cached amount** lives on the customer (`customer_users.wallets.{domestic,foreign,bonus}`) for fast reads on every Profile page load.
+- **Source of truth** is the immutable `wallet_transactions` collection. The cached amount is `SUM(direction × amount)` over the user's transactions in the wallet's pool.
 
 Every customer has three logical wallets that **never auto-convert**: domestic (KRW), foreign (USD), and bonus.
 
@@ -13,11 +13,13 @@ Source READMEs:
 
 ## Collection
 
-| Collection | Purpose |
-|---|---|
+
+| Collection            | Purpose                                              |
+| --------------------- | ---------------------------------------------------- |
 | `wallet_transactions` | Immutable ledger of every credit/debit. Append-only. |
 
-`wallets` itself (per-pool balance) is embedded on `customer_users` — see [`users.md`](./users.md).
+
+`wallets` itself (per-pool amount) is embedded on `customer_users` — see `[users.md](./users.md)`.
 
 Top-ups and gifts do **not** have their own collections any more:
 
@@ -26,15 +28,15 @@ Top-ups and gifts do **not** have their own collections any more:
 
 ---
 
-## Embedded balance shape (recap)
+## Embedded wallet shape (recap)
 
-For reference; canonical definition lives in [`users.md`](./users.md).
+For reference; canonical definition lives in `[users.md](./users.md)`.
 
 ```ts
 customer_users.wallets = {
-  domestic: { currency: "KRW" | string; balance: { amount: Decimal128; currency: string }; defaultPaymentMethodId?: ObjectId };
-  foreign:  { currency: "USD" | string; balance: { amount: Decimal128; currency: string }; defaultPaymentMethodId?: ObjectId };
-  bonus:    { currency: string;          balance: { amount: Decimal128; currency: string }; expiresAt?: Date | null };
+  domestic: { currency: "KRW" | string; amount: Decimal128 };
+  foreign:  { currency: "USD" | string; amount: Decimal128 };
+  bonus:    { currency: string;          amount: Decimal128 };
 };
 ```
 
@@ -110,12 +112,12 @@ type WalletTransaction = {
   1. Insert `payments` row (`purpose: "wallet_top_up"`) with intent metadata.
   2. On PSP success: insert `wallet_transactions` `{ type: "top_up", direction: "credit", paymentId }`.
   3. If a bonus applies: insert a second `wallet_transactions` `{ type: "top_up_bonus", direction: "credit" }` against the bonus wallet.
-  4. Recompute `customer_users.wallets.{pool}.balance` for both affected wallets.
+  4. Recompute `customer_users.wallets.{pool}.amount` for both affected wallets.
 - **Gift flow** (Profile → Send Gift):
   1. Generate a `giftId`.
   2. Insert sender debit `{ type: "gift_sent", direction: "debit", giftId, giftCounterpartyUserId, giftCounterpartyUsernameAtSend, giftMessage }`.
   3. Insert recipient credit `{ type: "gift_received", direction: "credit", giftId, ... }`.
-  4. Update both users' `wallets.{pool}.balance`.
+  4. Update both users' `wallets.{pool}.amount`.
   5. The product enforces: gifts cannot mix domestic and foreign in one transfer; the bonus pool is not giftable.
 - **Restaurant payment via wallet**: `payments.method.kind = "wallet"` row carries `walletTransactionId` for the matching debit. Both are inserted in one transaction.
 - **Refund**: refund of a wallet-funded payment writes a credit `wallet_transactions` of `type: "refund"` referencing `paymentId`.
@@ -124,4 +126,5 @@ type WalletTransaction = {
 ## Realtime channels
 
 - `wallet.transaction.created` (per row)
-- `user.wallets.updated` (after balance recomputation)
+- `user.wallets.updated` (after amount recomputation)
+

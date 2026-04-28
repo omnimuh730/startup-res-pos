@@ -16,14 +16,6 @@
       "seatedAt":      { "$date": "2026-04-25T11:00:00.000Z" },
       "partySize": 2
     },
-    "qrCode": {
-      "payload": "eyJhbGciOiJIUzI1NiJ9.eyJ0Ijoxc...",
-      "payloadHash": "sha256:6ec1ab90c4...",
-      "rotationVersion": 7,
-      "validFrom":  { "$date": "2026-04-01T00:00:00.000Z" },
-      "validUntil": null,
-      "issuedBy":   { "$oid": "65f0000000000000000a0001" }
-    },
     "createdAt": { "$date": "2025-08-01T00:00:00.000Z" },
     "updatedAt": { "$date": "2026-04-25T11:00:00.000Z" },
     "deletedAt": null
@@ -39,14 +31,6 @@
     "position": { "x": 220, "y": 110 },
     "z": 1,
     "status": "available",
-    "qrCode": {
-      "payload": "eyJhbGciOiJIUzI1NiJ9.eyJ0Ijoxc2Yj...",
-      "payloadHash": "sha256:b32a409faa...",
-      "rotationVersion": 4,
-      "validFrom":  { "$date": "2026-04-01T00:00:00.000Z" },
-      "validUntil": null,
-      "issuedBy":   { "$oid": "65f0000000000000000a0001" }
-    },
     "createdAt": { "$date": "2025-08-01T00:00:00.000Z" },
     "updatedAt": { "$date": "2026-04-25T10:30:00.000Z" },
     "deletedAt": null

@@ -1,6 +1,6 @@
 # Schema · Support
 
-Customer or restaurant-staff support chat. Messages are **embedded** on the conversation. Help-center articles live in [`metadata`](./metadata.md) under `_id: "support_articles"`.
+Customer or restaurant-staff support chat. Messages are **embedded** on the conversation. Help-center articles live in `[metadata](./metadata.md)` under `_id: "support_articles"`.
 
 Source READMEs:
 
@@ -9,9 +9,11 @@ Source READMEs:
 
 ## Collection
 
-| Collection | Purpose |
-|---|---|
+
+| Collection              | Purpose                                                                                          |
+| ----------------------- | ------------------------------------------------------------------------------------------------ |
 | `support_conversations` | A single chat thread between one user (customer or staff) and the support team. Embeds messages. |
+
 
 ---
 
@@ -118,3 +120,4 @@ any ─close (auto-after 7d)──▶ closed
 - Help-center search reads from `metadata.support_articles` (no separate collection); selecting an article and tapping "Contact Support" opens a new `support_conversations` row with `context.articleSlug` set.
 - `Mark as read` from the user side sets `readByUserAt` on each message ≤ the latest message and zeroes `unreadByUser`.
 - `assignedAgentId` is a foreign reference to your internal CRM/agent system — not modeled in MongoDB here.
+
