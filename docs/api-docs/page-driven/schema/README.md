@@ -56,7 +56,6 @@ The deliberate choice is to embed where data is **bounded, mostly read with the 
 | `reservation_preferences_catalog` | `metadata` doc `_id: "reservation_preferences"` |
 | `support_articles` | `metadata` doc `_id: "support_articles"` |
 | `reservation_invites` | `reservations.invites[]` |
-| `table_qr_codes` | `tables.qrCode` (current) |
 | subscription billing state | Embedded summaries on subject docs (`customer_users.subscription`, `restaurants.subscription`) with static plan catalog in `metadata.subscription_plans` |
 | `wallet_top_ups`, `wallet_gifts` | `wallet_transactions` rows + `payments` rows linked by `groupId`/`giftId` |
 | `chef_tickets`, `chef_ticket_items` | `orders.items[].chefStatus` and `orders.items[].sendBatchId` |

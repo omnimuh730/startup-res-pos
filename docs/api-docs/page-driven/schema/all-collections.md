@@ -246,30 +246,22 @@ type Table = {
   floorId: ObjectId;
   name: string;
   seats: number;
-  shape: "circle" | "square" | "rect" | "custom";
+  shape: "circle" | "square" | "rect";
   size: { w: number; h: number };
   position: { x: number; y: number };
   z: number;
   status: "available" | "reserved" | "occupied" | "needs_cleaning" | "out_of_service";
   occupancy?: {
-    reservationId?: ObjectId;
-    orderId?: ObjectId;
-    seatedAt?: Date;
+    reservationId?: ObjectId | null;
+    orderId?: ObjectId | null;
+    seatedAt: Date;
     partySize?: number;
-  };
-  qrCode?: {
-    payload: string;
-    payloadHash: string;
-    rotationVersion: number;
-    validFrom: Date;
-    validUntil?: Date | null;
-    issuedBy?: ObjectId;
   };
   createdAt: Date; updatedAt: Date; deletedAt?: Date | null;
 };
 ```
 
-Indexes: `{restaurantId:1, floorId:1}`, `{restaurantId:1, status:1}`, `{"occupancy.reservationId":1}`, `{"occupancy.orderId":1}`, `{"qrCode.payloadHash":1}`us.
+Indexes: `{restaurantId:1, floorId:1}`, `{restaurantId:1, status:1}`, `{"occupancy.reservationId":1}`, `{"occupancy.orderId":1}`.
 
 ---
 
@@ -498,22 +490,23 @@ type Notification = {
     | "table_ready" | "bill_finalized" | "payment_succeeded" | "payment_failed"
     | "review_reply" | "flash_deal" | "weekly_picks" | "you_earned_points" | "tier_promoted"
     | "gift_received" | "friend_request"
-    | "new_reservation" | "reservation_cancelled" | "new_order" | "order_ready_for_payment"
-    | "chef_batch_received" | "subscription_renewal" | "staff_join_request" | string;
-  title: string; body: string; iconHint?: string;
-  target?: { kind: string; id?: ObjectId; deepLink?: string };
+    | "new_reservation" | "reservation_cancelled" | "update_reservation"
+    | "subscription_renewal" | "staff_join_request" | string;
+  title: string; body: string;
+  iconHint: "success" | "notify" | "warning" | "error";
+  deepLink: string;
   read: boolean; readAt?: Date | null;
   deletedAt?: Date | null;
-  deliveredChannels: Array<"in_app" | "push" | "email" | "sms">;
+  deliveredChannels: Array<"in_app" | "push">;
   pushDelivery?: {
-    sentAt?: Date; deviceIds: ObjectId[];
-    failures?: Array<{ deviceId: ObjectId; reason: string }>;
+    sentAt?: Date;
+    failures?: Array<{ reason: string }>;
   };
   createdAt: Date; updatedAt: Date;
 };
 ```
 
-Indexes: `{customerUserId:1, deletedAt:1, createdAt:-1}`, `{staffUserId:1, deletedAt:1, createdAt:-1}`, `{customerUserId:1, read:1}`, `{staffUserId:1, read:1}`, `{restaurantId:1, type:1, createdAt:-1}`, `{"target.kind":1, "target.id":1}`.
+Indexes: `{customerUserId:1, deletedAt:1, createdAt:-1}`, `{staffUserId:1, deletedAt:1, createdAt:-1}`, `{customerUserId:1, read:1}`, `{staffUserId:1, read:1}`, `{restaurantId:1, type:1, createdAt:-1}`.
 
 ---
 
