@@ -522,17 +522,15 @@ components:
 
     Reservation:
       type: object
-      required: [id, restaurantId, userId, confirmationCode, source, partySize, date, time, scheduledFor, contact, occasion, preferences, deposit, serviceFee, total, status, invites, timeline, createdAt]
+      required: [id, restaurantId, userId, confirmationCode, partySize, date, time, contact, occasion, preferences, deposit, status, invites, timeline, createdAt]
       properties:
         id:                 { $ref: './common.yaml#/components/schemas/ObjectId' }
         restaurantId:       { $ref: './common.yaml#/components/schemas/ObjectId' }
         userId:             { $ref: './common.yaml#/components/schemas/ObjectId' }
         confirmationCode:   { type: string, example: 'CT-2026-0425A' }
-        source:             { type: string, enum: [explorer_map, discover, dining_book_again, restaurant_pos, other] }
         partySize:          { type: integer, minimum: 1, maximum: 20 }
         date:               { type: string, format: date }
         time:               { type: string, pattern: '^[0-2][0-9]:[0-5][0-9]$', example: '11:00' }
-        scheduledFor:       { type: string, format: date-time }
         seating:            { type: [string, 'null'] }
         contact:
           type: object
@@ -544,8 +542,6 @@ components:
         specialRequests:    { type: string }
         preferences:        { $ref: '#/components/schemas/ReservationPreferences' }
         deposit:            { $ref: './common.yaml#/components/schemas/Money' }
-        serviceFee:         { $ref: './common.yaml#/components/schemas/Money' }
-        total:              { $ref: './common.yaml#/components/schemas/Money' }
         paymentId:          { $ref: './common.yaml#/components/schemas/ObjectId' }
         refundId:           { $ref: './common.yaml#/components/schemas/ObjectId' }
         tableId:            { $ref: './common.yaml#/components/schemas/ObjectId' }
@@ -559,13 +555,25 @@ components:
         timeline:
           type: array
           items: { $ref: '#/components/schemas/ReservationTimelineEntry' }
-        rating:             { type: [number, 'null'], minimum: 0, maximum: 5 }
+        rating:
+          oneOf:
+            - $ref: '#/components/schemas/ReservationRating'
+            - { type: 'null' }
         ratingComment:      { type: [string, 'null'] }
         pointsEarned:       { type: integer, minimum: 0 }
         createdAt:          { type: string, format: date-time }
         updatedAt:          { type: string, format: date-time }
         cancelledAt:        { type: [string, 'null'], format: date-time }
         cancelReason:       { type: [string, 'null'] }
+
+    ReservationRating:
+      type: object
+      properties:
+        overall:      { type: [number, 'null'], minimum: 0, maximum: 5 }
+        taste:        { type: [number, 'null'], minimum: 0, maximum: 5 }
+        ambience:     { type: [number, 'null'], minimum: 0, maximum: 5 }
+        service:      { type: [number, 'null'], minimum: 0, maximum: 5 }
+        valueOfPrice: { type: [number, 'null'], minimum: 0, maximum: 5, description: 'Value-for-price score.' }
 
     ReservationPreferences:
       type: object
@@ -578,13 +586,11 @@ components:
 
     ReservationInvite:
       type: object
-      required: [id, status, shareLink, invitedAt, expiresAt]
+      required: [id, inviteeUserId, status, invitedAt, expiresAt]
       properties:
         id:            { $ref: './common.yaml#/components/schemas/ObjectId' }
         inviteeUserId: { $ref: './common.yaml#/components/schemas/ObjectId' }
-        inviteePhone:  { type: string }
         status:        { type: string, enum: [pending, accepted, declined, expired] }
-        shareLink:     { type: string, format: uri-reference }
         invitedAt:     { type: string, format: date-time }
         decidedAt:     { type: string, format: date-time }
         expiresAt:     { type: string, format: date-time }

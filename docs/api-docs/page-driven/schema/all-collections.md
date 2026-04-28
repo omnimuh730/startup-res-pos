@@ -282,19 +282,15 @@ type Reservation = {
   restaurantId: ObjectId;
   userId: ObjectId;
   confirmationCode: string;
-  source: "explorer_map" | "discover" | "dining_book_again" | "restaurant_pos" | "other";
   partySize: number;
   date: string;
   time: string;
-  scheduledFor: Date;
   seating?: string;
   contact: { fullName: string; phone: string };
   occasion: "anniversary" | "birthday" | "date_night" | "business" | "casual" | "celebration";
   specialRequests?: string;
   preferences: { seating: string[]; cuisine: string[]; vibe: string[]; amenities: string[] };
   deposit:    { amount: Decimal128; currency: string };
-  serviceFee: { amount: Decimal128; currency: string };
-  total:      { amount: Decimal128; currency: string };
   paymentId?: ObjectId | null;
   refundId?: ObjectId | null;
   tableId?: ObjectId | null;
@@ -305,10 +301,8 @@ type Reservation = {
     | "visited" | "cancelled" | "no_show";
   invites: Array<{
     _id: ObjectId;
-    inviteeUserId?: ObjectId;
-    inviteePhone?: string;
+    inviteeUserId: ObjectId;
     status: "pending" | "accepted" | "declined" | "expired";
-    shareLink: string;
     invitedAt: Date; decidedAt?: Date; expiresAt: Date;
   }>;
   timeline: Array<{
@@ -319,13 +313,21 @@ type Reservation = {
     actor?: { kind: "customer" | "staff" | "system"; id?: ObjectId };
     note?: string;
   }>;
-  rating?: number | null; ratingComment?: string | null; pointsEarned?: number;
+  rating?: {
+    overall?: number | null;
+    taste?: number | null;
+    ambience?: number | null;
+    service?: number | null;
+    valueOfPrice?: number | null;
+  } | null;
+  ratingComment?: string | null;
+  pointsEarned?: number;
   createdAt: Date; updatedAt: Date;
   cancelledAt?: Date | null; cancelReason?: string | null;
 };
 ```
 
-Indexes: `{confirmationCode:1}`u, `{userId:1, status:1, scheduledFor:-1}`, `{restaurantId:1, status:1, scheduledFor:1}`, `{tableId:1}`, `{orderId:1}`, `{paymentId:1}`, `{status:1, scheduledFor:1}`, `{"invites.shareLink":1}`us-mk, `{"invites.inviteeUserId":1, "invites.status":1}`mk.
+Indexes: `{confirmationCode:1}`u, `{userId:1, status:1, date:-1, time:-1}`, `{restaurantId:1, status:1, date:1, time:1}`, `{tableId:1}`, `{orderId:1}`, `{paymentId:1}`, `{status:1, date:1, time:1}`, `{"invites.inviteeUserId":1, "invites.status":1}`mk.
 
 ---
 
