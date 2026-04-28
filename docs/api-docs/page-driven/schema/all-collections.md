@@ -7,7 +7,7 @@ Single-file reference for every MongoDB collection in the system. For per-domain
 | --- | ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
 | 1   | `customer_users`        | End users of the reservation app; embeds wallet amounts cache, rewards cache, social, payment methods, daily-bonus, referral, subscription summary. | `[users.md](./users.md)`                 |
 | 2   | `staff_users`           | POS users tied to a single restaurant.                                                                                                               | `[users.md](./users.md)`                 |
-| 3   | `restaurants`           | Tenant root; embeds settings, floors, menu, phones, deposit cards, pending-staff inbox.                                                              | `[restaurants.md](./restaurants.md)`     |
+| 3   | `restaurants`           | Tenant root; embeds settings, floors, simplified menu, deposit cards, pending-staff inbox.                                                             | `[restaurants.md](./restaurants.md)`     |
 | 4   | `tables`                | Per-floor operational state with QR; separate from `restaurants` to avoid contention.                                                                | `[tables.md](./tables.md)`               |
 | 5   | `reservations`          | Customer ↔ restaurant bridge; embeds invites and timeline.                                                                                           | `[reservations.md](./reservations.md)`   |
 | 6   | `orders`                | POS order; embeds items with chef batches via `sendBatchId`.                                                                                         | `[orders.md](./orders.md)`               |
@@ -165,7 +165,6 @@ Indexes: `{restaurantId:1, username:1}`u, `{restaurantId:1, role:1, status:1}`, 
 type Restaurant = {
   _id: ObjectId;
   name: string;
-  slug: string;
   cuisine: string[];
   priceLevel: 1 | 2 | 3 | 4;
   description?: string;
@@ -174,10 +173,18 @@ type Restaurant = {
   imageUrls: string[];
   address: { line1: string; line2?: string; city: string; state?: string; country: string; postalCode?: string };
   location: { type: "Point"; coordinates: [number, number] };
-  contact: { primaryPhone?: string; websiteUrl?: string };
-  rating: { average: number; count: number };
+  primaryPhone?: string;
+  secondaryPhone?: string;
+  rating: {
+    reviewCount: number;
+    overall: Decimal128;
+    taste: Decimal128;
+    ambience: Decimal128;
+    service: Decimal128;
+    valueOfPrice: Decimal128;
+  };
   amenities: string[];
-  flags: { isNew?: boolean; isCatchOnly?: boolean; isEditorChoice?: boolean };
+  flags: { isNew?: boolean };
   subscription: {
     tier: "free" | "pro" | "ultra";
     issueDate: Date;
@@ -187,18 +194,11 @@ type Restaurant = {
 
   settings: {
     general: {
-      deposit: { moneyType: "domestic" | "foreign"; amountPerGuest: { amount: Decimal128; currency: string } };
+      deposit: { moneyType: "domestic" | "foreign"; amount: Decimal128 };
       gracePeriodMinutes: number;
       operatingHours: Array<{ day: 0|1|2|3|4|5|6; open: string; close: string; closed?: boolean }>;
     };
-    security: {
-      passwordPolicy: { minLength: number; requireUppercase: boolean; requireNumber: boolean };
-      notificationsMuted: boolean;
-    };
-    features: { reservations: boolean; qrPay: boolean; delivery: boolean };
   };
-
-  phones: Array<{ _id: ObjectId; label: "main"|"reservation"|"kitchen"|"support"|"other"; phone: string; isPrimary: boolean; addedAt: Date }>;
 
   floors: Array<{ _id: ObjectId; name: string; sortOrder: number; isPublished: boolean; deletedAt?: Date | null }>;
 
@@ -211,13 +211,6 @@ type Restaurant = {
       _id: ObjectId; categoryId: ObjectId; subcategoryId?: ObjectId | null;
       name: string; shortName?: string; description?: string; imageUrl?: string; tags?: string[];
       price: { amount: Decimal128; currency: string };
-      pool: "domestic" | "foreign" | "either";
-      modifiers: Array<{
-        _id: ObjectId; name: string; priceDelta: { amount: Decimal128; currency: string };
-        group?: string; selectionType: "single" | "multi"; isRequired: boolean; sortOrder: number; isActive: boolean;
-      }>;
-      availability: { isAvailable: boolean; soldOutUntil?: Date | null };
-      stats?: { soldCount30d: number; revenue30d: { amount: Decimal128; currency: string } };
       isActive: boolean; deletedAt?: Date | null;
       createdAt: Date; updatedAt: Date;
     }>;
@@ -240,7 +233,7 @@ type Restaurant = {
 };
 ```
 
-Indexes: `{slug:1}`u, `{status:1, "subscription.tier":1}`, `{"rating.average":-1}`, `{cuisine:1}`, `{amenities:1}`, `{location:"2dsphere"}`, text(`name, description`), `{"menu.items._id":1}`mk, `{"menu.items.categoryId":1}`mk, `{"phones.phone":1}`mk.
+Indexes: `{status:1, "subscription.tier":1}`, `{"rating.overall":-1}`, `{cuisine:1}`, `{amenities:1}`, `{location:"2dsphere"}`, text(`name, description`), `{"menu.items._id":1}`mk, `{"menu.items.categoryId":1}`mk.
 
 ---
 

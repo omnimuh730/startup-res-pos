@@ -13,7 +13,7 @@ This schema follows a **simplified 12-collection design**: aggressive embedding 
 |---|---|---|---|
 | 1 | `customer_users` | [`users.md`](./users.md) | Embeds wallets cache, rewards cache, saved items, friends, payment methods, daily-bonus history, and customer Pro subscription summary. |
 | 2 | `staff_users` | [`users.md`](./users.md) | POS staff identities and permissions. |
-| 3 | `restaurants` | [`restaurants.md`](./restaurants.md) | Embeds settings, floors, menu (categories + items + modifiers), phones, deposit cards. |
+| 3 | `restaurants` | [`restaurants.md`](./restaurants.md) | Embeds settings, floors, simplified menu items, primary/secondary phones, deposit cards. |
 | 4 | `tables` | [`tables.md`](./tables.md) | Separate — operational realtime state. |
 | 5 | `reservations` | [`reservations.md`](./reservations.md) | Bridge between users and restaurants; embeds invites and timeline. |
 | 6 | `orders` | [`orders.md`](./orders.md) | Embeds `order_items[]`; chef batches expressed via `sendBatchId` field. |
@@ -40,7 +40,7 @@ The deliberate choice is to embed where data is **bounded, mostly read with the 
 | `menu_categories`, `menu_subcategories`, `menu_items`, `menu_item_modifiers` | `restaurants.menu` |
 | `floors` | `restaurants.floors[]` |
 | `restaurant_settings` | `restaurants.settings` |
-| `restaurant_phones` | `restaurants.phones[]` |
+| `restaurant_phones` | `restaurants.primaryPhone`, `restaurants.secondaryPhone` |
 | `restaurant_payment_cards` / `restaurant_deposit_cards` | `restaurants.depositCards[]` |
 | `staff_join_requests` | `restaurants.pendingStaff[]` |
 | `wallets` | `customer_users.wallets.{domestic,foreign,bonus}` |
