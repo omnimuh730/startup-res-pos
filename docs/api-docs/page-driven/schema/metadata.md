@@ -76,21 +76,21 @@ Used by:
 ```ts
 {
   _id: "subscription_plans",
-  version: 3,
+  version: 4,
   items: [
-    // restaurant tiers
-    { code: "free",          product: "restaurant_tier", name: "Free",  price: { amount: "0",     currency: "USD" }, period: null,        features: ["...","..."], sortOrder: 1 },
-    { code: "pro",           product: "restaurant_tier", name: "Pro",   price: { amount: "49",    currency: "USD" }, period: "month",     features: ["...","..."], sortOrder: 2 },
-    { code: "ultra",         product: "restaurant_tier", name: "Ultra", price: { amount: "129",   currency: "USD" }, period: "month",     features: ["...","..."], sortOrder: 3 },
-    // catchtable pro
-    { code: "pro_monthly",   product: "catchtable_pro",  name: "Monthly",   price: { amount: "9.99",  currency: "USD" }, period: "month",     trialDays: 7,  sortOrder: 1 },
-    { code: "pro_quarterly", product: "catchtable_pro",  name: "Quarterly", price: { amount: "26.99", currency: "USD" }, period: "quarter",   trialDays: 7,  sortOrder: 2 },
-    { code: "pro_yearly",    product: "catchtable_pro",  name: "Yearly",    price: { amount: "89.99", currency: "USD" }, period: "year",      trialDays: 14, sortOrder: 3, badge: "Best Value" }
+    // restaurant subscription tiers
+    { subject: "restaurant", tier: "free",  name: "Free",  price: { amount: "0",   currency: "USD" }, billingCycle: "monthly",  trialDays: 0,  features: ["...","..."], sortOrder: 1 },
+    { subject: "restaurant", tier: "pro",   name: "Pro",   price: { amount: "49",  currency: "USD" }, billingCycle: "monthly",  trialDays: 7,  features: ["...","..."], sortOrder: 2 },
+    { subject: "restaurant", tier: "ultra", name: "Ultra", price: { amount: "129", currency: "USD" }, billingCycle: "monthly",  trialDays: 7,  features: ["...","..."], sortOrder: 3 },
+    // customer subscription (single tier, billing cycle selectable)
+    { subject: "customer", tier: "pro", name: "Pro Monthly",   price: { amount: "9.99",  currency: "USD" }, billingCycle: "monthly",   trialDays: 7,  sortOrder: 1 },
+    { subject: "customer", tier: "pro", name: "Pro Quarterly", price: { amount: "26.99", currency: "USD" }, billingCycle: "quarterly", trialDays: 7,  sortOrder: 2 },
+    { subject: "customer", tier: "pro", name: "Pro Yearly",    price: { amount: "89.99", currency: "USD" }, billingCycle: "yearly",    trialDays: 14, sortOrder: 3, badge: "Best Value" }
   ]
 }
 ```
 
-Used by `subscriptions.planCode` and the upgrade wizards.
+Used by `customer_users.subscription.{tier,billingCycle}`, `restaurants.subscription.tier`, and the upgrade wizards.
 
 ### `_id: "reward_tiers"`
 

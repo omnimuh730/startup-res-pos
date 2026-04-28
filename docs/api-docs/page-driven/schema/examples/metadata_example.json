@@ -15,15 +15,15 @@
   },
   {
     "_id": "subscription_plans",
-    "description": "Restaurant tiers and CatchTable Pro plans.",
-    "version": 3,
+    "description": "Subscription plan matrix for restaurant and customer subjects.",
+    "version": 4,
     "items": [
-      { "code": "free",          "product": "restaurant_tier", "name": "Free",      "price": { "amount": { "$numberDecimal": "0" },     "currency": "USD" }, "period": null,      "features": ["Basic POS", "Up to 1 floor"], "sortOrder": 1 },
-      { "code": "pro",           "product": "restaurant_tier", "name": "Pro",       "price": { "amount": { "$numberDecimal": "49" },    "currency": "USD" }, "period": "month",   "features": ["Multi floor", "Online reservations", "Analytics"], "sortOrder": 2 },
-      { "code": "ultra",         "product": "restaurant_tier", "name": "Ultra",     "price": { "amount": { "$numberDecimal": "129" },   "currency": "USD" }, "period": "month",   "features": ["Pro features", "Branded app", "Dedicated support"], "sortOrder": 3 },
-      { "code": "pro_monthly",   "product": "catchtable_pro",  "name": "Monthly",   "price": { "amount": { "$numberDecimal": "9.99" },  "currency": "USD" }, "period": "month",   "trialDays": 7,  "sortOrder": 1 },
-      { "code": "pro_quarterly", "product": "catchtable_pro",  "name": "Quarterly", "price": { "amount": { "$numberDecimal": "26.99" }, "currency": "USD" }, "period": "quarter", "trialDays": 7,  "sortOrder": 2 },
-      { "code": "pro_yearly",    "product": "catchtable_pro",  "name": "Yearly",    "price": { "amount": { "$numberDecimal": "89.99" }, "currency": "USD" }, "period": "year",    "trialDays": 14, "sortOrder": 3, "badge": "Best Value" }
+      { "subject": "restaurant", "tier": "free",  "name": "Free",         "price": { "amount": { "$numberDecimal": "0" },     "currency": "USD" }, "billingCycle": "monthly",   "trialDays": 0,  "features": ["Basic POS", "Up to 1 floor"], "sortOrder": 1 },
+      { "subject": "restaurant", "tier": "pro",   "name": "Pro",          "price": { "amount": { "$numberDecimal": "49" },    "currency": "USD" }, "billingCycle": "monthly",   "trialDays": 7,  "features": ["Multi floor", "Online reservations", "Analytics"], "sortOrder": 2 },
+      { "subject": "restaurant", "tier": "ultra", "name": "Ultra",        "price": { "amount": { "$numberDecimal": "129" },   "currency": "USD" }, "billingCycle": "monthly",   "trialDays": 7,  "features": ["Pro features", "Branded app", "Dedicated support"], "sortOrder": 3 },
+      { "subject": "customer",   "tier": "pro",   "name": "Pro Monthly",   "price": { "amount": { "$numberDecimal": "9.99" },  "currency": "USD" }, "billingCycle": "monthly",   "trialDays": 7,  "sortOrder": 1 },
+      { "subject": "customer",   "tier": "pro",   "name": "Pro Quarterly", "price": { "amount": { "$numberDecimal": "26.99" }, "currency": "USD" }, "billingCycle": "quarterly", "trialDays": 7,  "sortOrder": 2 },
+      { "subject": "customer",   "tier": "pro",   "name": "Pro Yearly",    "price": { "amount": { "$numberDecimal": "89.99" }, "currency": "USD" }, "billingCycle": "yearly",    "trialDays": 14, "sortOrder": 3, "badge": "Best Value" }
     ],
     "updatedBy": { "$oid": "65f0000000000000000a0001" },
     "createdAt": { "$date": "2025-08-01T00:00:00.000Z" },

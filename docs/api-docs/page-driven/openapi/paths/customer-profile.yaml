@@ -36,7 +36,7 @@ paths:
     patch: { $ref: '#/x-operations/UpdatePaymentMethod' }
 
 x-operations:
-  # /me, preferences, security answers, password, devices, payment methods.
+  # /me, security answers, password, payment methods (+ legacy preferences/devices endpoints).
 
   GetMe:
     tags: [Customer · Profile]
@@ -68,10 +68,8 @@ x-operations:
             additionalProperties: false
             properties:
               fullName:    { type: string, minLength: 1, maxLength: 80 }
-              displayName: { type: [string, 'null'], maxLength: 80 }
-              email:       { type: [string, 'null'], format: email }
               phone:       { type: [string, 'null'] }
-              avatarUrl:   { type: [string, 'null'], format: uri-reference }
+              avatarImg:   { type: [string, 'null'], description: 'Base64 image data URI (e.g. data:image/png;base64,...)' }
     responses:
       '200':
         description: Updated profile.
@@ -80,7 +78,7 @@ x-operations:
             schema: { $ref: '../components/schemas.yaml#/components/schemas/CustomerUser' }
       '401': { $ref: '../components/common.yaml#/components/responses/Unauthenticated' }
       '409':
-        description: Email or phone collision.
+        description: Phone collision.
         content:
           application/problem+json:
             schema: { $ref: '../components/common.yaml#/components/schemas/Problem' }
@@ -89,7 +87,11 @@ x-operations:
   PutPreferences:
     tags: [Customer · Profile]
     operationId: putPreferences
+    deprecated: true
     summary: Replace preferences (theme, locale, location).
+    description: |
+      Deprecated. Preferences are stored locally on the client and this endpoint
+      is kept for backward compatibility only.
     requestBody:
       required: true
       content:
@@ -115,8 +117,7 @@ x-operations:
             schema:
               type: object
               properties:
-                preferences:
-                  $ref: '../components/schemas.yaml#/components/schemas/CustomerUser/properties/preferences'
+                storedLocally: { type: boolean, enum: [true] }
       '401': { $ref: '../components/common.yaml#/components/responses/Unauthenticated' }
       '422': { $ref: '../components/common.yaml#/components/responses/UnprocessableEntity' }
 
@@ -191,7 +192,9 @@ x-operations:
   ListDevices:
     tags: [Customer · Profile]
     operationId: listDevices
+    deprecated: true
     summary: List the customer's registered push devices.
+    description: 'Deprecated. Device registration is no longer required by the profile schema.'
     responses:
       '200':
         description: Devices.
@@ -208,8 +211,11 @@ x-operations:
   RegisterDevice:
     tags: [Customer · Profile]
     operationId: registerDevice
+    deprecated: true
     summary: Register or update a push token for the current device.
-    description: 'Idempotent on `(provider, token)`. Used to wire up FCM/APNs/web-push.'
+    description: |
+      Deprecated. Device registration is no longer required by the profile schema.
+      Kept for backward compatibility.
     requestBody:
       required: true
       content:
@@ -235,6 +241,7 @@ x-operations:
   DeleteDevice:
     tags: [Customer · Profile]
     operationId: deleteDevice
+    deprecated: true
     summary: Remove a push device. Idempotent.
     parameters:
       - $ref: '../components/common.yaml#/components/parameters/DeviceIdPath'

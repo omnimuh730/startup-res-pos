@@ -64,8 +64,7 @@ x-operations:
     operationId: deleteAllNotifications
     summary: Soft-delete every notification for the user.
     description: |
-      Sets `deletedAt` on all undeleted notifications. The user's `unreadNotifications`
-      cache is reset.
+      Sets `deletedAt` on all undeleted notifications.
     responses:
       '204': { $ref: '../components/common.yaml#/components/responses/NoContent' }
       '401': { $ref: '../components/common.yaml#/components/responses/Unauthenticated' }

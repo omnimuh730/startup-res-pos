@@ -1,6 +1,6 @@
 # Schema · Reservations
 
-The bridge entity between customers and restaurants. Carries both `userId` and `restaurantId` and drives the booking → arrival → dining → payment lifecycle. Drafts live on `customer_users.activeDraft`, invites and timeline are embedded.
+The bridge entity between customers and restaurants. Carries both `userId` and `restaurantId` and drives the booking → arrival → dining → payment lifecycle. Invites and timeline are embedded.
 
 Source READMEs:
 
@@ -10,11 +10,13 @@ Source READMEs:
 
 ## Collection
 
-| Collection | Purpose |
-|---|---|
+
+| Collection     | Purpose                                                                                  |
+| -------------- | ---------------------------------------------------------------------------------------- |
 | `reservations` | A confirmed-or-pending booking. Single source of truth between the customer app and POS. |
 
-Related catalogs (`reservation_preferences`) live in [`metadata`](./metadata.md). Drafts are embedded on the customer (`customer_users.activeDraft`). Table assignment and QR validation use the `tables` collection.
+
+Related catalogs (`reservation_preferences`) live in `[metadata](./metadata.md)`. Table assignment and QR validation use the `tables` collection.
 
 ---
 
@@ -27,13 +29,10 @@ type Reservation = {
   userId: ObjectId;                 // -> customer_users
 
   confirmationCode: string;         // "CT-2026-0418A", unique
-  source: "explorer_map" | "discover" | "dining_book_again" | "restaurant_pos" | "other";
-
   // Booking selection
   partySize: number;
   date: string;                     // YYYY-MM-DD in restaurant local tz
   time: string;                     // HH:mm
-  scheduledFor: Date;               // computed UTC datetime
   seating?: "Indoor" | "Outdoor" | "Bar" | "Private Room" | string;
 
   // Captured contact (snapshot at booking time)
@@ -54,8 +53,6 @@ type Reservation = {
 
   // Money
   deposit:    { amount: Decimal128; currency: string };
-  serviceFee: { amount: Decimal128; currency: string };
-  total:      { amount: Decimal128; currency: string };
 
   // Linked finance + flow
   paymentId?: ObjectId | null;      // -> payments (after capture)
@@ -80,10 +77,8 @@ type Reservation = {
   // ---- Embedded: Friend invites ----
   invites: Array<{
     _id: ObjectId;
-    inviteeUserId?: ObjectId;       // null for phone invites
-    inviteePhone?: string;
+    inviteeUserId: ObjectId;
     status: "pending" | "accepted" | "declined" | "expired";
-    shareLink: string;
     invitedAt: Date;
     decidedAt?: Date;
     expiresAt: Date;
@@ -109,7 +104,13 @@ type Reservation = {
   }>;
 
   // Post-visit fields
-  rating?: number | null;           // 0..5
+  rating?: {
+    overall?: number | null;        // 0..5
+    taste?: number | null;          // 0..5
+    ambience?: number | null;       // 0..5
+    service?: number | null;        // 0..5
+    valueOfPrice?: number | null;   // 0..5
+  } | null;
   ratingComment?: string | null;
   pointsEarned?: number;            // mirrored from points_ledger
 
@@ -123,14 +124,13 @@ type Reservation = {
 ### Indexes
 
 - `{ confirmationCode: 1 }` unique
-- `{ userId: 1, status: 1, scheduledFor: -1 }`        // Dining tabs (Scheduled/Visited/Cancelled)
-- `{ restaurantId: 1, status: 1, scheduledFor: 1 }`   // Floor Plan calendar
-- `{ restaurantId: 1, scheduledFor: 1 }`
+- `{ userId: 1, status: 1, date: -1, time: -1 }`      // Dining tabs (Scheduled/Visited/Cancelled)
+- `{ restaurantId: 1, status: 1, date: 1, time: 1 }`  // Floor Plan calendar
+- `{ restaurantId: 1, date: 1, time: 1 }`
 - `{ tableId: 1 }`
 - `{ orderId: 1 }`
 - `{ paymentId: 1 }`
-- `{ status: 1, scheduledFor: 1 }`                    // background no-show sweeper
-- `{ "invites.shareLink": 1 }` unique sparse (multikey)
+- `{ status: 1, date: 1, time: 1 }`                  // background no-show sweeper
 - `{ "invites.inviteeUserId": 1, "invites.status": 1 }` (multikey)
 
 ### State diagram
@@ -154,9 +154,10 @@ dining ─request bill─▶ bill_requested ─finalize─▶ bill ─pay─▶ 
 
 ## Cross-document rules
 
-- The booking wizard state lives on `customer_users.activeDraft` until Step 4 succeeds; on success the draft is deleted and a `reservations` row is inserted.
+- The booking wizard state is maintained client-side until Step 4 succeeds; then a `reservations` row is inserted.
 - A reservation moving from `requested` → `declined` triggers a refund (embedded on the parent `payments` row) and sets `refundId`.
 - A reservation moving to `arrived` sets `tableId`, opens an `orders` row (`orderId`), and flips the `tables` row's `status` to `occupied`.
 - A reservation that ends in `visited` triggers a points credit recorded in `points_ledger`; `pointsEarned` mirrors the credited points.
 - Invite acceptance updates the matching `invites[i].status` and sends a notification to the inviter.
-- Calendar conflicts on POS are enforced by the unique combination of `(tableId, scheduledFor)` plus party-size compatibility, not by the reservation document alone.
+- Calendar conflicts on POS are enforced by the unique combination of `(tableId, date, time)` plus party-size compatibility, not by the reservation document alone.
+

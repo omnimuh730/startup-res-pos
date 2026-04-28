@@ -5,25 +5,24 @@ Canonical MongoDB collection schemas derived from the page-driven READMEs in:
 - `api-docs/page-driven/pos/` (restaurant/staff facing)
 - `api-docs/page-driven/reservation/` (customer facing)
 
-This schema follows a **simplified 13-collection design**: aggressive embedding for bounded data, separate collections only for unbounded growth (ledgers, notifications), realtime contention (tables), or audit-critical history (payments).
+This schema follows a **simplified 12-collection design**: aggressive embedding for bounded data, separate collections only for unbounded growth (ledgers, notifications), realtime contention (tables), or audit-critical history (payments).
 
 ## Collection list
 
 | # | Collection | File | Notes |
 |---|---|---|---|
-| 1 | `customer_users` | [`users.md`](./users.md) | Embeds wallets cache, rewards cache, saved items, recent searches, friends, devices, payment methods, daily-bonus history, subscription summary. |
-| 2 | `staff_users` | [`users.md`](./users.md) | Embeds devices. |
-| 3 | `restaurants` | [`restaurants.md`](./restaurants.md) | Embeds settings, floors, menu (categories + items + modifiers), phones, deposit cards. |
+| 1 | `customer_users` | [`users.md`](./users.md) | Embeds wallets cache, rewards cache, saved items, friends, payment methods, daily-bonus history, and customer Pro subscription summary. |
+| 2 | `staff_users` | [`users.md`](./users.md) | POS staff identities and permissions. |
+| 3 | `restaurants` | [`restaurants.md`](./restaurants.md) | Embeds settings, floors, simplified menu items, primary/secondary phones, deposit cards. |
 | 4 | `tables` | [`tables.md`](./tables.md) | Separate — operational realtime state. |
 | 5 | `reservations` | [`reservations.md`](./reservations.md) | Bridge between users and restaurants; embeds invites and timeline. |
 | 6 | `orders` | [`orders.md`](./orders.md) | Embeds `order_items[]`; chef batches expressed via `sendBatchId` field. |
 | 7 | `payments` | [`payments.md`](./payments.md) | Append-only; embeds `refunds[]` and method/intent metadata. |
-| 8 | `wallet_transactions` | [`wallets.md`](./wallets.md) | Append-only ledger; balances on user are derived. |
+| 8 | `wallet_transactions` | [`wallets.md`](./wallets.md) | Append-only ledger; wallet amounts on user are derived. |
 | 9 | `points_ledger` | [`rewards.md`](./rewards.md) | Append-only ledger; tier/points cache lives on user. |
 | 10 | `notifications` | [`notifications.md`](./notifications.md) | High-write fan-out; push tokens live on user devices. |
-| 11 | `subscriptions` | [`subscriptions.md`](./subscriptions.md) | Embeds `invoices[]`; plan catalog lives in metadata. |
-| 12 | `support_conversations` | [`support.md`](./support.md) | Embeds `messages[]`. |
-| 13 | `metadata` | [`metadata.md`](./metadata.md) | Read-mostly catalogs (security questions, plans, tiers, amenities, preferences, support articles) as one doc per catalog. |
+| 11 | `support_conversations` | [`support.md`](./support.md) | Embeds `messages[]`. |
+| 12 | `metadata` | [`metadata.md`](./metadata.md) | Read-mostly catalogs (security questions, plans, tiers, amenities, preferences, support articles) as one doc per catalog. |
 
 Plus auxiliary auth-infra collections (TTL'd, isolated): `sessions`, `password_reset_sessions`. Documented in `users.md`.
 
@@ -41,14 +40,13 @@ The deliberate choice is to embed where data is **bounded, mostly read with the 
 | `menu_categories`, `menu_subcategories`, `menu_items`, `menu_item_modifiers` | `restaurants.menu` |
 | `floors` | `restaurants.floors[]` |
 | `restaurant_settings` | `restaurants.settings` |
-| `restaurant_phones` | `restaurants.phones[]` |
+| `restaurant_phones` | `restaurants.primaryPhone`, `restaurants.secondaryPhone` |
 | `restaurant_payment_cards` / `restaurant_deposit_cards` | `restaurants.depositCards[]` |
 | `staff_join_requests` | `restaurants.pendingStaff[]` |
 | `wallets` | `customer_users.wallets.{domestic,foreign,bonus}` |
 | `customer_payment_methods` | `customer_users.paymentMethods[]` |
 | `friend_requests`, `friends` | `customer_users.friends[]` |
 | `saved_items` | `customer_users.savedItems[]` |
-| `recent_searches` | `customer_users.recentSearches[]` (capped to 20) |
 | `daily_bonus_claims` | `customer_users.dailyBonus.history[]` (capped, archive older) |
 | `referral_codes`, `referral_redemptions` | `customer_users.referral` |
 | `reward_tiers` | `metadata` doc `_id: "reward_tiers"` |
@@ -57,15 +55,12 @@ The deliberate choice is to embed where data is **bounded, mostly read with the 
 | `amenities` | `metadata` doc `_id: "amenities"` |
 | `reservation_preferences_catalog` | `metadata` doc `_id: "reservation_preferences"` |
 | `support_articles` | `metadata` doc `_id: "support_articles"` |
-| `reservation_drafts` | `customer_users.activeDraft` (one at a time) |
 | `reservation_invites` | `reservations.invites[]` |
-| `table_qr_codes` | `tables.qrCode` (current) |
-| `subscription_invoices` | `subscriptions.invoices[]` |
+| subscription billing state | Embedded summaries on subject docs (`customer_users.subscription`, `restaurants.subscription`) with static plan catalog in `metadata.subscription_plans` |
 | `wallet_top_ups`, `wallet_gifts` | `wallet_transactions` rows + `payments` rows linked by `groupId`/`giftId` |
 | `chef_tickets`, `chef_ticket_items` | `orders.items[].chefStatus` and `orders.items[].sendBatchId` |
 | `payment_intents` | `payments.intent` (latest intent state) |
 | `support_messages` | `support_conversations.messages[]` |
-| `push_tokens` | `customer_users.devices[]`, `staff_users.devices[]` |
 
 ### Stayed separate (with reason)
 
@@ -78,7 +73,6 @@ The deliberate choice is to embed where data is **bounded, mostly read with the 
 | `payments` | Append-only finance record; cross-purpose queries (reservation, order, top-up, subscription); audit. |
 | `reservations` | Bridges customer ↔ restaurant; queried from both sides; central state machine. |
 | `orders` | Operational; lifecycle independent of any single reservation. |
-| `subscriptions` | Per-subject single active record + history; embedded invoices stay bounded over decades. |
 | `support_conversations` | Agent queue requires querying all open chats across users. |
 
 ## Conventions
@@ -126,7 +120,7 @@ Each file lists `Indexes:` blocks. Defaults:
 
 ### Money-related integrity rules
 
-- Wallet balances on `customer_users` are derived from `wallet_transactions` and recomputable.
+- Wallet amounts on `customer_users` are derived from `wallet_transactions` and recomputable.
 - Reward points/tier on `customer_users` are derived from `points_ledger` and recomputable.
 - Payments are append-only. Refunds are embedded rows on the parent payment, not mutations.
 

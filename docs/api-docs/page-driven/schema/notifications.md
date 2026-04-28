@@ -1,22 +1,18 @@
 # Schema · Notifications
 
-In-app notification feed (top-right bell). One row per delivered notification. Push tokens are no longer their own collection — they live on `customer_users.devices[]` and `staff_users.devices[]`.
+In-app notification feed (top-right bell). One row per delivered notification.
 
 Source READMEs:
 
 - `reservation/Discover/README.md` (Notifications page)
 - `reservation/Auth/README.md` (push/realtime cross-cutting)
-- `pos/Auth/README.md`, `pos/Floor Plan/README.md`, `pos/Kitchen/README.md` (server pushes to staff devices)
+- `pos/Auth/README.md`, `pos/Floor Plan/README.md`, `pos/Kitchen/README.md`
 
 ## Collection
 
 | Collection | Purpose |
 |---|---|
 | `notifications` | One row per delivered in-app notification (customer or staff). |
-
-Push device tokens live on the user document under `devices[]`. See [`users.md`](./users.md).
-
----
 
 ## `notifications`
 
@@ -50,22 +46,16 @@ type Notification = {
     // staff
     | "new_reservation"
     | "reservation_cancelled"
-    | "new_order"
-    | "order_ready_for_payment"
-    | "chef_batch_received"
+    | "update_reservation"
     | "subscription_renewal"
     | "staff_join_request"
     | string;
 
   title: string;                    // "Reservation Confirmed"
   body: string;                     // human readable line shown in the feed
-  iconHint?: string;                // "R", "P", "W"...
+  iconHint: "success" | "notify" | "warning" | "error";
 
-  target?: {
-    kind: "reservation" | "order" | "wallet" | "support" | "restaurant" | "deal" | "friend_request" | string;
-    id?: ObjectId;
-    deepLink?: string;
-  };
+  deepLink: string;
 
   read: boolean;
   readAt?: Date | null;
@@ -73,11 +63,10 @@ type Notification = {
   deletedAt?: Date | null;
 
   // Delivery
-  deliveredChannels: Array<"in_app" | "push" | "email" | "sms">;
+  deliveredChannels: Array<"in_app" | "push">;
   pushDelivery?: {
     sentAt?: Date;
-    deviceIds: ObjectId[];          // -> customer_users.devices[]._id | staff_users.devices[]._id
-    failures?: Array<{ deviceId: ObjectId; reason: string }>;
+    failures?: Array<{ reason: string }>;
   };
 
   createdAt: Date;
@@ -92,25 +81,22 @@ type Notification = {
 - `{ customerUserId: 1, read: 1 }`        // unread count badge
 - `{ staffUserId: 1, read: 1 }`
 - `{ restaurantId: 1, type: 1, createdAt: -1 }`
-- `{ "target.kind": 1, "target.id": 1 }`
 
 ### Behavior
 
 - The Notifications page tabs (`All`, `Unread`, `Read`) are filters on `read` and `deletedAt`.
 - `Mark all read` writes `{ read: true, readAt: now }` for the current user's unread rows; `customer_users.unreadNotifications` is decremented to 0.
 - `Remove all` writes `{ deletedAt: now }`; we do not hard-delete so analytics can audit delivery rate.
-- Tapping a notification routes by `target` and patches `read = true` (and decrements `unreadNotifications`).
-- Failed push delivery with a "not_registered" code from FCM/APNs flips the matching `customer_users.devices[i].isActive = false` (or staff equivalent).
+- Tapping a notification routes by `deepLink` and patches `read = true` (and decrements `unreadNotifications`).
 
 ---
 
 ## Cross-document rules
 
-- **Writers**: page-readme endpoints (`POST /chef-tickets/{id}:accept`, `POST /reservations`, `POST /payments`, etc.) emit events that a worker consumes to insert `notifications` rows and fan out push to the device list of the recipient.
+- **Writers**: page-readme endpoints (`POST /reservations`, `POST /payments`, etc.) emit events that a worker consumes to insert `notifications` rows and trigger push delivery.
 - **Unread badge** caches:
   - `customer_users.unreadNotifications` is recomputed on insert/mark-read/delete.
   - Staff equivalent lives on `staff_users` if needed (optional; computed live from a small index lookup is also acceptable).
-- **Device fan-out**: the notifications worker reads `customer_users.devices[]` (or `staff_users.devices[]`) filtered to `isActive: true`, then issues PSP push calls. Failures bump `failures[]`.
 
 ## Realtime channels
 

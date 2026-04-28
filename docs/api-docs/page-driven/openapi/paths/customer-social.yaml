@@ -133,7 +133,7 @@ x-operations:
     parameters:
       - name: kind
         in: query
-        schema: { type: string, enum: [restaurant, cuisine, location, freeform, all], default: all }
+        schema: { type: string, enum: [restaurant, cuisine, location, all], default: all }
     responses:
       '200':
         description: Recent searches.
@@ -162,7 +162,7 @@ x-operations:
             type: object
             required: [kind, query]
             properties:
-              kind:         { type: string, enum: [restaurant, cuisine, location, freeform] }
+              kind:         { type: string, enum: [restaurant, cuisine, location] }
               query:        { type: string, minLength: 1, maxLength: 200 }
               restaurantId: { $ref: '../components/common.yaml#/components/schemas/ObjectId' }
               cuisineCode:  { type: string }
@@ -308,10 +308,10 @@ x-operations:
   InviteFriendByPhone:
     tags: [Customer · Social]
     operationId: inviteFriendByPhone
+    deprecated: true
     summary: Invite a friend by phone number (sends SMS deep link).
     description: |
-      Looks up the phone number; if a customer exists the invite becomes a friend request,
-      otherwise an SMS invite is recorded against the user with `source=phone_invite`.
+      Deprecated. Phone-based friend invites are no longer part of the social schema.
     requestBody:
       required: true
       content:
@@ -441,20 +441,7 @@ x-operations:
                   type: array
                   items: { $ref: '../components/schemas.yaml#/components/schemas/Referral/properties/redemptions/items' }
                 reward:
-                  type: object
-                  properties:
-                    perRedemption:
-                      type: object
-                      properties:
-                        kind:     { type: string, enum: [points, wallet] }
-                        amount:   { type: number }
-                        currency: { type: string }
-                    selfBonus:
-                      type: object
-                      properties:
-                        kind:     { type: string, enum: [points, wallet] }
-                        amount:   { type: number }
-                        currency: { type: string }
+                  $ref: '../components/common.yaml#/components/schemas/Money'
       '401': { $ref: '../components/common.yaml#/components/responses/Unauthenticated' }
 
   RedeemReferralCode:
@@ -486,11 +473,7 @@ x-operations:
                 walletTransactionId: { $ref: '../components/common.yaml#/components/schemas/ObjectId' }
                 pointsLedgerId:      { $ref: '../components/common.yaml#/components/schemas/ObjectId' }
                 reward:
-                  type: object
-                  properties:
-                    kind:     { type: string, enum: [points, wallet] }
-                    amount:   { type: number }
-                    currency: { type: string }
+                  $ref: '../components/common.yaml#/components/schemas/Money'
       '401': { $ref: '../components/common.yaml#/components/responses/Unauthenticated' }
       '404':
         description: Unknown code.
