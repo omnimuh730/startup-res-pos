@@ -23,7 +23,6 @@ The same IDs are used across files so the documents cross-reference into a coher
 | `wallet_transactions_example.json`   | `wallet_transactions`   |
 | `points_ledger_example.json`         | `points_ledger`         |
 | `notifications_example.json`         | `notifications`         |
-| `subscriptions_example.json`         | `subscriptions`         |
 | `support_conversations_example.json` | `support_conversations` |
 | `metadata_example.json`              | `metadata`              |
 
@@ -47,7 +46,6 @@ The same IDs are used across files so the documents cross-reference into a coher
 | Wallet top-up tx     | `65f0000000000000000a2001` |
 | Points ledger entry  | `65f0000000000000000a3001` |
 | Notification         | `65f0000000000000000a4001` |
-| Subscription (pro)   | `65f0000000000000000a5001` |
 | Support conv         | `65f0000000000000000a6001` |
 
 

@@ -117,11 +117,13 @@ type CustomerUser = {
     }>;
   };
 
-  // Active subscription summary (catchtable_pro). Authoritative: subscriptions collection.
+  // CatchTable Pro subscription (customer-only). No subscriptionId needed.
   subscription?: {
-    subscriptionId: ObjectId;       // -> subscriptions
-    planCode: "pro_monthly" | "pro_quarterly" | "pro_yearly";
+    tier: "pro";
+    billingCycle: "monthly" | "quarterly" | "yearly";
     status: "trialing" | "active" | "past_due" | "cancelled" | "expired";
+    issueDate: Date;
+    expireDate: Date;
     currentPeriodEnd: Date;
     cancelAtPeriodEnd: boolean;
   };

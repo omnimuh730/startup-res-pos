@@ -68,8 +68,13 @@ type Restaurant = {
     isEditorChoice?: boolean;
   };
 
-  // Subscription tier — sync'd from subscriptions collection.
-  tier: "free" | "pro" | "ultra";
+  // Subscription state (restaurant tiers). Mandatory for active restaurants.
+  subscription: {
+    tier: "free" | "pro" | "ultra";
+    issueDate: Date;
+    expireDate: Date;
+    status: "active" | "expired" | "cancelled" | "past_due" | "trialing";
+  };
 
   // ---- Embedded: Settings ----
   settings: {
@@ -213,7 +218,7 @@ type Restaurant = {
 ### Indexes
 
 - `{ slug: 1 }` unique
-- `{ status: 1, tier: 1 }`
+- `{ status: 1, "subscription.tier": 1 }`
 - `{ "rating.average": -1 }`
 - `{ cuisine: 1 }`
 - `{ amenities: 1 }`
@@ -251,7 +256,7 @@ Tables carry runtime status (`available | reserved | occupied | needs_cleaning |
 - Floor edits replace the floor's contents transactionally; tables not in the request are soft-deleted in the `tables` collection.
 - Staff sign-up appends a row into `pendingStaff[]`; approval atomically inserts a `staff_users` row and removes the pending entry.
 - Menu item soft-delete (`menu.items[i].deletedAt`) keeps the row available for historical order rendering.
-- Restaurant tier is sync'd from the `subscriptions` collection on subscription state change.
+- Restaurant subscription is persisted directly in this document (`subscription.*`) and validated against `metadata.subscription_plans`.
 
 ## Realtime channels
 

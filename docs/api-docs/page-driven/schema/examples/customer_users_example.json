@@ -122,9 +122,11 @@
       ]
     },
     "subscription": {
-      "subscriptionId": { "$oid": "65f0000000000000000a5001" },
-      "planCode": "pro_yearly",
+      "tier": "pro",
+      "billingCycle": "yearly",
       "status": "active",
+      "issueDate": { "$date": "2026-03-15T00:00:00.000Z" },
+      "expireDate": { "$date": "2027-03-15T00:00:00.000Z" },
       "currentPeriodEnd": { "$date": "2027-03-15T00:00:00.000Z" },
       "cancelAtPeriodEnd": false
     },

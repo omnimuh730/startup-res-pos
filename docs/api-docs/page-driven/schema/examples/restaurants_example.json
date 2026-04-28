@@ -27,7 +27,12 @@
     "rating": { "average": 4.8, "count": 412 },
     "amenities": ["wifi", "private", "vegan"],
     "flags": { "isEditorChoice": true },
-    "tier": "pro",
+    "subscription": {
+      "tier": "pro",
+      "issueDate": { "$date": "2026-04-01T00:00:00.000Z" },
+      "expireDate": { "$date": "2026-05-01T00:00:00.000Z" },
+      "status": "active"
+    },
     "settings": {
       "general": {
         "deposit": {

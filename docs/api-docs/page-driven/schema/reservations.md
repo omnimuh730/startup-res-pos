@@ -10,11 +10,13 @@ Source READMEs:
 
 ## Collection
 
-| Collection | Purpose |
-|---|---|
+
+| Collection     | Purpose                                                                                  |
+| -------------- | ---------------------------------------------------------------------------------------- |
 | `reservations` | A confirmed-or-pending booking. Single source of truth between the customer app and POS. |
 
-Related catalogs (`reservation_preferences`) live in [`metadata`](./metadata.md). Table assignment and QR validation use the `tables` collection.
+
+Related catalogs (`reservation_preferences`) live in `[metadata](./metadata.md)`. Table assignment and QR validation use the `tables` collection.
 
 ---
 
@@ -158,3 +160,4 @@ dining ─request bill─▶ bill_requested ─finalize─▶ bill ─pay─▶ 
 - A reservation that ends in `visited` triggers a points credit recorded in `points_ledger`; `pointsEarned` mirrors the credited points.
 - Invite acceptance updates the matching `invites[i].status` and sends a notification to the inviter.
 - Calendar conflicts on POS are enforced by the unique combination of `(tableId, date, time)` plus party-size compatibility, not by the reservation document alone.
+

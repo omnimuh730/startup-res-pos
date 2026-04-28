@@ -1,4 +1,4 @@
-# All Collections (13)
+# All Collections (12)
 
 Single-file reference for every MongoDB collection in the system. For per-domain context, sample documents, and state diagrams, see the individual files in this directory.
 
@@ -15,12 +15,11 @@ Single-file reference for every MongoDB collection in the system. For per-domain
 | 8   | `wallet_transactions`   | Append-only wallet ledger across domestic, foreign, bonus pools.                                                                                     | `[wallets.md](./wallets.md)`             |
 | 9   | `points_ledger`         | Append-only loyalty points ledger.                                                                                                                   | `[rewards.md](./rewards.md)`             |
 | 10  | `notifications`         | One row per delivered in-app notification (customer or staff).                                                                                       | `[notifications.md](./notifications.md)` |
-| 11  | `subscriptions`         | Subscription per subject (customer pro or restaurant tier); embeds invoices and history.                                                             | `[subscriptions.md](./subscriptions.md)` |
-| 12  | `support_conversations` | Support thread; embeds messages.                                                                                                                     | `[support.md](./support.md)`             |
-| 13  | `metadata`              | One doc per static catalog (security questions, plans, tiers, amenities, articles, ...).                                                             | `[metadata.md](./metadata.md)`           |
+| 11  | `support_conversations` | Support thread; embeds messages.                                                                                                                     | `[support.md](./support.md)`             |
+| 12  | `metadata`              | One doc per static catalog (security questions, plans, tiers, amenities, articles, ...).                                                             | `[metadata.md](./metadata.md)`           |
 
 
-Auxiliary auth-infra (TTL'd, not part of the 13): `sessions`, `password_reset_sessions` — see `[users.md](./users.md)`.
+Auxiliary auth-infra (TTL'd, not part of the 12): `sessions`, `password_reset_sessions` — see `[users.md](./users.md)`.
 
 ## Conventions (recap)
 
@@ -116,9 +115,11 @@ type CustomerUser = {
   };
 
   subscription?: {
-    subscriptionId: ObjectId;
-    planCode: "pro_monthly" | "pro_quarterly" | "pro_yearly";
+    tier: "pro";
+    billingCycle: "monthly" | "quarterly" | "yearly";
     status: "trialing" | "active" | "past_due" | "cancelled" | "expired";
+    issueDate: Date;
+    expireDate: Date;
     currentPeriodEnd: Date;
     cancelAtPeriodEnd: boolean;
   };
@@ -177,7 +178,12 @@ type Restaurant = {
   rating: { average: number; count: number };
   amenities: string[];
   flags: { isNew?: boolean; isCatchOnly?: boolean; isEditorChoice?: boolean };
-  tier: "free" | "pro" | "ultra";
+  subscription: {
+    tier: "free" | "pro" | "ultra";
+    issueDate: Date;
+    expireDate: Date;
+    status: "active" | "expired" | "cancelled" | "past_due" | "trialing";
+  };
 
   settings: {
     general: {
@@ -234,7 +240,7 @@ type Restaurant = {
 };
 ```
 
-Indexes: `{slug:1}`u, `{status:1, tier:1}`, `{"rating.average":-1}`, `{cuisine:1}`, `{amenities:1}`, `{location:"2dsphere"}`, text(`name, description`), `{"menu.items._id":1}`mk, `{"menu.items.categoryId":1}`mk, `{"phones.phone":1}`mk.
+Indexes: `{slug:1}`u, `{status:1, "subscription.tier":1}`, `{"rating.average":-1}`, `{cuisine:1}`, `{amenities:1}`, `{location:"2dsphere"}`, text(`name, description`), `{"menu.items._id":1}`mk, `{"menu.items.categoryId":1}`mk, `{"phones.phone":1}`mk.
 
 ---
 
@@ -518,47 +524,7 @@ Indexes: `{customerUserId:1, deletedAt:1, createdAt:-1}`, `{staffUserId:1, delet
 
 ---
 
-## 11) `subscriptions`
-
-```ts
-type Subscription = {
-  _id: ObjectId;
-  product: "restaurant_tier" | "catchtable_pro";
-  customerUserId?: ObjectId; restaurantId?: ObjectId;
-  planCode: string;
-  status: "trialing" | "active" | "past_due" | "cancelled" | "expired";
-  currentPeriodStart: Date; currentPeriodEnd: Date;
-  cancelAtPeriodEnd: boolean; cancelledAt?: Date | null;
-  paymentMethodRef?: { kind: "customer_method" | "restaurant_deposit_card"; methodId: ObjectId };
-  pspProvider?: string; pspSubscriptionId?: string;
-  invoices: Array<{
-    _id: ObjectId;
-    periodStart: Date; periodEnd: Date;
-    amount: { amount: Decimal128; currency: string };
-    taxes?: { amount: Decimal128; currency: string };
-    total:  { amount: Decimal128; currency: string };
-    status: "open" | "paid" | "uncollectible" | "voided";
-    paymentId?: ObjectId; walletTransactionId?: ObjectId;
-    attemptCount: number; nextAttemptAt?: Date;
-    failure?: { code: string; message: string };
-    createdAt: Date; updatedAt: Date;
-  }>;
-  history: Array<{
-    at: Date;
-    type: "created" | "renewed" | "upgraded" | "downgraded" | "cancelled" | "reactivated" | "payment_failed";
-    fromPlan?: string; toPlan?: string;
-    actor?: { kind: "customer" | "staff" | "system"; id?: ObjectId };
-    note?: string;
-  }>;
-  createdAt: Date; updatedAt: Date;
-};
-```
-
-Indexes: `{customerUserId:1, product:1, status:1}`, `{restaurantId:1, product:1, status:1}`, `{planCode:1, status:1}`, `{pspSubscriptionId:1}`us, `{status:1, currentPeriodEnd:1}`, `{"invoices.status":1, "invoices.nextAttemptAt":1}`mk.
-
----
-
-## 12) `support_conversations`
+## 11) `support_conversations`
 
 ```ts
 type SupportConversation = {
@@ -596,7 +562,7 @@ Indexes: `{customerUserId:1, status:1, lastMessageAt:-1}`, `{staffUserId:1, stat
 
 ---
 
-## 13) `metadata`
+## 12) `metadata`
 
 ```ts
 type MetadataDoc<TItem = unknown> = {
@@ -613,7 +579,7 @@ type MetadataDoc<TItem = unknown> = {
 Documents stored in this collection (one per `_id`):
 
 - `security_questions`     — list of selectable security questions
-- `subscription_plans`     — restaurant tiers and catchtable_pro plans
+- `subscription_plans`     — subscription plan matrix for restaurant and customer subjects
 - `reward_tiers`           — silver/gold/platinum/diamond + thresholds + benefits
 - `amenities`              — amenity codes with labels and icons
 - `reservation_preferences`— seating, cuisine, vibe, amenity preference codes
