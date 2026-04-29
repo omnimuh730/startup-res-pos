@@ -1,5 +1,6 @@
 import { motion, type Variants, type Transition } from "motion/react";
 import { type ReactNode, type HTMLAttributes } from "react";
+import { useMemo } from "react";
 
 // ── Preset Animations ──────────────────────────────────────
 type AnimationPreset =
@@ -143,7 +144,7 @@ export function Animate({
   ...props
 }: AnimateProps) {
   const variants = presetVariants[preset];
-  const MotionTag = motion.create(as);
+  const MotionTag = useMemo(() => motion.create(as), [as]);
 
   const transition: Transition = {
     duration,
@@ -253,7 +254,7 @@ export function Stagger({
   className = "",
   as = "div",
 }: StaggerProps) {
-  const MotionTag = motion.create(as);
+  const MotionTag = useMemo(() => motion.create(as), [as]);
 
   const containerVariants: Variants = {
     hidden: {},
@@ -293,7 +294,7 @@ export function StaggerItem({
   className = "",
   as = "div",
 }: StaggerItemProps) {
-  const MotionTag = motion.create(as);
+  const MotionTag = useMemo(() => motion.create(as), [as]);
   const variants = presetVariants[preset];
 
   return (

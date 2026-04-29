@@ -12,10 +12,11 @@ export function SavedRoute() {
     <SavedListView
       savedRestaurantsRef={ctx.savedRestaurantsRef}
       savedFoodsRef={ctx.savedFoodsRef}
+      wishlistCollections={ctx.wishlistCollections}
       onBack={() => navigate(-1)}
       onSelectRestaurant={(r) => navigate(`/discover/restaurant/${r.id}`, { state: { restaurant: r } })}
       onSelectFood={(f) => navigate(`/discover/food/${f.id}`, { state: { food: f } })}
-      onRemoveRestaurant={ctx.toggleSaveRestaurant}
+      onRemoveRestaurant={ctx.removeSavedRestaurant}
       onRemoveFood={ctx.toggleSaveFood}
     />
   );

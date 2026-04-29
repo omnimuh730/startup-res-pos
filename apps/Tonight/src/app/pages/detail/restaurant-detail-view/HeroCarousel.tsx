@@ -32,15 +32,23 @@ export function HeroCarousel({ restaurant, galleryImages, heroIdx, heroRef, isSa
       </div>
 
       <div className="absolute top-4 left-4 right-4 flex items-center justify-between z-10">
-        <button onClick={onBack} className="w-10 h-10 rounded-full bg-white/90 flex items-center justify-center cursor-pointer">
+        <button type="button" onClick={onBack} className="w-10 h-10 rounded-full bg-white/90 flex items-center justify-center cursor-pointer">
           <ArrowLeft className="w-5 h-5 text-foreground" />
         </button>
         <div className="flex items-center gap-2">
-          <button className="w-10 h-10 rounded-full bg-white/90 flex items-center justify-center cursor-pointer">
+          <button type="button" className="w-10 h-10 rounded-full bg-white/90 flex items-center justify-center cursor-pointer">
             <Share className="w-4 h-4 text-foreground" />
           </button>
           {onSave && (
-            <button onClick={() => onSave(restaurant)} className="w-10 h-10 rounded-full bg-white/90 flex items-center justify-center cursor-pointer">
+            <button
+              type="button"
+              onClick={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                onSave(restaurant);
+              }}
+              className="w-10 h-10 rounded-full bg-white/90 flex items-center justify-center cursor-pointer"
+            >
               <Heart className={`w-5 h-5 ${isSaved ? "fill-rose-500 text-rose-500" : "text-foreground"}`} />
             </button>
           )}

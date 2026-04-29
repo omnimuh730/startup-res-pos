@@ -1,6 +1,6 @@
 /* Search mock data + filter logic + section data */
 import type { SearchResults, SearchResultFood, SectionItem } from "./discoverTypes";
-import { MONTHLY_BEST, LOVED_BY_LOCALS, VIRAL, DATE_NIGHT, EDITORS_CHOICE, FOOD_TYPES, CITIES } from "./discoverData";
+import { MONTHLY_BEST, LOVED_BY_LOCALS, VIRAL, DATE_NIGHT, FOOD_TYPES, CITIES } from "./discoverData";
 import type { RestaurantData } from "../detail/RestaurantDetailView";
 import type { SearchResultRestaurant } from "./discoverTypes";
 
@@ -82,10 +82,6 @@ export const ALL_SECTION_DATA: Record<string, { title: string; items: SectionIte
   "date-night": {
     title: "Date Night Picks",
     items: DATE_NIGHT.map((r) => ({ ...r, reviews: 600, distance: "1.0 mi", tag: "Romantic" })),
-  },
-  "editors-choice": {
-    title: "Editor's Choice",
-    items: EDITORS_CHOICE.map((r) => ({ ...r, price: "$$$", reviews: 700, distance: "0.6 mi" })),
   },
   "brunch": {
     title: "Weekend Brunch Spots",

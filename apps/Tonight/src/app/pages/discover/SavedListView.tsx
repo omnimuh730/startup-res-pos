@@ -12,7 +12,7 @@ type WishlistCollection = {
   title: string;
   subtitle: string;
   items: (RestaurantData | SearchResultFood)[];
-  type: "all" | "restaurants" | "foods";
+  type: "all" | "restaurants" | "foods" | "custom";
 };
 
 const ImageGrid = ({ images, layoutId }: { images: string[], layoutId?: string }) => {
@@ -97,7 +97,7 @@ const GatheredModal = ({ onClose, images }: { onClose: () => void, images: strin
         className="bg-white rounded-[2rem] w-full max-w-sm overflow-hidden relative shadow-2xl"
         onClick={e => e.stopPropagation()}
       >
-        <button onClick={onClose} className="absolute top-4 right-4 z-10 p-2 hover:bg-black/5 rounded-full transition-colors cursor-pointer">
+        <button type="button" onClick={onClose} className="absolute top-4 right-4 z-10 p-2 hover:bg-black/5 rounded-full transition-colors cursor-pointer">
           <X className="w-5 h-5 text-black" />
         </button>
 
@@ -127,17 +127,18 @@ const GatheredModal = ({ onClose, images }: { onClose: () => void, images: strin
             initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}
             className="text-[1.375rem] leading-tight text-black mb-3" style={{ fontWeight: 600 }}
           >
-            We've gathered everything you've recently viewed
+            We've gathered your recently searched restaurants
           </motion.h2>
           
           <motion.p 
             initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}
             className="text-muted-foreground text-[0.9375rem] leading-relaxed mb-8 px-2"
           >
-            We'll automatically save homes, experiences, and services as you view them to help you keep track.
+            Restaurants you liked from recent search and discovery stay here so you can compare them later.
           </motion.p>
 
           <motion.button 
+            type="button"
             initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }}
             onClick={onClose}
             className="w-full bg-[#222222] text-white py-3.5 rounded-xl font-semibold text-[1rem] active:scale-[0.98] transition-transform cursor-pointer"
@@ -150,9 +151,16 @@ const GatheredModal = ({ onClose, images }: { onClose: () => void, images: strin
   );
 };
 
-export function SavedListView({ savedRestaurantsRef, savedFoodsRef, onBack, onSelectRestaurant, onSelectFood, onRemoveRestaurant, onRemoveFood }: {
+type CustomWishlistCollection = {
+  id: string;
+  title: string;
+  restaurants: RestaurantData[];
+};
+
+export function SavedListView({ savedRestaurantsRef, savedFoodsRef, wishlistCollections = [], onBack, onSelectRestaurant, onSelectFood, onRemoveRestaurant, onRemoveFood }: {
   savedRestaurantsRef: React.RefObject<RestaurantData[]>;
   savedFoodsRef: React.RefObject<SearchResultFood[]>;
+  wishlistCollections?: CustomWishlistCollection[];
   onBack: () => void;
   onSelectRestaurant: (r: RestaurantData) => void;
   onSelectFood: (f: SearchResultFood) => void;
@@ -173,17 +181,24 @@ export function SavedListView({ savedRestaurantsRef, savedFoodsRef, onBack, onSe
     return () => clearTimeout(timer);
   }, []);
 
-  const allSavedItems = [...savedRestaurants, ...savedFoods];
-  const recentImages = allSavedItems.slice(0, 4).map(item => item.image || '').filter(Boolean);
+  const recentlySearchedRestaurants = savedRestaurants;
+  const recentImages = recentlySearchedRestaurants.slice(0, 4).map(item => item.image || '').filter(Boolean);
 
   const collections: WishlistCollection[] = [
     {
       id: "recent",
-      title: "Recently viewed",
+      title: "Recently searched restaurants",
       subtitle: "Today",
-      items: allSavedItems,
-      type: "all"
+      items: recentlySearchedRestaurants,
+      type: "restaurants"
     },
+    ...wishlistCollections.map((collection) => ({
+      id: collection.id,
+      title: collection.title,
+      subtitle: `${collection.restaurants.length} saved`,
+      items: collection.restaurants,
+      type: "custom" as const,
+    })),
     ...(savedRestaurants.length > 0 ? [{
       id: "restaurants",
       title: "Saved Restaurants",
@@ -203,8 +218,18 @@ export function SavedListView({ savedRestaurantsRef, savedFoodsRef, onBack, onSe
   return (
     <div className="min-h-[calc(100vh-120px)] bg-white relative pb-24 overflow-x-hidden"> 
       
-      <div className="px-6 pt-12">
-        <h1 className="text-[2rem] text-black mb-6 tracking-tight" style={{ fontWeight: 600 }}>Wishlists</h1>
+      <div className="px-6 pt-8">
+        <div className="mb-6 flex items-center gap-3">
+          <button
+            type="button"
+            onClick={onBack}
+            className="p-2 -ml-2 hover:bg-secondary rounded-full transition-colors cursor-pointer"
+            aria-label="Back"
+          >
+            <ChevronLeft className="w-6 h-6 text-black" />
+          </button>
+          <h1 className="text-[2rem] text-black tracking-tight" style={{ fontWeight: 600 }}>Wishlists</h1>
+        </div>
         
         <div className="grid grid-cols-2 gap-4">
           {collections.map((collection) => {
@@ -241,13 +266,14 @@ export function SavedListView({ savedRestaurantsRef, savedFoodsRef, onBack, onSe
           >
             {/* Top Navigation Bar */}
             <div className="sticky top-0 bg-white/90 backdrop-blur-md z-10 flex items-center justify-between px-4 py-4">
-               <button 
+                 <button
+                   type="button"
                  onClick={() => setSelectedCollection(null)} 
                  className="p-2 hover:bg-secondary rounded-full transition-colors cursor-pointer"
                >
                  <ChevronLeft className="w-6 h-6 text-black" />
                </button>
-               <button className="px-2 py-1 text-[1rem] font-semibold text-black underline cursor-pointer">
+               <button type="button" className="px-2 py-1 text-[1rem] font-semibold text-black underline cursor-pointer">
                  Edit
                </button>
             </div>
@@ -279,19 +305,22 @@ export function SavedListView({ savedRestaurantsRef, savedFoodsRef, onBack, onSe
                       />
                     )}
                     {/* Heart Icon overlaid on image */}
-                    <button 
+                    {selectedCollection.id === "recent" && "cuisine" in item && (
+                    <button
+                      type="button"
                       onClick={(e) => {
+                        e.preventDefault();
                         e.stopPropagation();
-                        // Optional: Add toggle logic here later
+                        onRemoveRestaurant(item);
                       }}
                       className="absolute top-3 right-3 p-1 rounded-full cursor-pointer"
                     >
                       <Heart 
-                         className="w-6 h-6 text-white drop-shadow-md" 
-                         fill="rgba(0,0,0,0.3)" 
-                         strokeWidth={1.5}
+                         className="w-6 h-6 text-white drop-shadow-md fill-[#E31C5F]" 
+                         strokeWidth={2}
                       />
                     </button>
+                    )}
                   </div>
 
                   {/* Card Details */}

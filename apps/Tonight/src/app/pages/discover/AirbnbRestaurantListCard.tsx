@@ -28,12 +28,19 @@ export function AirbnbRestaurantListCard({
 }) {
   return (
     <article className="group border-b border-border/80 pb-4 last:border-b-0 last:pb-0">
-      <button
-        type="button"
+      <div
+        role="button"
+        tabIndex={0}
         onClick={() => onSelect(restaurant)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            onSelect(restaurant);
+          }
+        }}
         className="w-full flex gap-3 text-left cursor-pointer"
       >
-        <div className="relative w-28 h-28 rounded-2xl overflow-hidden bg-secondary shrink-0">
+        <div className="relative w-24 h-24 rounded-2xl overflow-hidden bg-secondary shrink-0">
           <ImageWithFallback
             src={restaurant.image}
             alt={restaurant.name}
@@ -77,8 +84,8 @@ export function AirbnbRestaurantListCard({
         </div>
 
         {!onSave && <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0 mt-2" />}
-      </button>
-      {children && <div className="mt-3 pl-[7rem]">{children}</div>}
+      </div>
+      {children && <div className="mt-3 pl-[6rem]">{children}</div>}
     </article>
   );
 }

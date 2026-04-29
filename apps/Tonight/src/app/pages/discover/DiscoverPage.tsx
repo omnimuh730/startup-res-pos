@@ -14,7 +14,7 @@ import { BookTableFlow } from "../booking/BookTableFlow";
 import type { SearchResults, SearchResultLocation, SearchResultFood, SearchResultChef } from "./discoverTypes";
 import { fmtR } from "./discoverTypes";
 import { _savedRIds, _savedFNames, _notifySaved, incrementSavedSnapshot } from "./savedStore";
-import { QUICK_CATEGORIES, CITIES, FOOD_TYPES, MONTHLY_BEST, LOVED_BY_LOCALS, DATE_NIGHT, EDITORS_CHOICE } from "./discoverData";
+import { QUICK_CATEGORIES, CITIES, FOOD_TYPES, MONTHLY_BEST, LOVED_BY_LOCALS, DATE_NIGHT } from "./discoverData";
 import { ALL_SEARCH_DATA, searchResultToRestaurantData, filterSearchResults, ALL_SECTION_DATA } from "./discoverSearchData";
 import { CardSaveBtn, SavedCountBadge, NotificationBellBtn, SectionHeader } from "./SaveButtons";
 import { CategoryIcon } from "./CategoryIcon";
@@ -28,8 +28,7 @@ import { SectionListView } from "./SectionListView";
 import { RestaurantsByPrice } from "./RestaurantsByPrice";
 import { NewsSection, NewsListPage, NewsDetailPage, MOCK_NEWS } from "./NewsSection";
 import { DiscoverSearchModal, type SearchPlan } from "./DiscoverSearchModal";
-import type { DiscoverExperienceTab } from "./DiscoverExperienceTabs";
-import { AirbnbRestaurantCard, type AirbnbRestaurantCardItem } from "./AirbnbRestaurantCard";
+import { AirbnbRestaurantCard } from "./AirbnbRestaurantCard";
 
 export function DiscoverPage() {
   const navigate = useNavigate();
@@ -125,7 +124,6 @@ export function DiscoverPage() {
   const [showBannerGallery, setShowBannerGallery] = useState(false);
   const [showSearchModal, setShowSearchModal] = useState(false);
   const [searchPlan, setSearchPlan] = useState<SearchPlan | null>(null);
-  const [activeExperienceTab, setActiveExperienceTab] = useState<DiscoverExperienceTab>("restaurants");
 
   const toggleSaveRestaurant = toggleSaveRestaurantProp;
   const toggleSaveFood = toggleSaveFoodProp;
@@ -194,40 +192,6 @@ export function DiscoverPage() {
   const openSection = (sectionId: string) => { saveScrollPos(); setViewingSection(sectionId); };
   const openFoodType = (f: typeof FOOD_TYPES[0]) => { saveScrollPos(); setSelectedCategory({ id: f.id, label: f.label }); };
   const openCity = (city: typeof CITIES[0]) => { saveScrollPos(); setSelectedLocation({ id: city.id, name: city.label, count: 100 + Math.floor(Math.random() * 300) }); };
-  const featuredItems: Record<DiscoverExperienceTab, AirbnbRestaurantCardItem[]> = {
-    restaurants: MONTHLY_BEST.map((r, idx) => ({
-      id: r.id,
-      name: r.name,
-      cuisine: r.cuisine,
-      area: r.area,
-      rating: r.rating,
-      image: r.image,
-      price: idx === 0 ? "$$$" : idx === 1 ? "$$" : "$$$$",
-      reviews: 780 + idx * 137,
-      distance: `${(0.4 + idx * 0.3).toFixed(1)} mi`,
-      badge: idx === 0 ? "Guest favorite" : idx === 3 ? "Chef's pick" : "Popular",
-      wait: idx === 3 ? "Few seats left" : "Tables tonight",
-    })),
-    bars: [
-      { id: "bar-1", name: "Night Owl Bar", cuisine: "Cocktails Â· Tapas", rating: 4.7, image: "https://images.unsplash.com/photo-1598990386084-8af4dd12b3b4?w=600&h=600&fit=crop", price: "$$$", reviews: 912, distance: "0.6 mi", badge: "Open late", wait: "Walk-ins tonight" },
-      { id: "bar-2", name: "Twilight Lounge", cuisine: "Wine Bar Â· Small Plates", rating: 4.6, image: "https://images.unsplash.com/photo-1768508948990-f5866f800fad?w=600&h=600&fit=crop", price: "$$$", reviews: 684, distance: "0.8 mi", badge: "Local favorite", wait: "Bar seats available" },
-      { id: "bar-3", name: "Azure Rooftop", cuisine: "Rooftop Â· Cocktails", rating: 4.8, image: "https://images.unsplash.com/photo-1768397003905-a202ea6325f5?w=600&h=600&fit=crop", price: "$$$$", reviews: 423, distance: "1.1 mi", badge: "Views", wait: "Reserve sunset" },
-    ],
-    events: DATE_NIGHT.map((r, idx) => ({
-      id: r.id,
-      name: r.name,
-      cuisine: r.cuisine,
-      rating: r.rating,
-      image: r.image,
-      price: r.price,
-      reviews: 420 + idx * 96,
-      distance: `${(0.7 + idx * 0.4).toFixed(1)} mi`,
-      badge: idx === 0 ? "Date night" : idx === 1 ? "Wine pairing" : "Chef event",
-      wait: idx === 2 ? "Tonight 8:30 PM" : "Book this week",
-    })),
-  };
-  const featuredTitle = activeExperienceTab === "restaurants" ? "Guest Favorites Near You" : activeExperienceTab === "bars" ? "Bars Open Tonight" : "Chef-Led Dining Events";
-
   return (
     <>
     <style>{`.discover-ribbon > div > div { padding: 4px 40px !important; font-size: 0.75rem !important; letter-spacing: 0.04em !important; line-height: 1.3 !important; }`}</style>
@@ -238,7 +202,7 @@ export function DiscoverPage() {
 
     {selectedLocation && !detailRestaurant && <LocationResultsView location={selectedLocation} onBack={() => { setSelectedLocation(null); restoreScrollPos(); }} onSelectRestaurant={(r) => setDetailRestaurant(r)} onSaveRestaurant={toggleSaveRestaurant} isRestaurantSaved={isRestaurantSaved} />}
     {selectedFood && !detailRestaurant && <FoodResultsView food={selectedFood} onBack={() => { setSelectedFood(null); restoreScrollPos(); }} onSaveFood={toggleSaveFood} isFoodSaved={savedFoodsRef.current.some((s) => s.id === selectedFood.id)} onSaveFoodName={toggleSaveFoodName} savedFoodNames={savedFoodNames} />}
-    {selectedCategory && !detailRestaurant && (<><CategoryResultsView category={selectedCategory} onBack={() => { setSelectedCategory(null); restoreScrollPos(); }} onSelectRestaurant={(r) => setDetailRestaurant(r)} onBookTable={(r) => setBookingRestaurant(r)} />{bookingRestaurant && <BookTableFlow restaurant={bookingRestaurant} onBack={() => setBookingRestaurant(null)} onComplete={() => setBookingRestaurant(null)} />}</>)}
+    {selectedCategory && !detailRestaurant && (<><CategoryResultsView category={selectedCategory} onBack={() => { setSelectedCategory(null); restoreScrollPos(); }} onSelectRestaurant={(r) => setDetailRestaurant(r)} onBookTable={(r) => setBookingRestaurant(r)} onSaveRestaurant={toggleSaveRestaurant} />{bookingRestaurant && <BookTableFlow restaurant={bookingRestaurant} onBack={() => setBookingRestaurant(null)} onComplete={() => setBookingRestaurant(null)} />}</>)}
     {viewingSection && ALL_SECTION_DATA[viewingSection] && !detailRestaurant && <SectionListView title={ALL_SECTION_DATA[viewingSection].title} items={ALL_SECTION_DATA[viewingSection].items} onBack={() => { setViewingSection(null); restoreScrollPos(); }} onSelectRestaurant={(r) => setDetailRestaurant(r)} onSaveRestaurant={toggleSaveRestaurant} isRestaurantSaved={isRestaurantSaved} />}
     {viewingNewsList && <NewsListPage onBack={() => navigate("/discover")} onSelect={(id) => navigate(`/discover/news/${id}`)} />}
     {viewingNewsItem && <NewsDetailPage item={viewingNewsItem} onBack={() => navigate("/discover/news")} onSelect={(id) => navigate(`/discover/news/${id}`)} />}
@@ -298,13 +262,12 @@ export function DiscoverPage() {
               }}
               onSelect={(item) => openRestaurant(item)}
               onSave={toggleSaveRestaurant}
-              className="shrink-0 w-[64%] sm:w-[13rem]"
+              className="shrink-0 w-44 sm:w-48"
             />
           ))}
         </DragScrollContainer>
       </StaggerItem>      <StaggerItem preset="fadeInUp" className="mt-8"><SectionHeader title="Loved by Locals" action="View All" onAction={() => openSection("loved-by-locals")} /><div className="space-y-3">{LOVED_BY_LOCALS.map((r, idx) => (<div key={r.id} onClick={() => openRestaurant({ ...r, cuisine: r.cuisine.split("\u00b7")[0].trim() })} className="flex items-center gap-3 p-3 rounded-2xl border border-border bg-card hover:bg-secondary/30 transition cursor-pointer group"><div className="relative w-20 h-20 rounded-xl overflow-hidden shrink-0"><ImageWithFallback src={r.image} alt={r.name} className="w-full h-full object-cover" /><Ribbon position="top-left" variant="diagonal" size="sm" color={pickRibbonLabel(r.id) === "Sale" ? "destructive" : "primary"}>{pickRibbonLabel(r.id)}</Ribbon></div><div className="flex-1 min-w-0"><div className="flex items-center gap-2"><p className="text-[0.875rem] truncate" style={{ fontWeight: 600 }}>{r.name}</p><DSBadge variant="soft" color="primary" size="sm">{r.tag}</DSBadge></div><p className="text-[0.75rem] text-muted-foreground mt-0.5">{r.cuisine} Â· {r.price}</p><div className="flex items-center gap-3 mt-1 text-[0.75rem]"><span className="flex items-center gap-1 text-warning"><Star className="w-3 h-3 fill-current" /> {fmtR(r.rating)}</span><span className="text-muted-foreground">({r.reviews.toLocaleString()})</span><span className="text-muted-foreground flex items-center gap-0.5"><MapPin className="w-3 h-3" /> {r.distance}</span></div></div><CardSaveBtn id={r.id} restaurant={{ id: r.id, name: r.name, cuisine: r.cuisine.split("\u00b7")[0].trim(), emoji: "", rating: r.rating, reviews: r.reviews, price: r.price, lng: -122.42, lat: 37.78, open: true, distance: r.distance, image: r.image }} onToggle={toggleSaveRestaurant} variant="inline" /></div>))}</div></StaggerItem>
       {false && <StaggerItem preset="fadeInUp" className="mt-8"><SectionHeader title="Date Night Picks" action="View All" onAction={() => openSection("date-night")} /><DragScrollContainer className="flex gap-3 pb-1">{DATE_NIGHT.map((r) => (<div key={r.id} className="shrink-0 w-52 cursor-pointer group" onClick={() => openRestaurant(r)}><div className="relative h-36 rounded-xl overflow-hidden mb-2"><ImageWithFallback src={r.image} alt={r.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" /><Ribbon position="top-left" variant="diagonal" size="lg" color={pickRibbonLabel(r.id) === "Sale" ? "destructive" : "primary"}>{pickRibbonLabel(r.id)}</Ribbon><div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" /><div className="absolute bottom-2 right-2 bg-black/50 text-white text-[0.6875rem] px-2 py-0.5 rounded-full">{r.price}</div><CardSaveBtn id={r.id} restaurant={{ id: r.id, name: r.name, cuisine: r.cuisine, emoji: "", rating: r.rating, reviews: 500, price: r.price, lng: -122.42, lat: 37.78, open: true, distance: "0.5 mi", image: r.image }} onToggle={toggleSaveRestaurant} /></div><p className="text-[0.8125rem] truncate" style={{ fontWeight: 600 }}>{r.name}</p><p className="text-[0.6875rem] text-muted-foreground">{r.cuisine}</p><div className="flex items-center gap-1 mt-0.5"><Star className="w-3 h-3 fill-warning text-warning" /><span className="text-[0.75rem]" style={{ fontWeight: 600 }}>{fmtR(r.rating)}</span></div></div>))}</DragScrollContainer></StaggerItem>}
-      <StaggerItem preset="fadeInUp" className="mt-8"><SectionHeader title="Editor's Choice" action="View All" onAction={() => openSection("editors-choice")} /><div className="grid grid-cols-2 gap-3">{EDITORS_CHOICE.map((r) => (<div key={r.id} className="cursor-pointer group" onClick={() => openRestaurant({ ...r, cuisine: r.cuisine.split("\u00b7")[0].trim() })}><div className="relative aspect-[4/3] rounded-xl overflow-hidden mb-2"><ImageWithFallback src={r.image} alt={r.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 pointer-events-none select-none" draggable={false} /><Ribbon position="top-left" variant="diagonal" size="md" color={pickRibbonLabel(r.id) === "Sale" ? "destructive" : "primary"}>{pickRibbonLabel(r.id)}</Ribbon><CardSaveBtn id={r.id} restaurant={{ id: r.id, name: r.name, cuisine: r.cuisine.split("\u00b7")[0].trim(), emoji: "", rating: r.rating, reviews: 700, price: "$$$", lng: -122.42, lat: 37.78, open: true, distance: "0.6 mi", image: r.image }} onToggle={toggleSaveRestaurant} /></div><p className="text-[0.8125rem] truncate" style={{ fontWeight: 600 }}>{r.name}</p><p className="text-[0.6875rem] text-muted-foreground">{r.cuisine}</p><div className="flex items-center gap-1 mt-0.5"><Star className="w-3 h-3 fill-warning text-warning" /><span className="text-[0.75rem]" style={{ fontWeight: 600 }}>{fmtR(r.rating)}</span></div></div>))}</div></StaggerItem>
       {false && <StaggerItem preset="fadeInUp" className="mt-8"><SectionHeader title="Weekend Brunch Spots" action="View All" onAction={() => openSection("brunch")} /><DragScrollContainer className="flex gap-3 pb-1">{[{ id: "b1", name: "Morning Table", cuisine: "American \u00b7 Brunch", rating: 4.5, price: "$$", image: "https://images.unsplash.com/photo-1687276287139-88f7333c8ca4?w=400&h=300&fit=crop" },{ id: "b2", name: "Flour & Butter", cuisine: "Bakery \u00b7 Caf\u00e9", rating: 4.6, price: "$$", image: "https://images.unsplash.com/photo-1657502996869-6ccd568b9d41?w=400&h=300&fit=crop" },{ id: "b3", name: "Green Bowl Co.", cuisine: "Healthy \u00b7 Bowls", rating: 4.4, price: "$", image: "https://images.unsplash.com/photo-1692780941487-505d5d908aa6?w=400&h=300&fit=crop" }].map((r) => (<div key={r.id} className="shrink-0 w-44 cursor-pointer group" onClick={() => openRestaurant({ ...r, cuisine: r.cuisine.split("\u00b7")[0].trim() })}><div className="relative h-32 rounded-xl overflow-hidden mb-2"><ImageWithFallback src={r.image} alt={r.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" /><Ribbon position="top-left" variant="diagonal" size="md" color={pickRibbonLabel(r.id) === "Sale" ? "destructive" : "primary"}>{pickRibbonLabel(r.id)}</Ribbon><div className="absolute bottom-2 right-2 bg-black/50 text-white text-[0.6875rem] px-2 py-0.5 rounded-full">{r.price}</div><CardSaveBtn id={r.id} restaurant={{ id: r.id, name: r.name, cuisine: r.cuisine.split("\u00b7")[0].trim(), emoji: "", rating: r.rating, reviews: 500, price: r.price, lng: -122.42, lat: 37.78, open: true, distance: "0.5 mi", image: r.image }} onToggle={toggleSaveRestaurant} /></div><p className="text-[0.8125rem] truncate" style={{ fontWeight: 600 }}>{r.name}</p><p className="text-[0.6875rem] text-muted-foreground">{r.cuisine}</p><div className="flex items-center gap-1 mt-0.5"><Star className="w-3 h-3 fill-warning text-warning" /><span className="text-[0.75rem]" style={{ fontWeight: 600 }}>{fmtR(r.rating)}</span></div></div>))}</DragScrollContainer></StaggerItem>}
       <StaggerItem preset="fadeInUp" className="mt-8"><NewsSection onSelect={(id) => navigate(`/discover/news/${id}`)} onViewAll={() => navigate("/discover/news")} /></StaggerItem>
       <StaggerItem preset="fadeInUp" className="mt-8"><SectionHeader title="New This Week" /><div className="space-y-3">{[{ id: "n1", name: "Sakura Bloom", cuisine: "Japanese \u00b7 Tempura", time: "Opens Today", rating: 4.3, image: "https://images.unsplash.com/photo-1681270507609-e2a5f21969b0?w=400&h=300&fit=crop" },{ id: "n2", name: "Saffron Street", cuisine: "Indian \u00b7 Street Food", time: "3 days ago", rating: 4.1, image: "https://images.unsplash.com/photo-1675150303909-1bb94e33132f?w=400&h=300&fit=crop" },{ id: "n3", name: "Verdant Table", cuisine: "Vegan \u00b7 Organic", time: "1 week ago", rating: 4.4, image: "https://images.unsplash.com/photo-1692780941487-505d5d908aa6?w=400&h=300&fit=crop" }].map((r) => (<div key={r.id} onClick={() => openRestaurant({ ...r, cuisine: r.cuisine.split("\u00b7")[0].trim() })} className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-secondary/30 transition cursor-pointer"><div className="w-16 h-16 rounded-xl overflow-hidden shrink-0"><ImageWithFallback src={r.image} alt={r.name} className="w-full h-full object-cover" /></div><div className="flex-1 min-w-0"><p className="text-[0.875rem] truncate" style={{ fontWeight: 600 }}>{r.name}</p><p className="text-[0.6875rem] text-muted-foreground">{r.cuisine}</p><div className="flex items-center gap-2 mt-0.5 text-[0.6875rem]"><span className="flex items-center gap-1 text-warning"><Star className="w-3 h-3 fill-current" /> {fmtR(r.rating)}</span><span className="text-success flex items-center gap-0.5"><Clock className="w-3 h-3" /> {r.time}</span></div></div><div className="flex items-center gap-1 shrink-0"><DSBadge variant="soft" color="success" size="sm">NEW</DSBadge><CardSaveBtn id={r.id} restaurant={{ id: r.id, name: r.name, cuisine: r.cuisine.split("\u00b7")[0].trim(), emoji: "", rating: r.rating, reviews: 500, price: "$$$", lng: -122.42, lat: 37.78, open: true, distance: "0.5 mi", image: r.image }} onToggle={toggleSaveRestaurant} variant="inline" /></div></div>))}</div></StaggerItem>

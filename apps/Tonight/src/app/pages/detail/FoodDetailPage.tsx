@@ -27,11 +27,20 @@ export function FoodDetailPage({ item, restaurantName, onBack, onSave, isSaved }
       <div className="relative h-56 sm:h-64 shrink-0">
         <ImageWithFallback src={imageSrc} alt={item.name} className="w-full h-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/20" />
-        <button onClick={onBack} className="absolute top-4 left-4 w-10 h-10 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center cursor-pointer hover:bg-black/60 transition">
+        <button type="button" onClick={onBack} className="absolute top-4 left-4 w-10 h-10 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center cursor-pointer hover:bg-black/60 transition">
           <ArrowLeft className="w-5 h-5 text-white" />
         </button>
         {onSave && (
-          <button onClick={() => { onSave(); setLocalSaved(s => !s); }} className="absolute top-4 right-4 w-10 h-10 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center cursor-pointer hover:bg-black/60 transition">
+          <button
+            type="button"
+            onClick={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              onSave();
+              setLocalSaved(s => !s);
+            }}
+            className="absolute top-4 right-4 w-10 h-10 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center cursor-pointer hover:bg-black/60 transition"
+          >
             <Heart className={`w-5 h-5 ${localSaved ? "fill-red-500 text-red-500" : "text-white"}`} />
           </button>
         )}

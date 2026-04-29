@@ -16,13 +16,23 @@ import { authStore } from "./stores/authStore";
 import { LoginPromptModal } from "./components/LoginPromptModal";
 import { FirstLoginDbModal } from "./components/FirstLoginDbModal";
 import { dailyBonusStore } from "./pages/discover/DailyBonusModal";
+import { WishlistSelectionSheet, type WishlistSheetCollection } from "./pages/discover/WishlistSelectionSheet";
+import { WishlistSavedToast, type WishlistSavedToastState } from "./pages/discover/WishlistSavedToast";
+
+export type AppWishlistCollection = {
+  id: string;
+  title: string;
+  restaurants: RestaurantData[];
+};
 
 export type AppOutletContext = {
   userLocation: { name: string; address: string; lat: number; lng: number };
   setUserLocation: (l: AppOutletContext["userLocation"]) => void;
   savedRestaurantsRef: React.RefObject<RestaurantData[]>;
   savedFoodsRef: React.RefObject<SearchResultFood[]>;
+  wishlistCollections: AppWishlistCollection[];
   toggleSaveRestaurant: (r: RestaurantData) => void;
+  removeSavedRestaurant: (r: RestaurantData) => void;
   toggleSaveFood: (f: SearchResultFood) => void;
   requireAuth: (redirect: string, message?: string) => boolean;
 };
@@ -35,6 +45,8 @@ const TABS = [
 ] as const;
 
 type TabId = (typeof TABS)[number]["id"];
+
+const QUICK_SAVE_WINDOW_MS = 12000;
 
 interface Particle { id: number; x: number; y: number; size: number; angle: number; distance: number; }
 
@@ -182,6 +194,11 @@ export function AppLayout() {
   const [userLocation, setUserLocation] = useState({ name: "Gangnam Station", address: "Gangnam-gu, Seoul", lat: 37.498, lng: 127.0276 });
   const savedRestaurantsRef = useRef<RestaurantData[]>([]);
   const savedFoodsRef = useRef<SearchResultFood[]>([]);
+  const [wishlistRestaurant, setWishlistRestaurant] = useState<RestaurantData | null>(null);
+  const [wishlistCollections, setWishlistCollections] = useState<AppWishlistCollection[]>([]);
+  const [quickSaveTarget, setQuickSaveTarget] = useState<null | { collectionId: string; title: string; savedAt: number }>(null);
+  const [savedToast, setSavedToast] = useState<WishlistSavedToastState | null>(null);
+  const savedToastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const authed = useSyncExternalStore(authStore.subscribe, authStore.getSnapshot);
   const [loginPrompt, setLoginPrompt] = useState<null | { title?: string; message?: string; redirect: string }>(null);
@@ -192,12 +209,154 @@ export function AppLayout() {
     return false;
   }, []);
 
+  useEffect(() => () => {
+    if (savedToastTimerRef.current) clearTimeout(savedToastTimerRef.current);
+  }, []);
+
+  const saveRestaurantToRecent = useCallback((r: RestaurantData) => {
+    if (_savedRIds.has(r.id)) {
+      if (!savedRestaurantsRef.current.some((saved) => saved.id === r.id)) {
+        savedRestaurantsRef.current = [...savedRestaurantsRef.current, r];
+      }
+      return false;
+    }
+    _savedRIds.add(r.id);
+    savedRestaurantsRef.current = [...savedRestaurantsRef.current, r];
+    return true;
+  }, []);
+
+  const showSavedToast = useCallback((restaurant: RestaurantData, collectionTitle: string) => {
+    if (savedToastTimerRef.current) clearTimeout(savedToastTimerRef.current);
+    setSavedToast({
+      id: Date.now(),
+      restaurant,
+      collectionTitle,
+    });
+    savedToastTimerRef.current = setTimeout(() => {
+      setSavedToast(null);
+      savedToastTimerRef.current = null;
+    }, 4200);
+  }, []);
+
+  const hideSavedToast = useCallback(() => {
+    if (savedToastTimerRef.current) {
+      clearTimeout(savedToastTimerRef.current);
+      savedToastTimerRef.current = null;
+    }
+    setSavedToast(null);
+  }, []);
+
+  const getWishlistCollectionTitle = useCallback((collectionId: string) => {
+    if (collectionId === "recent") return "Recently searched restaurants";
+    return wishlistCollections.find((collection) => collection.id === collectionId)?.title ?? "Wishlist";
+  }, [wishlistCollections]);
+
+  const saveRestaurantToCollection = useCallback((restaurant: RestaurantData, collectionId: string) => {
+    saveRestaurantToRecent(restaurant);
+    if (collectionId !== "recent") {
+      setWishlistCollections((current) => current.map((collection) => {
+        if (collection.id !== collectionId || collection.restaurants.some((saved) => saved.id === restaurant.id)) {
+          return collection;
+        }
+        return { ...collection, restaurants: [...collection.restaurants, restaurant] };
+      }));
+    }
+    incrementSavedSnapshot();
+    _notifySaved();
+  }, [saveRestaurantToRecent]);
+
+  const removeSavedRestaurant = useCallback((r: RestaurantData) => {
+    const existed = _savedRIds.delete(r.id);
+    savedRestaurantsRef.current = savedRestaurantsRef.current.filter((saved) => saved.id !== r.id);
+    setWishlistCollections((current) => current.map((collection) => ({
+      ...collection,
+      restaurants: collection.restaurants.filter((saved) => saved.id !== r.id),
+    })));
+    if (existed) {
+      incrementSavedSnapshot();
+      _notifySaved();
+    }
+    setWishlistRestaurant((current) => (current?.id === r.id ? null : current));
+    hideSavedToast();
+  }, [hideSavedToast]);
+
   const toggleSaveRestaurant = useCallback((r: RestaurantData) => {
-    if (!requireAuth("/discover", "Sign in to save restaurants to your Heart list.")) return;
-    if (_savedRIds.has(r.id)) { _savedRIds.delete(r.id); savedRestaurantsRef.current = savedRestaurantsRef.current.filter((s) => s.id !== r.id); }
-    else { _savedRIds.add(r.id); savedRestaurantsRef.current = [...savedRestaurantsRef.current, r]; }
-    incrementSavedSnapshot(); _notifySaved();
-  }, [requireAuth]);
+    if (_savedRIds.has(r.id)) {
+      removeSavedRestaurant(r);
+      return;
+    }
+
+    const canQuickSave = authStore.getSnapshot()
+      && quickSaveTarget
+      && Date.now() - quickSaveTarget.savedAt <= QUICK_SAVE_WINDOW_MS;
+
+    if (canQuickSave) {
+      const savedAt = Date.now();
+      saveRestaurantToCollection(r, quickSaveTarget.collectionId);
+      setQuickSaveTarget({ ...quickSaveTarget, savedAt });
+      showSavedToast(r, quickSaveTarget.title);
+      return;
+    }
+
+    setWishlistRestaurant(r);
+  }, [quickSaveTarget, removeSavedRestaurant, saveRestaurantToCollection, showSavedToast]);
+
+  const handleSelectWishlistCollection = useCallback((collectionId: string) => {
+    if (!wishlistRestaurant) return;
+    if (!authStore.getSnapshot()) {
+      setWishlistRestaurant(null);
+      requireAuth("/discover", "Sign in to save restaurants to your wishlist.");
+      return;
+    }
+    const title = getWishlistCollectionTitle(collectionId);
+    const savedAt = Date.now();
+    saveRestaurantToCollection(wishlistRestaurant, collectionId);
+    setQuickSaveTarget({ collectionId, title, savedAt });
+    showSavedToast(wishlistRestaurant, title);
+    setWishlistRestaurant(null);
+  }, [getWishlistCollectionTitle, requireAuth, saveRestaurantToCollection, showSavedToast, wishlistRestaurant]);
+
+  const handleCreateWishlist = useCallback((name: string) => {
+    if (!wishlistRestaurant) return;
+    if (!authStore.getSnapshot()) {
+      setWishlistRestaurant(null);
+      requireAuth("/discover", "Sign in to create a wishlist.");
+      return;
+    }
+    const collectionId = `wishlist-${Date.now().toString(36)}`;
+    const nextCollection: AppWishlistCollection = {
+      id: collectionId,
+      title: name,
+      restaurants: [wishlistRestaurant],
+    };
+    const savedAt = Date.now();
+    saveRestaurantToRecent(wishlistRestaurant);
+    setWishlistCollections((current) => [nextCollection, ...current]);
+    setQuickSaveTarget({ collectionId, title: name, savedAt });
+    showSavedToast(wishlistRestaurant, name);
+    incrementSavedSnapshot();
+    _notifySaved();
+    setWishlistRestaurant(null);
+  }, [requireAuth, saveRestaurantToRecent, showSavedToast, wishlistRestaurant]);
+
+  const wishlistSheetCollections: WishlistSheetCollection[] = [
+    {
+      id: "recent",
+      title: "Recently searched restaurants",
+      restaurants: savedRestaurantsRef.current,
+      isDefault: true,
+    },
+    ...wishlistCollections,
+  ];
+
+  const closeWishlistSheet = useCallback(() => {
+    setWishlistRestaurant(null);
+  }, []);
+
+  const handleChangeSavedToast = useCallback((restaurant: RestaurantData) => {
+    hideSavedToast();
+    setWishlistRestaurant(restaurant);
+  }, [hideSavedToast]);
 
   const toggleSaveFood = useCallback((f: SearchResultFood) => {
     if (!requireAuth("/discover", "Sign in to save foods to your Heart list.")) return;
@@ -231,7 +390,8 @@ export function AppLayout() {
   const ctx: AppOutletContext = {
     userLocation, setUserLocation,
     savedRestaurantsRef, savedFoodsRef,
-    toggleSaveRestaurant, toggleSaveFood,
+    wishlistCollections,
+    toggleSaveRestaurant, removeSavedRestaurant, toggleSaveFood,
     requireAuth,
   };
 
@@ -309,6 +469,15 @@ export function AppLayout() {
         }}
         message={loginPrompt?.message}
       />
+      <WishlistSelectionSheet
+        open={!!wishlistRestaurant}
+        restaurant={wishlistRestaurant}
+        collections={wishlistSheetCollections}
+        onClose={closeWishlistSheet}
+        onSelectCollection={handleSelectWishlistCollection}
+        onCreateWishlist={handleCreateWishlist}
+      />
+      <WishlistSavedToast toast={savedToast} onChange={handleChangeSavedToast} />
       <FirstLoginDbModal />
     </div>
   );

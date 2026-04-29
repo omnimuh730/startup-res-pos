@@ -1,8 +1,6 @@
-/* Location Results Page */
-import { ArrowLeft, ChevronRight, MapPin, Star } from "lucide-react";
+﻿/* Location Results Page */
+import { ArrowLeft } from "lucide-react";
 import { ImageWithFallback } from "../../components/figma/ImageWithFallback";
-import { CardSaveBtn } from "./SaveButtons";
-import { fmtR } from "./discoverTypes";
 import type { SearchResultLocation } from "./discoverTypes";
 import type { RestaurantData } from "../detail/RestaurantDetailView";
 import { CITIES } from "./discoverData";
@@ -70,28 +68,6 @@ export function LocationResultsView({ location, onBack, onSelectRestaurant, onSa
             badge={index === 0 ? "Guest favorite" : index === 1 ? "Popular" : undefined}
             waitLabel={index % 3 === 0 ? "Tables tonight" : undefined}
           />
-        ))}
-        {false && restaurants.map((r) => (
-          <div key={r.id} onClick={() => onSelectRestaurant(r)}
-            className="w-full flex items-center gap-3 p-3 rounded-2xl border border-border bg-card hover:bg-secondary/30 transition cursor-pointer text-left">
-            <div className="w-20 h-20 rounded-xl overflow-hidden shrink-0">
-              <ImageWithFallback src={r.image} alt={r.name} className="w-full h-full object-cover" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-[0.875rem] truncate" style={{ fontWeight: 600 }}>{r.name}</p>
-              <p className="text-[0.75rem] text-muted-foreground mt-0.5">{r.cuisine} · {r.price}</p>
-              <div className="flex items-center gap-3 mt-1 text-[0.75rem]">
-                <span className="flex items-center gap-1 text-warning"><Star className="w-3 h-3 fill-current" /> {fmtR(r.rating)}</span>
-                <span className="text-muted-foreground">({r.reviews.toLocaleString()})</span>
-                <span className="text-muted-foreground flex items-center gap-0.5"><MapPin className="w-3 h-3" /> {r.distance}</span>
-              </div>
-            </div>
-            {onSaveRestaurant ? (
-              <CardSaveBtn id={r.id} restaurant={r} onToggle={onSaveRestaurant} variant="inline" />
-            ) : (
-              <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
-            )}
-          </div>
         ))}
       </div>
     </div>

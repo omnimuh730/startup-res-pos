@@ -106,10 +106,3 @@ export const DATE_NIGHT = [
   { id: "d2", name: "Wine & Whisper", cuisine: "Wine Bar \u00b7 French", rating: 4.7, price: "$$$", image: "https://images.unsplash.com/photo-1763867641400-96b9cccdbf7d?w=400&h=300&fit=crop" },
   { id: "d3", name: "Skyline Rooftop", cuisine: "Contemporary", rating: 4.8, price: "$$$$", image: "https://images.unsplash.com/photo-1768397003905-a202ea6325f5?w=400&h=300&fit=crop" },
 ];
-
-export const EDITORS_CHOICE = [
-  { id: "e1", name: "Ember & Oak", cuisine: "Steakhouse", rating: 4.8, tag: "Best Steak", image: "https://images.unsplash.com/photo-1678684279246-96e6afb970f2?w=400&h=300&fit=crop" },
-  { id: "e2", name: "Jade Temple", cuisine: "Chinese Fine Dining", rating: 4.9, tag: "Hidden Gem", image: "https://images.unsplash.com/photo-1694834589398-27b369c6f7a6?w=400&h=300&fit=crop" },
-  { id: "e3", name: "The Herb Garden", cuisine: "Farm to Table", rating: 4.7, tag: "Eco-friendly", image: "https://images.unsplash.com/photo-1692780941487-505d5d908aa6?w=400&h=300&fit=crop" },
-  { id: "e4", name: "Pasta Republic", cuisine: "Italian \u00b7 Handmade", rating: 4.6, tag: "Fresh Pasta", image: "https://images.unsplash.com/photo-1762922425306-ef64664f6e4d?w=400&h=300&fit=crop" },
-];

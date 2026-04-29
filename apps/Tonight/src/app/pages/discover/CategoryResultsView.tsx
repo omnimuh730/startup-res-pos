@@ -1,12 +1,11 @@
 /* Category Results Page (12 Quick Categories) with date picker */
 import { useState } from "react";
-import { ArrowLeft, Star, ChevronRight, CalendarDays, Users } from "lucide-react";
-import { ImageWithFallback } from "../../components/figma/ImageWithFallback";
+import { ArrowLeft, ChevronRight, CalendarDays } from "lucide-react";
 import { DragScrollContainer } from "../shared/DragScrollContainer";
 import { CategoryIcon } from "./CategoryIcon";
 import { CATEGORY_RESTAURANTS, getTimeSlots } from "./discoverCategoryData";
-import { fmtR } from "./discoverTypes";
 import type { RestaurantData } from "../detail/RestaurantDetailView";
+import { AirbnbRestaurantListCard } from "./AirbnbRestaurantListCard";
 
 function CategoryDatePickerModal({ value, onSelect, onClose }: {
   value: Date | null; onSelect: (d: Date) => void; onClose: () => void;
@@ -66,11 +65,12 @@ function CategoryDatePickerModal({ value, onSelect, onClose }: {
   );
 }
 
-export function CategoryResultsView({ category, onBack, onSelectRestaurant, onBookTable }: {
+export function CategoryResultsView({ category, onBack, onSelectRestaurant, onBookTable, onSaveRestaurant }: {
   category: { id: string; label: string; icon?: string };
   onBack: () => void;
   onSelectRestaurant: (r: RestaurantData) => void;
   onBookTable: (r: RestaurantData) => void;
+  onSaveRestaurant?: (r: RestaurantData) => void;
 }) {
   const restaurants = CATEGORY_RESTAURANTS[category.id] || [];
   const [selectedDate, setSelectedDate] = useState(0);
@@ -137,34 +137,20 @@ export function CategoryResultsView({ category, onBack, onSelectRestaurant, onBo
         <CategoryDatePickerModal value={customDate} onSelect={(d) => { setCustomDate(d); setShowDatePicker(false); }} onClose={() => setShowDatePicker(false)} />
       )}
       <div className="space-y-4">
-        {restaurants.map((r) => {
+        {restaurants.map((r, index) => {
           const slots = getTimeSlots(r.id + selectedDate);
           const rd = toRestaurantData(r);
           return (
-            <div key={r.id} className="border-b border-border/80 pb-4 last:border-b-0 last:pb-0">
-              <button onClick={() => onSelectRestaurant(rd)} className="w-full flex gap-3 text-left cursor-pointer group">
-                <div className="relative w-28 h-28 rounded-2xl overflow-hidden bg-secondary shrink-0">
-                  <ImageWithFallback src={r.image} alt={r.name} className="w-full h-full object-cover" />
-                  {r.waitMin !== null && (
-                    <div className="absolute left-2 bottom-2 rounded-full bg-black/65 px-2 py-0.5 text-[0.6875rem] text-white backdrop-blur-sm" style={{ fontWeight: 700 }}>
-                      <Users className="w-2.5 h-2.5 inline mr-0.5" />{r.waitMin}m wait
-                    </div>
-                  )}
-                </div>
-                <div className="flex-1 min-w-0 pt-0.5">
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-[1rem]">{r.emoji}</span>
-                    <p className="text-[0.9375rem] truncate text-[#222222]" style={{ fontWeight: 700 }}>{r.name}</p>
-                  </div>
-                  <p className="text-[0.8125rem] text-[#717171] mt-1">{r.cuisine} · {r.price} · {r.distance}</p>
-                  <div className="flex items-center gap-2 mt-1.5">
-                    <span className="flex items-center gap-1 text-[0.8125rem] text-[#222222]"><Star className="w-3.5 h-3.5 fill-current" /><span style={{ fontWeight: 600 }}>{fmtR(r.rating)}</span></span>
-                    <span className="text-[0.75rem] text-[#717171]">({r.reviews.toLocaleString()} reviews)</span>
-                  </div>
-                </div>
-                <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0 mt-2" />
-              </button>
-              <div className="mt-3 pl-[7rem]">
+            <AirbnbRestaurantListCard
+              key={r.id}
+              restaurant={rd}
+              onSelect={onSelectRestaurant}
+              onSave={onSaveRestaurant}
+              badge={index === 0 ? "Guest favorite" : index === 1 ? "Popular" : undefined}
+              waitLabel={r.waitMin !== null ? `${r.waitMin}m wait` : undefined}
+              detail={`${r.cuisine} \u00b7 ${r.price} \u00b7 ${r.distance}`}
+              meta={`${r.reviews.toLocaleString()} reviews`}
+            >
                 <DragScrollContainer className="flex gap-1.5">
                   {slots.map((slot) => (
                     <button key={slot.time} onClick={(e) => { e.stopPropagation(); if (slot.open) onBookTable(rd); }} disabled={!slot.open}
@@ -175,8 +161,7 @@ export function CategoryResultsView({ category, onBack, onSelectRestaurant, onBo
                     </button>
                   ))}
                 </DragScrollContainer>
-              </div>
-            </div>
+            </AirbnbRestaurantListCard>
           );
         })}
       </div>
