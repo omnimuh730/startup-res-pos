@@ -1,13 +1,13 @@
 /* Subscription Page — plan selection, payment, confirmation */
 import { useState, useSyncExternalStore } from "react";
-import { Card } from "../../components/ds/Card";
-import { Text } from "../../components/ds/Text";
-import { Button } from "../../components/ds/Button";
-import { Modal, ModalHeader, ModalBody, ModalFooter } from "../../components/ds/Modal";
-import { DSBadge } from "../../components/ds/Badge";
+import { Card } from "../../../components/ds/Card";
+import { Text } from "../../../components/ds/Text";
+import { Button } from "../../../components/ds/Button";
+import { Modal, ModalHeader, ModalBody, ModalFooter } from "../../../components/ds/Modal";
+import { DSBadge } from "../../../components/ds/Badge";
 import { Crown, Star, TrendingUp, Gift, Users, Lock, Check, Wallet } from "lucide-react";
-import { subscribePlan, getPlanSnapshot, getPlan, activatePro, cancelPro, PLAN_PRICES, type BillingCycle } from "../../stores/subscriptionStore";
-import { PageHeader } from "./profileHelpers";
+import { subscribePlan, getPlanSnapshot, getPlan, activatePro, cancelPro, PLAN_PRICES, type BillingCycle } from "../../../stores/subscriptionStore";
+import { PageHeader } from "../profileHelpers";
 
 export function SubscriptionPage({ onBack }: { onBack: () => void }) {
   const [step, setStep] = useState<"plan" | "payment" | "processing" | "confirmed">("plan");

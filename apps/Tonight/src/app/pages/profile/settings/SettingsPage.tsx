@@ -1,14 +1,14 @@
 /* Settings Page (merged: Notifications + Privacy & Security + Sound) */
 import { useState } from "react";
-import { Text } from "../../components/ds/Text";
-import { Button } from "../../components/ds/Button";
-import { Toggle } from "../../components/ds/Toggle";
-import { PasswordInput } from "../../components/ds/PasswordInput";
+import { Text } from "../../../components/ds/Text";
+import { Button } from "../../../components/ds/Button";
+import { Toggle } from "../../../components/ds/Toggle";
+import { PasswordInput } from "../../../components/ds/PasswordInput";
 import {
   Bell, Gift, Calendar, Star, ShoppingBag, Volume2,
   MapPin, Eye, Smartphone, Share, Shield, Lock, X, Sun,
 } from "lucide-react";
-import { PageHeader, themePresets } from "./profileHelpers";
+import { PageHeader, themePresets } from "../profileHelpers";
 
 function ToggleRow({ icon: Icon, label, description, checked, onToggle }: {
   icon: typeof Bell; label: string; description: string; checked: boolean; onToggle: (v: boolean) => void;

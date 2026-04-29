@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { ArrowLeft, MessageCircle, Plus, Trash2, X } from "lucide-react";
 import { motion, useAnimation, useMotionValue, useTransform, PanInfo } from "framer-motion";
-import { HelpChatModal, type ChatSession } from "./HelpChatModal";
+import { SupportChatView, type ChatSession } from "./SupportChat";
 
 // Re-using the Custom Logo for consistency
 const BrandLogo = ({ className = "w-8 h-8" }) => (
@@ -136,7 +136,7 @@ export function ContactSupportPage({ onBack }: { onBack: () => void }) {
 
       {/* Full screen active chat */}
       {activeSessionId && (
-        <HelpChatModal
+        <SupportChatView
           session={activeSession}
           onClose={() => setActiveSessionId(null)}
           onUpdateSession={handleUpdateSession}

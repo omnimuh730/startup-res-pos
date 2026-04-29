@@ -14,7 +14,7 @@ import {
 import { authStore } from "./stores/authStore";
 import { LoginPromptModal } from "./components/LoginPromptModal";
 import { FirstLoginDbModal } from "./components/FirstLoginDbModal";
-import { dailyBonusStore } from "./pages/discover/DailyBonusModal";
+import { dailyBonusStore } from "./pages/profile/dailyreward/DailyBonusModal";
 import { WishlistSelectionSheet, type WishlistSheetCollection } from "./pages/discover/WishlistSelectionSheet";
 import { WishlistSavedToast, type WishlistSavedToastState } from "./pages/discover/WishlistSavedToast";
 

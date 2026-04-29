@@ -16,13 +16,13 @@ import { subscribePlan, getPlanSnapshot, getPlan } from "../../stores/subscripti
 import { subscribeNotifications, getNotificationSnapshot, getUnreadCount } from "../../stores/notificationStore";
 import type { AppOutletContext } from "../../AppLayout";
 import { TopUpPage, SendGiftPage, HistoryPage } from "./ProfileSubPages";
-import { WalletCardStack } from "./WalletCardStack";
-import { DailyBonusModal, dailyBonusStore, markDailyBonusClaimed, type DailyBonusReward } from "../discover/DailyBonusModal";
+import { WalletCardStack } from "./wallet/WalletCardStack";
+import { DailyBonusModal, dailyBonusStore, markDailyBonusClaimed, type DailyBonusReward } from "./dailyreward/DailyBonusModal";
 import { ReferPage, FriendsPage, TierBenefitsPage } from "./SavedAndSocialPages";
-import { SettingsPage } from "./SettingsPage";
-import { SubscriptionPage } from "./SubscriptionPage";
-import { HelpCenterPage } from "./HelpCenterPage";
-import { ContactSupportPage } from "./ContactSupportPage";
+import { SettingsPage } from "./settings/SettingsPage";
+import { SubscriptionPage } from "./subscription/SubscriptionPage";
+import { HelpCenterPage } from "./help-center/HelpCenterPage";
+import { ContactSupportPage } from "./support/ContactSupportPage";
 import { LocationPickerModal } from "../shared/LocationPickerModal";
 import { NotificationsView } from "../discover/NotificationsView";
 

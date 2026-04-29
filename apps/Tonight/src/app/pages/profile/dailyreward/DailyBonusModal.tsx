@@ -1,8 +1,8 @@
 /* Daily Bonus — pick-a-gift modal shown once per day on signin */
 import { useState } from "react";
 import { Gift, Sparkles, PartyPopper } from "lucide-react";
-import { Modal, ModalBody } from "../../components/ds/Modal";
-import { Button } from "../../components/ds/Button";
+import { Modal, ModalBody } from "../../../components/ds/Modal";
+import { Button } from "../../../components/ds/Button";
 
 export type DailyBonusReward = {
   id: string;

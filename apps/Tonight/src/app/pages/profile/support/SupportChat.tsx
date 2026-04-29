@@ -89,7 +89,7 @@ function agentReply(payload: string): ChatMessage[] {
   }
 }
 
-export function HelpChatModal({ session, onClose, onUpdateSession }: HelpChatScreenProps) {
+export function SupportChatView({ session, onClose, onUpdateSession }: HelpChatScreenProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [typing, setTyping] = useState(false);

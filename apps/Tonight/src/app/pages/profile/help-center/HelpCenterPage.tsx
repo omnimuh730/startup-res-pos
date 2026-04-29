@@ -19,13 +19,13 @@ import {
   Volume2,
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
-import { DSBadge } from "../../components/ds/Badge";
-import { Button } from "../../components/ds/Button";
-import { Card } from "../../components/ds/Card";
-import { Heading, Text } from "../../components/ds/Text";
-import { ImageWithFallback } from "../../components/figma/ImageWithFallback";
-import { SectionHelpfulness } from "./help-center/HelpCenterPrimitives";
-import { buildFaqs, buildSections } from "./help-center/helpCenterContent";
+import { DSBadge } from "../../../components/ds/Badge";
+import { Button } from "../../../components/ds/Button";
+import { Card } from "../../../components/ds/Card";
+import { Heading, Text } from "../../../components/ds/Text";
+import { ImageWithFallback } from "../../../components/figma/ImageWithFallback";
+import { SectionHelpfulness } from "./HelpCenterPrimitives";
+import { buildFaqs, buildSections } from "./helpCenterContent";
 
 interface HelpCenterPageProps {
   onBack: () => void;
