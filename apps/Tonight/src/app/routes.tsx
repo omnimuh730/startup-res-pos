@@ -10,7 +10,7 @@ import { DiscoverPage } from "./pages/discover/DiscoverPage";
 import { DiningPage } from "./pages/dining/DiningPage";
 import { ProfilePage } from "./pages/profile/ProfilePage";
 import { ExplorerPage } from "./pages/explorer/ExplorerPage";
-import { SavedRoute, NotificationsRoute, QRPayRoute } from "./routeWrappers";
+import { SavedRoute, QRPayRoute } from "./routeWrappers";
 
 const routes = [
   {
@@ -43,7 +43,7 @@ const routes = [
             Component: RequireAuth,
             children: [
               { path: "saved", Component: SavedRoute },
-              { path: "notifications", Component: NotificationsRoute },
+              { path: "notifications", element: <Navigate to="/profile/notifications" replace /> },
               { path: "dining/*", Component: DiningPage },
               { path: "profile/*", Component: ProfilePage },
             ],

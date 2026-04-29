@@ -441,7 +441,7 @@ export function AppLayout() {
               <React.Fragment key={tab.id}>
                 <TabButton tab={tab} isActive={activeTab === tab.id}
                   onSelect={() => handleTabSelect(tab.id)}
-                  badgeCount={tab.id === "discover" ? unreadCount : undefined}
+                  badgeCount={tab.id === "profile" ? unreadCount : undefined}
                   showDot={tab.id === "profile" && !dailyClaimed} />
                 {idx === 1 && (
                   <div className="relative flex items-center justify-center" style={{ width: 0 }}>

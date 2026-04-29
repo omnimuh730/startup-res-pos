@@ -26,6 +26,7 @@ import { SubscriptionPage } from "./SubscriptionPage";
 import { HelpCenterPage } from "./HelpCenterPage";
 import { ContactSupportPage } from "./ContactSupportPage";
 import { LocationPickerModal } from "../shared/LocationPickerModal";
+import { NotificationsView } from "../discover/NotificationsView";
 
 const PRESET_AVATARS: { id: string; src: string; label: string }[] = [
   { id: "a1", src: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=240&h=240&fit=crop&crop=faces", label: "Classic" },
@@ -49,6 +50,7 @@ const PAGE_MAP: Record<string, string> = {
   subscription: "subscription",
   help: "help",
   "contact-support": "contactSupport",
+  notifications: "notifications",
 };
 const REVERSE_PAGE_MAP: Record<string, string> = Object.fromEntries(
   Object.entries(PAGE_MAP).map(([url, state]) => [state, url])
@@ -85,8 +87,8 @@ export function ProfilePage() {
   const [tierBenefitsOpen, setTierBenefitsOpen] = useState(false);
   const handleClaimBonus = (reward: DailyBonusReward) => { markDailyBonusClaimed(); console.info("Daily bonus claimed:", reward); };
   const openNotifications = () => {
-    if (outletCtx?.requireAuth && !outletCtx.requireAuth("/notifications", "Sign in to view your notifications.")) return;
-    navigate("/notifications");
+    if (outletCtx?.requireAuth && !outletCtx.requireAuth("/profile/notifications", "Sign in to view your notifications.")) return;
+    navigate("/profile/notifications");
   };
 
   if (page === "topUp") return <TopUpPage onBack={goBack} />;
@@ -97,6 +99,7 @@ export function ProfilePage() {
   if (page === "settings") return <SettingsPage onBack={goBack} />;
   if (page === "tierBenefits") return <TierBenefitsPage onBack={goBack} />;
   if (page === "subscription") return <SubscriptionPage onBack={goBack} />;
+  if (page === "notifications") return <NotificationsView onBack={goBack} />;
   if (page === "help") return (
     <HelpCenterPage
       onBack={goBack}

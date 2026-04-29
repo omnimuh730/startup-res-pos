@@ -371,7 +371,7 @@ export default function RestaurantApp() {
                   tab={tab}
                   isActive={activeTab === tab.id}
                   onSelect={() => handleTabChange(tab.id)}
-                  badgeCount={tab.id === "discover" ? unreadCount : undefined}
+                  badgeCount={tab.id === "profile" ? unreadCount : undefined}
                 />
                 {/* FAB between Explorer (idx 1) and Dining (idx 2) */}
                 {idx === 1 && (
