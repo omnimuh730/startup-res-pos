@@ -25,6 +25,7 @@ export function SendGiftPage({ onBack }: { onBack: () => void }) {
   const activeAmount = Number(valStr) || 0;
   const presets = currency === "USD" ? [10, 25, 50] : [500000, 1000000, 2000000];
   const symbol = currency === "KRW" ? "₩" : "$";
+  const altSymbol = currency === "KRW" ? "$" : "₩";
   
   // Format string for the bottom button
   const intPart = valStr.split(".")[0] || "0";
@@ -122,8 +123,14 @@ export function SendGiftPage({ onBack }: { onBack: () => void }) {
           />
         </div>
 
-        {/* Gift Card */}
-        <div className="w-full max-w-[280px] mx-auto aspect-[1.58/1] rounded-[1.25rem] bg-[#FF5A5F] p-5 flex flex-col justify-between relative overflow-hidden shadow-[0_8px_24px_rgba(255,90,95,0.25)] shrink-0">
+        {/* Gift Card — USD coral / KRW blue series */}
+        <div
+          className={`relative mx-auto flex aspect-[1.58/1] w-full max-w-[280px] shrink-0 flex-col justify-between overflow-hidden rounded-[1.25rem] p-5 ${
+            currency === "KRW"
+              ? "bg-gradient-to-br from-blue-600 to-sky-500 shadow-[0_8px_24px_rgba(37,99,235,0.28)]"
+              : "bg-[#FF5A5F] shadow-[0_8px_24px_rgba(255,90,95,0.25)]"
+          }`}
+        >
           
           <div className="absolute top-[-30%] right-[-10%] w-[80%] aspect-square bg-white rounded-full opacity-[0.08] blur-[24px]" />
           
@@ -140,8 +147,12 @@ export function SendGiftPage({ onBack }: { onBack: () => void }) {
             </p>
             
             {/* 2. PERFECT ALIGNMENT: items-baseline correctly aligns the symbol with the bottom of the numbers */}
-            <div className="flex items-baseline text-white">
-              <span className="text-[1.5rem] font-medium opacity-90 mr-1.5 align-baseline">
+            <div
+              className={`flex items-baseline ${
+                currency === "KRW" ? "text-sky-100" : "text-white"
+              }`}
+            >
+              <span className="mr-1.5 align-baseline text-[1.5rem] font-medium opacity-90">
                 {symbol}
               </span>
               
@@ -161,7 +172,7 @@ export function SendGiftPage({ onBack }: { onBack: () => void }) {
                         damping: 30, // Perfectly smooth iOS-like curve
                         mass: 0.8,
                       }}
-                      className="text-[2.5rem] font-bold tracking-tight leading-none tabular-nums inline-block align-baseline"
+                      className="inline-block align-baseline text-[2.5rem] font-bold leading-none tabular-nums tracking-tight text-white"
                     >
                       {item.char}
                     </motion.span>
@@ -183,8 +194,10 @@ export function SendGiftPage({ onBack }: { onBack: () => void }) {
                   key={p} 
                   onClick={() => setValStr(String(p))} 
                   className={`flex-1 py-3 rounded-2xl text-[0.8125rem] font-bold transition-all cursor-pointer ${
-                    isSel 
-                      ? "bg-black text-white shadow-md" 
+                    isSel
+                      ? currency === "KRW"
+                        ? "bg-blue-600 text-white shadow-md shadow-blue-600/25"
+                        : "bg-rose-600 text-white shadow-md shadow-rose-600/25"
                       : "bg-[#f3f4f6] text-black hover:bg-gray-200"
                   }`}
                 >
@@ -195,10 +208,15 @@ export function SendGiftPage({ onBack }: { onBack: () => void }) {
           </div>
           <button 
             onClick={switchCurrency}
-            className="w-12 h-12 rounded-2xl bg-[#f3f4f6] hover:bg-gray-200 flex items-center justify-center text-black transition cursor-pointer shrink-0"
+            className={`flex h-12 w-12 shrink-0 flex-col items-center justify-center gap-0.5 rounded-2xl text-[0.625rem] font-bold leading-none transition cursor-pointer ${
+              currency === "USD"
+                ? "bg-sky-100 text-blue-700 hover:bg-sky-200"
+                : "bg-rose-100 text-rose-700 hover:bg-rose-200"
+            }`}
             aria-label="Switch Currency"
           >
-            <ArrowLeftRight className="w-4 h-4" strokeWidth={2.5} />
+            <span>{altSymbol}</span>
+            <ArrowLeftRight className="h-3 w-3 shrink-0 opacity-80" strokeWidth={2.5} />
           </button>
         </div>
 
@@ -222,7 +240,11 @@ export function SendGiftPage({ onBack }: { onBack: () => void }) {
         <button 
           disabled={activeAmount <= 0 || !recipient.trim()}
           onClick={onBack}
-          className="mt-auto mb-2 w-full shrink-0 rounded-full bg-[#FF5A5F] py-3 text-[1.0625rem] font-bold text-white shadow-[0_4px_12px_rgba(255,90,95,0.2)] transition-colors hover:bg-[#E0484D] disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-[#FF5A5F]"
+          className={`mt-auto mb-2 w-full shrink-0 rounded-full py-3 text-[1.0625rem] font-bold text-white transition-colors disabled:cursor-not-allowed disabled:opacity-30 ${
+            currency === "KRW"
+              ? "bg-blue-600 shadow-[0_4px_12px_rgba(37,99,235,0.25)] hover:bg-blue-700 disabled:hover:bg-blue-600"
+              : "bg-[#FF5A5F] shadow-[0_4px_12px_rgba(255,90,95,0.2)] hover:bg-[#E0484D] disabled:hover:bg-[#FF5A5F]"
+          }`}
         >
           Send {activeAmount > 0 ? `${symbol}${displayAmount}` : "Gift"}
         </button>
