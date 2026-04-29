@@ -6,7 +6,7 @@ import { Stagger, StaggerItem } from "../../components/ds/Animate";
 import { DSBadge } from "../../components/ds/Badge";
 import { ImageWithFallback } from "../../components/figma/ImageWithFallback";
 import { Ribbon, pickRibbonLabel } from "../../components/ds/Ribbon";
-import { Star, ChevronRight, Clock, MapPin, Search } from "lucide-react";
+import { Star, ChevronRight, Clock, Map as MapIcon, MapPin, Search } from "lucide-react";
 import { DragScrollContainer } from "../shared/DragScrollContainer";
 import { RestaurantDetailView } from "../detail/RestaurantDetailView";
 import type { RestaurantData } from "../detail/RestaurantDetailView";
@@ -176,6 +176,12 @@ export function DiscoverPage() {
     setShowSearchModal(false);
     navigate(`/discover/search?q=${encodeURIComponent(plan.query)}`);
   };
+  const handleOpenMapSearch = () => {
+    const q = (searchPlan?.query || searchInput || "Gangnam").trim();
+    setSearchInput(q);
+    setSearchResults(filterSearchResults(q));
+    navigate(`/discover/search?q=${encodeURIComponent(q)}`);
+  };
   const handleSearchBack = () => { setSearchInput(""); navigate("/discover"); };
 
   const handleSelectLocation = (_loc: SearchResultLocation) => { saveScrollPos(); setSelectedLocation(_loc); };
@@ -258,6 +264,14 @@ export function DiscoverPage() {
               {searchPlan ? formatSearchPlanSummary(searchPlan) : "Tonight, 7:00 PM, 2 people"}
             </span>
           </span>
+        </button>
+        <button
+          type="button"
+          onClick={handleOpenMapSearch}
+          className="h-14 w-14 shrink-0 rounded-full bg-card border border-border shadow-[0_6px_20px_rgba(0,0,0,0.08)] flex items-center justify-center cursor-pointer transition hover:scale-[1.03] active:scale-95"
+          aria-label="Open map search"
+        >
+          <MapIcon className="w-5 h-5 text-foreground" />
         </button>
       </div>
     </div>
