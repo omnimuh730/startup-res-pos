@@ -41,7 +41,7 @@ export function TopUpSelectView({
   const altLabel = currency === "KRW" ? "USD" : "KRW";
 
   return (
-    <div className="pb-32 relative">
+    <div className="pb-4 relative">
       <PageHeader title="Topup" onBack={onBack} />
       <div className="text-center mb-6 mt-2">
         <Text className="text-[0.6875rem] uppercase text-muted-foreground" style={{ fontWeight: 600, letterSpacing: "0.14em" }}>Topup amount</Text>

@@ -1,74 +1,233 @@
 import { useState } from "react";
-import { Gift, Minus, Plus, Send, Wallet } from "lucide-react";
-import { DSBadge } from "../../../components/ds/Badge";
-import { Button } from "../../../components/ds/Button";
-import { Input } from "../../../components/ds/Input";
-import { Text } from "../../../components/ds/Text";
-import { PageHeader } from "../profileHelpers";
+import { ArrowLeft, Delete, ArrowLeftRight, User, Sparkles } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
-const fmtMoney = (n: number, c: "KRW" | "USD") => c === "KRW" ? `\u20A9${Math.round(n).toLocaleString()}` : `$${n.toFixed(2)}`;
+// Custom Brand Logo
+const BrandLogo = ({ className = "w-8 h-8" }) => (
+  <svg viewBox="0 0 120 100" fill="none" xmlns="http://www.w3.org/2000/svg" className={className}>
+    <g transform="translate(0, 0)">
+      <circle cx="20" cy="50" r="12" fill="currentColor" />
+      <path
+        fillRule="evenodd"
+        clipRule="evenodd"
+        d="M75 85C94.33 85 110 69.33 110 50C110 30.67 94.33 15 75 15C55.67 15 40 30.67 40 50C40 69.33 55.67 85 75 85ZM75 62C81.627 62 87 56.627 87 50C87 43.373 81.627 38 75 38C68.373 38 63 43.373 63 50C63 56.627 68.373 62 75 62Z"
+        fill="currentColor"
+      />
+    </g>
+  </svg>
+);
 
 export function SendGiftPage({ onBack }: { onBack: () => void }) {
-  const [currency, setCurrency] = useState<"KRW" | "USD">("KRW");
-  const [amount, setAmount] = useState(30_000);
+  const [currency, setCurrency] = useState<"KRW" | "USD">("USD");
+  const [valStr, setValStr] = useState("50");
   const [recipient, setRecipient] = useState("");
 
-  const step = currency === "KRW" ? 5_000 : 5;
-  const min = currency === "KRW" ? 5_000 : 5;
-  const max = currency === "KRW" ? 1_000_000 : 1000;
-  const fmt = (n: number) => fmtMoney(n, currency);
-  const balance = currency === "KRW" ? 13_000_000 : 5_000;
+  const activeAmount = Number(valStr) || 0;
+  const presets = currency === "USD" ? [10, 25, 50] : [500000, 1000000, 2000000];
+  const symbol = currency === "KRW" ? "₩" : "$";
+  
+  // Format string for the bottom button
+  const intPart = valStr.split(".")[0] || "0";
+  const hasDot = valStr.includes(".");
+  const decPart = hasDot ? valStr.split(".")[1] : "";
+  const displayAmount = currency === "USD" && hasDot 
+    ? `${Number(intPart).toLocaleString()}.${decPart}` 
+    : Number(intPart).toLocaleString();
 
-  const switchCurrency = (c: "KRW" | "USD") => {
-    setCurrency(c);
-    setAmount(c === "KRW" ? 30_000 : 25);
+  // 1. SMART FORMATTING: Generate stable IDs for Framer Motion
+  // This completely stops the "bombing" effect. Digits keep their original ID,
+  // so only new digits animate, while existing ones smoothly slide over.
+  const getAnimatedItems = () => {
+    const items = [];
+    
+    // Integer part
+    for (let i = 0; i < intPart.length; i++) {
+      items.push({ id: `raw-${i}`, char: intPart[i] });
+      
+      const digitsAfter = intPart.length - 1 - i;
+      // Insert commas stably based on distance from the decimal point
+      if (digitsAfter > 0 && digitsAfter % 3 === 0) {
+        items.push({ id: `comma-${digitsAfter}`, char: "," });
+      }
+    }
+
+    // Decimal part
+    if (hasDot) {
+      items.push({ id: "dot", char: "." });
+      for (let i = 0; i < decPart.length; i++) {
+        items.push({ id: `dec-${i}`, char: decPart[i] });
+      }
+    }
+    
+    // Fallback if empty
+    if (items.length === 0) items.push({ id: "raw-0", char: "0" });
+
+    return items;
+  };
+
+  const animatedDigits = getAnimatedItems();
+
+  // Keypad logic
+  const KEYS = currency === "USD" 
+    ? ["1", "2", "3", "4", "5", "6", "7", "8", "9", ".", "0", "back"] 
+    : ["1", "2", "3", "4", "5", "6", "7", "8", "9", "", "0", "back"];
+
+  const switchCurrency = () => {
+    const newCur = currency === "KRW" ? "USD" : "KRW";
+    setCurrency(newCur);
+    setValStr(newCur === "USD" ? "50" : "500000");
+  };
+
+  const pressKey = (k: string) => {
+    if (k === "back") {
+      setValStr(prev => prev.length > 1 ? prev.slice(0, -1) : "");
+      return;
+    }
+    if (k === "." && valStr.includes(".")) return;
+    if (valStr === "0" && k !== ".") {
+      setValStr(k);
+      return;
+    }
+    if (currency === "USD" && valStr.length > 6) return;
+    if (currency === "KRW" && valStr.length > 9) return;
+    
+    setValStr(prev => prev + k);
   };
 
   return (
-    <div className="pb-8">
-      <PageHeader title="Send Gift Card" onBack={onBack} />
-      <div className="text-center mb-5">
-        <div className="w-16 h-16 rounded-full bg-success/10 flex items-center justify-center mx-auto mb-3">
-          <Gift className="w-8 h-8 text-success" />
+    <div className="bg-white flex h-full min-h-0 flex-col font-sans">
+      
+      {/* Header */}
+      <div className="sticky top-0 z-20 flex items-center justify-between px-4 pt-8 pb-2 bg-white shrink-0">
+        <button onClick={onBack} className="w-10 h-10 -ml-2 rounded-full hover:bg-gray-100 flex items-center justify-center text-black cursor-pointer transition">
+          <ArrowLeft className="w-5 h-5" />
+        </button>
+        <span className="font-bold text-[1rem] tracking-tight">Send a gift</span>
+        <div className="w-10" />
+      </div>
+      
+      <div className="flex-1 min-h-0 flex flex-col overflow-y-auto px-6 pt-4">
+        
+        {/* Recipient Input */}
+        <div className="relative mb-8 shrink-0">
+          <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
+            <User className="w-[18px] h-[18px] text-gray-400" />
+          </div>
+          <input 
+            type="text" 
+            value={recipient}
+            onChange={(e) => setRecipient(e.target.value)}
+            placeholder="Who is this for? (Username)" 
+            className="w-full bg-[#f3f4f6] text-black text-[0.9375rem] font-medium rounded-[1rem] py-3.5 pl-11 pr-4 outline-none focus:ring-2 focus:ring-black/5 transition placeholder:font-normal placeholder:text-gray-500"
+          />
         </div>
-        <Text className="text-[0.8125rem] text-muted-foreground">Send a dining gift to someone special</Text>
-      </div>
 
-      <Text className="text-[0.8125rem] mb-2" style={{ fontWeight: 600 }}>Send From</Text>
-      <div className="grid grid-cols-2 gap-2 mb-4">
-        <button onClick={() => switchCurrency("KRW")} className={`rounded-xl p-3 text-left border transition ${currency === "KRW" ? "border-primary bg-primary/5" : "border-border bg-card hover:bg-secondary/30"}`}>
-          <p className="text-[0.625rem] text-muted-foreground tracking-wider" style={{ fontWeight: 600 }}>DOMESTIC · ₩</p>
-          <p className="text-[0.9375rem] mt-0.5" style={{ fontWeight: 700 }}>₩13,000,000</p>
-        </button>
-        <button onClick={() => switchCurrency("USD")} className={`rounded-xl p-3 text-left border transition ${currency === "USD" ? "border-primary bg-primary/5" : "border-border bg-card hover:bg-secondary/30"}`}>
-          <p className="text-[0.625rem] text-muted-foreground tracking-wider" style={{ fontWeight: 600 }}>FOREIGN · $</p>
-          <p className="text-[0.9375rem] mt-0.5" style={{ fontWeight: 700 }}>$5,000.00</p>
-        </button>
-      </div>
+        {/* Gift Card */}
+        <div className="w-full max-w-[280px] mx-auto aspect-[1.58/1] rounded-[1.25rem] bg-[#FF5A5F] p-5 flex flex-col justify-between relative overflow-hidden shadow-[0_8px_24px_rgba(255,90,95,0.25)] shrink-0">
+          
+          <div className="absolute top-[-30%] right-[-10%] w-[80%] aspect-square bg-white rounded-full opacity-[0.08] blur-[24px]" />
+          
+          <div className="flex justify-between items-start relative z-10">
+            <div className="bg-white/20 p-2 rounded-[0.625rem] backdrop-blur-md text-white">
+              <BrandLogo className="w-6 h-6" />
+            </div>
+            <Sparkles className="w-5 h-5 text-white/50" />
+          </div>
 
-      <div className="space-y-4">
-        <Input label="Recipient Username" value={recipient} onChange={e => setRecipient(e.target.value)} placeholder="Enter username" fullWidth />
-        <div>
-          <Text className="text-[0.8125rem] mb-2" style={{ fontWeight: 600 }}>Gift Amount</Text>
-          <div className="flex items-center gap-3 justify-center">
-            <Button variant="outline" size="icon" radius="full" onClick={() => setAmount(Math.max(min, amount - step))}><Minus className="w-4 h-4" /></Button>
-            <Text className="text-[1.5rem] w-32 text-center" style={{ fontWeight: 700 }}>{fmt(amount)}</Text>
-            <Button variant="outline" size="icon" radius="full" onClick={() => setAmount(Math.min(max, amount + step))}><Plus className="w-4 h-4" /></Button>
+          <div className="relative z-10">
+            <p className="text-white/80 text-[0.6875rem] font-bold tracking-widest uppercase mb-0.5">
+              Gift Card Balance
+            </p>
+            
+            {/* 2. PERFECT ALIGNMENT: items-baseline correctly aligns the symbol with the bottom of the numbers */}
+            <div className="flex items-baseline text-white">
+              <span className="text-[1.5rem] font-medium opacity-90 mr-1.5 align-baseline">
+                {symbol}
+              </span>
+              
+              {/* 3. SMOOTH GRADUATE ANIMATION */}
+              <div className="flex items-baseline h-[3rem]">
+                <AnimatePresence mode="popLayout">
+                  {animatedDigits.map((item) => (
+                    <motion.span
+                      layout // This is what creates the smooth left/right sliding
+                      key={`${item.id}-${item.char}`}
+                      initial={{ opacity: 0, scale: 0.6 }} // Gentle pop in
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.6 }} // Gentle pop out
+                      transition={{
+                        type: "spring",
+                        stiffness: 400,
+                        damping: 30, // Perfectly smooth iOS-like curve
+                        mass: 0.8,
+                      }}
+                      className="text-[2.5rem] font-bold tracking-tight leading-none tabular-nums inline-block align-baseline"
+                    >
+                      {item.char}
+                    </motion.span>
+                  ))}
+                </AnimatePresence>
+              </div>
+            </div>
+
           </div>
         </div>
-        <Input label="Personal Message (optional)" placeholder="Enjoy a great meal!" fullWidth />
-      </div>
-      <div className="mt-4 p-3 rounded-xl bg-secondary flex items-center gap-3">
-        <Wallet className="w-5 h-5 text-muted-foreground" />
-        <div className="flex-1">
-          <Text className="text-[0.8125rem]" style={{ fontWeight: 500 }}>Pay from {currency === "KRW" ? "Domestic" : "Foreign"} Balance</Text>
-          <Text className="text-muted-foreground text-[0.6875rem]">Available: {fmt(balance)}</Text>
+
+        {/* Quick Presets & Currency Toggle */}
+        <div className="flex items-center gap-2 mb-4 shrink-0 mt-6">
+          <div className="flex-1 flex gap-2">
+            {presets.map((p) => {
+              const isSel = valStr === String(p);
+              return (
+                <button 
+                  key={p} 
+                  onClick={() => setValStr(String(p))} 
+                  className={`flex-1 py-3 rounded-2xl text-[0.8125rem] font-bold transition-all cursor-pointer ${
+                    isSel 
+                      ? "bg-black text-white shadow-md" 
+                      : "bg-[#f3f4f6] text-black hover:bg-gray-200"
+                  }`}
+                >
+                  {currency === "USD" ? `$${p}` : p.toLocaleString()}
+                </button>
+              );
+            })}
+          </div>
+          <button 
+            onClick={switchCurrency}
+            className="w-12 h-12 rounded-2xl bg-[#f3f4f6] hover:bg-gray-200 flex items-center justify-center text-black transition cursor-pointer shrink-0"
+            aria-label="Switch Currency"
+          >
+            <ArrowLeftRight className="w-4 h-4" strokeWidth={2.5} />
+          </button>
         </div>
-        <DSBadge variant="outline" size="sm">Default</DSBadge>
+
+        {/* Keypad */}
+        <div className="grid grid-cols-3 gap-x-2 gap-y-2 mb-4 shrink-0 select-none">
+          {KEYS.map((k, i) => {
+            if (k === "") return <div key={`spacer-${i}`} aria-hidden />;
+            return (
+              <button 
+                key={`${k}-${i}`} 
+                onClick={() => pressKey(k)} 
+                className="aspect-[2.2/1] flex items-center justify-center rounded-2xl text-[1.25rem] font-medium text-black bg-white hover:bg-gray-50 active:bg-gray-100 transition cursor-pointer tabular-nums"
+              >
+                {k === "back" ? <Delete className="w-6 h-6 text-black" strokeWidth={1.5} /> : k}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Send Action Button */}
+        <button 
+          disabled={activeAmount <= 0 || !recipient.trim()}
+          onClick={onBack}
+          className="mt-auto mb-2 w-full shrink-0 rounded-full bg-[#FF5A5F] py-3 text-[1.0625rem] font-bold text-white shadow-[0_4px_12px_rgba(255,90,95,0.2)] transition-colors hover:bg-[#E0484D] disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-[#FF5A5F]"
+        >
+          Send {activeAmount > 0 ? `${symbol}${displayAmount}` : "Gift"}
+        </button>
+
       </div>
-      <Button variant="primary" fullWidth radius="full" leftIcon={<Send className="w-4 h-4" />} onClick={onBack} className="mt-5" disabled={amount > balance || !recipient}>
-        Send {fmt(amount)}
-      </Button>
     </div>
   );
 }
