@@ -109,10 +109,10 @@ export function ProfilePage() {
   if (page === "contactSupport") return <ContactSupportPage onBack={goBack} />;
 
   // Common shadow class for the Airbnb look
-  const cardShadow = "shadow-[0_6px_16px_rgba(0,0,0,0.08)] border border-black/[0.04]";
+  const cardShadow = "shadow-[0_6px_12px_rgba(0,0,0,0.18)] border border-black/[0.04]";
 
   return (
-    <div className="min-h-screen bg-white text-foreground pb-24 font-sans">
+    <div className="min-h-screen bg-white text-foreground font-sans">
       <Stagger stagger={0.04} className="space-y-6">
         
         {/* Header */}
@@ -132,7 +132,7 @@ export function ProfilePage() {
 
         {/* Main Identity Card */}
         <StaggerItem preset="fadeInUp">
-          <div className={`mx-6 bg-white rounded-[2rem] p-6 flex flex-col items-center text-center relative overflow-hidden ${cardShadow}`}>
+          <div className={`mx-4 bg-white rounded-[2rem] p-6 flex flex-col items-center text-center relative overflow-hidden ${cardShadow}`}>
             
             {/* Avatar block */}
             <div className="relative mb-4">
@@ -181,14 +181,14 @@ export function ProfilePage() {
         </StaggerItem>
 
         <StaggerItem preset="fadeInUp">
-          <div className="mx-6">
+          <div className="mx-4">
             <WalletCardStack showBalance={showBalance} onToggleBalance={() => setShowBalance(!showBalance)} />
           </div>
         </StaggerItem>
 
         {/* Cute Action Cards Grid */}
         <StaggerItem preset="fadeInUp">
-          <div className="mx-6 grid grid-cols-3 gap-3">
+          <div className="mx-4 grid grid-cols-3 gap-3">
             {[
               { label: "Top Up", icon: ArrowUpRight, page: "topUp", color: "bg-blue-100 text-blue-600" },
               { label: "Gift", icon: Gift, page: "sendGift", color: "bg-emerald-100 text-emerald-600" },
@@ -211,11 +211,11 @@ export function ProfilePage() {
         {/* Promotional / Call to Action Cards */}
         <div className="space-y-4">
 
-{(
+        {(
             <StaggerItem preset="fadeInUp">
               <button
                 onClick={() => setBonusOpen(true)}
-                className="mx-6 w-[calc(100%-3rem)] bg-white rounded-[1.5rem] shadow-[0_6px_16px_rgba(0,0,0,0.08)] border border-black/[0.04] p-5 flex items-center gap-4 text-left active:scale-[0.98] transition cursor-pointer group"
+                className={`mx-4 w-[calc(100%-2rem)] bg-white rounded-[1.5rem] p-5 flex items-center gap-4 text-left active:scale-[0.98] transition cursor-pointer group ${cardShadow}`}
               >
                 {/* Cute 3D-styled Icon Container */}
                 <div className="w-[4.5rem] h-[4.5rem] rounded-[1.25rem] bg-gradient-to-br from-[#FF385C] to-[#D70466] flex items-center justify-center shrink-0 shadow-[0_4px_12px_rgba(229,29,83,0.3)] relative overflow-hidden">
@@ -226,10 +226,10 @@ export function ProfilePage() {
 
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
-                    <h3 className="font-bold text-[1.125rem] text-black tracking-tight leading-tight group-hover:text-[#E51D53] transition-colors">Today's daily reward</h3>
+                    <h3 className="font-bold text-[1.125rem]">Today's daily reward</h3>
                     <span className="bg-[#E51D53] text-white text-[0.625rem] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md">Daily</span>
                   </div>
-                  <p className="text-[0.8125rem] text-gray-500 leading-snug">Tap to pick a gift box and reveal your extra points.</p>
+                  <p className="text-[0.8rem] text-gray-500 leading-snug">Tap to pick a gift box and reveal your extra points.</p>
                 </div>
                 
                 <ChevronRight className="w-5 h-5 text-gray-400 shrink-0 group-hover:text-black transition-colors" />
@@ -240,13 +240,13 @@ export function ProfilePage() {
           <StaggerItem preset="fadeInUp">
             <button
               onClick={() => setPage("refer")}
-              className={`mx-6 w-[calc(100%-3rem)] bg-white rounded-[1.5rem] p-5 flex items-center gap-4 text-left active:scale-[0.98] transition cursor-pointer ${cardShadow}`}
+              className={`mx-4 w-[calc(100%-2rem)] bg-white rounded-[1.5rem] p-5 flex items-center gap-4 text-left active:scale-[0.98] transition cursor-pointer group ${cardShadow}`}
             >
               <div className="w-[4.5rem] h-[4.5rem] rounded-2xl bg-rose-50 flex items-center justify-center shrink-0">
                 <Users className="w-8 h-8 text-rose-500" strokeWidth={1.5} />
               </div>
               <div className="flex-1 min-w-0">
-                <h3 className="font-bold text-[1.125rem] text-black tracking-tight mb-1">Refer a friend</h3>
+                <h3 className="font-bold text-[1.125rem] mb-1">Refer a friend</h3>
                 <p className="text-[0.8125rem] text-gray-500 leading-snug">You both get $10 in rewards.</p>
               </div>
               <ChevronRight className="w-5 h-5 text-gray-400 shrink-0" />
@@ -256,7 +256,7 @@ export function ProfilePage() {
 
         {/* Unified Settings List */}
         <StaggerItem preset="fadeInUp">
-          <div className="mx-6 pt-2">
+          <div className="mx-4 pt-2">
             <h3 className="text-[1.375rem] font-bold text-black mb-4">Account settings</h3>
             <div className="bg-white rounded-none">
               <ListGroup
@@ -301,9 +301,10 @@ export function ProfilePage() {
                     onClick: () => navigate("/profile/contact-support") 
                   },
                 ]}
+                variant="default"
                 showChevron 
                 hoverable
-                className="[&>button]:px-0 [&>button]:py-5 [&>button]:border-b [&>button]:border-gray-100 last:[&>button]:border-0"
+                className="[&>button]:px-0 [&>button]:py-5"
               />
             </div>
           </div>
