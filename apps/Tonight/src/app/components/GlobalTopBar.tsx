@@ -1,5 +1,5 @@
 /* Global sticky top bar — location, notifications, saved */
-import { useState, useRef, useCallback } from "react";
+import { useState } from "react";
 import { MapPin, ChevronRight, Heart } from "lucide-react";
 import { Heading } from "./ds/Text";
 import { NotificationBellBtn, SavedCountBadge } from "../pages/discover/SaveButtons";
@@ -39,7 +39,12 @@ export function GlobalTopBar({
           currentLocation={userLocation}
         />
       )}
-      <div className="sticky top-0 z-40 bg-background/95 backdrop-blur-md border-b border-border/50 px-4 sm:px-6 lg:px-8 py-3 safe-area-pad-top max-w-3xl mx-auto w-full lg:hidden">
+      <div
+        className="sticky z-40 bg-background/95 backdrop-blur-md border-b border-border/50 px-4 sm:px-6 lg:px-8 py-3 max-w-3xl mx-auto w-full lg:hidden"
+        // Shift the whole bar down by the OS-reported safe-area so the background and content
+        // don't overlap the status line in edge-to-edge mode.
+        style={{ top: "var(--safe-area-inset-top)" }}
+      >
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button
