@@ -190,6 +190,8 @@ export function AppLayout() {
     : "discover";
 
   const isExplorerRoute = location.pathname.startsWith("/explorer");
+  const isDiscoverSearchRoute = location.pathname.startsWith("/discover/search");
+  const shouldLockMainScroll = isExplorerRoute || isDiscoverSearchRoute;
 
   const [userLocation, setUserLocation] = useState({ name: "Gangnam Station", address: "Gangnam-gu, Seoul", lat: 37.498, lng: 127.0276 });
   const savedRestaurantsRef = useRef<RestaurantData[]>([]);
@@ -414,8 +416,8 @@ export function AppLayout() {
           />
         )}
 
-        <main className={`flex-1 min-w-0 min-h-0 ${isExplorerRoute ? "overflow-hidden" : "overflow-y-auto"}`}
-          style={isExplorerRoute ? undefined : { overflowX: "clip" }}>
+        <main className={`flex-1 min-w-0 min-h-0 ${shouldLockMainScroll ? "overflow-hidden" : "overflow-y-auto"}`}
+          style={shouldLockMainScroll ? undefined : { overflowX: "clip" }}>
           <div className={isExplorerRoute ? "h-full" : "max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-24 lg:pb-8 w-full"}>
             <AnimatePresence mode="wait">
               <motion.div

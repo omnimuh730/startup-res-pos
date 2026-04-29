@@ -15,15 +15,49 @@ import { DateStep, DetailsStep } from "./BookingStepDate";
 import { ConfirmStep, AwaitingStep, SuccessStep } from "./BookingConfirmStep";
 import { UnifiedPayment } from "../shared/UnifiedPayment";
 
-interface Props { restaurant: RestaurantData; onBack: () => void; onComplete: () => void; }
+interface ReservationPrefill {
+  dateOffset?: number;
+  timeLabel?: string;
+  partySize?: number;
+}
 
-export function BookTableFlow({ restaurant, onBack, onComplete }: Props) {
+interface Props {
+  restaurant: RestaurantData;
+  onBack: () => void;
+  onComplete: () => void;
+  initialReservation?: ReservationPrefill;
+}
+
+function normalizeInitialTime(value?: string) {
+  if (!value) return null;
+  if (TIME_SLOTS.includes(value)) return value;
+
+  const match = value.trim().match(/^(\d{1,2})(?::(\d{2}))?\s*(AM|PM)$/i);
+  if (!match) return null;
+  const suffix = match[3].toUpperCase();
+  let hour = Number(match[1]);
+  const minute = match[2] ?? "00";
+  if (suffix === "PM" && hour < 12) hour += 12;
+  if (suffix === "AM" && hour === 12) hour = 0;
+  const normalized = `${hour.toString().padStart(2, "0")}:${minute}`;
+  return TIME_SLOTS.includes(normalized) ? normalized : null;
+}
+
+export function BookTableFlow({ restaurant, onBack, onComplete, initialReservation }: Props) {
+  const initialDateOffset = initialReservation?.dateOffset ?? 0;
   const [step, setStep] = useState<Step>("date");
-  const [selectedDate, setSelectedDate] = useState(0);
-  const [customDate, setCustomDate] = useState<Date | null>(null);
+  const [selectedDate, setSelectedDate] = useState(() => (
+    initialDateOffset >= 0 && initialDateOffset < DAYS.length ? initialDateOffset : -1
+  ));
+  const [customDate, setCustomDate] = useState<Date | null>(() => {
+    if (initialDateOffset >= 0 && initialDateOffset < DAYS.length) return null;
+    const date = new Date();
+    date.setDate(date.getDate() + Math.max(0, initialDateOffset));
+    return date;
+  });
   const [showCustomDatePicker, setShowCustomDatePicker] = useState(false);
-  const [selectedTime, setSelectedTime] = useState<string | null>(null);
-  const [guests, setGuests] = useState(2);
+  const [selectedTime, setSelectedTime] = useState<string | null>(() => normalizeInitialTime(initialReservation?.timeLabel));
+  const [guests, setGuests] = useState(() => Math.max(1, initialReservation?.partySize ?? 2));
   const [name, setName] = useState("Alex Chen"); const [phone, setPhone] = useState("+1 (415) 555-0142"); const [notes, setNotes] = useState("");
   const [occasion, setOccasion] = useState<string | null>(null);
   const [seating, setSeating] = useState<string[]>([]);

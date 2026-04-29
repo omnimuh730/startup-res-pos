@@ -1,4 +1,4 @@
-import { createBrowserRouter, Navigate } from "react-router";
+import { createBrowserRouter, createHashRouter, Navigate } from "react-router";
 import { SplashGate } from "./SplashGate";
 import { AuthLayout } from "./AuthLayout";
 import { RequireAuth } from "./RequireAuth";
@@ -12,7 +12,7 @@ import { ProfilePage } from "./pages/profile/ProfilePage";
 import { ExplorerPage } from "./pages/explorer/ExplorerPage";
 import { SavedRoute, NotificationsRoute, QRPayRoute } from "./routeWrappers";
 
-export const router = createBrowserRouter([
+const routes = [
   {
     path: "/",
     Component: SplashGate,
@@ -53,4 +53,12 @@ export const router = createBrowserRouter([
       { path: "*", element: <Navigate to="/discover" replace /> },
     ],
   },
-]);
+];
+
+function isTauriRuntime() {
+  return typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
+}
+
+export const router = isTauriRuntime()
+  ? createHashRouter(routes)
+  : createBrowserRouter(routes);

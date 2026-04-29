@@ -6,7 +6,7 @@ import { Stagger, StaggerItem } from "../../components/ds/Animate";
 import { DSBadge } from "../../components/ds/Badge";
 import { ImageWithFallback } from "../../components/figma/ImageWithFallback";
 import { Ribbon, pickRibbonLabel } from "../../components/ds/Ribbon";
-import { Star, ChevronRight, Clock, MapPin, Search, SlidersHorizontal } from "lucide-react";
+import { Star, ChevronRight, Clock, MapPin, Search } from "lucide-react";
 import { DragScrollContainer } from "../shared/DragScrollContainer";
 import { RestaurantDetailView } from "../detail/RestaurantDetailView";
 import type { RestaurantData } from "../detail/RestaurantDetailView";
@@ -30,6 +30,20 @@ import { NewsSection, NewsListPage, NewsDetailPage, MOCK_NEWS } from "./NewsSect
 import { DiscoverSearchModal, type SearchPlan } from "./DiscoverSearchModal";
 import { AirbnbRestaurantCard } from "./AirbnbRestaurantCard";
 
+function formatReservationTime(value: string) {
+  const match = value.match(/^(\d{1,2}):(\d{2})$/);
+  if (!match) return value;
+  const hour = Number(match[1]);
+  const suffix = hour >= 12 ? "PM" : "AM";
+  const displayHour = hour % 12 || 12;
+  return `${displayHour}:${match[2]} ${suffix}`;
+}
+
+function formatSearchPlanSummary(plan: SearchPlan) {
+  const people = `${plan.partySize} ${plan.partySize === 1 ? "person" : "people"}`;
+  return `${plan.dateLabel}, ${formatReservationTime(plan.timeLabel)}, ${people}`;
+}
+
 export function DiscoverPage() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -47,11 +61,13 @@ export function DiscoverPage() {
     food?: SearchResultFood;
     locationRef?: SearchResultLocation;
     categoryRef?: { id: string; label: string; icon?: string };
+    reservationPlan?: SearchPlan;
   } | null;
 
   // Derived sub-view state
   const detailRestaurant = subType === "restaurant" && subId ? (locState?.restaurant ?? null) : null;
   const bookingRestaurant = subType === "restaurant" && subId && subAction === "book" ? (locState?.restaurant ?? null) : null;
+  const bookingReservationPlan = subType === "restaurant" && subId && subAction === "book" ? (locState?.reservationPlan ?? undefined) : undefined;
   const selectedLocation = subType === "location" && subId ? (locState?.locationRef ?? { id: subId, name: subId.toUpperCase(), count: 50 }) : null;
   const selectedFood = subType === "food" && subId ? (locState?.food ?? { id: subId, name: subId, count: 50, image: "" }) : null;
   const selectedCategory = subType === "category" && subId ? (locState?.categoryRef ?? { id: subId, label: subId, icon: "" }) : null;
@@ -154,9 +170,10 @@ export function DiscoverPage() {
     if (q) { setSearchResults(filterSearchResults(q)); navigate(`/discover/search?q=${encodeURIComponent(q)}`); }
   };
   const handleSearchPlanSubmit = (plan: SearchPlan) => {
+    const results = filterSearchResults(plan.query);
     setSearchPlan(plan);
     setSearchInput(plan.query);
-    setSearchResults(filterSearchResults(plan.query));
+    setSearchResults(results);
     setShowSearchModal(false);
     navigate(`/discover/search?q=${encodeURIComponent(plan.query)}`);
   };
@@ -197,7 +214,7 @@ export function DiscoverPage() {
     <style>{`.discover-ribbon > div > div { padding: 4px 40px !important; font-size: 0.75rem !important; letter-spacing: 0.04em !important; line-height: 1.3 !important; }`}</style>
     {detailRestaurant && (<>
       <RestaurantDetailView restaurant={detailRestaurant} onBack={() => { setDetailRestaurant(null); restoreScrollPos(); }} onBookTable={(r) => setBookingRestaurant(r)} onDirections={(r) => navigate(`/explorer?directions=${r.id}`)} onSave={toggleSaveRestaurant} isSaved={isRestaurantSaved(detailRestaurant.id)} onSaveFood={toggleSaveFoodName} savedFoodNames={savedFoodNames} />
-      {bookingRestaurant && <BookTableFlow restaurant={bookingRestaurant} onBack={() => setBookingRestaurant(null)} onComplete={() => { setBookingRestaurant(null); setDetailRestaurant(null); }} />}
+      {bookingRestaurant && <BookTableFlow restaurant={bookingRestaurant} initialReservation={bookingReservationPlan} onBack={() => setBookingRestaurant(null)} onComplete={() => { setBookingRestaurant(null); setDetailRestaurant(null); }} />}
     </>)}
 
     {selectedLocation && !detailRestaurant && <LocationResultsView location={selectedLocation} onBack={() => { setSelectedLocation(null); restoreScrollPos(); }} onSelectRestaurant={(r) => setDetailRestaurant(r)} onSaveRestaurant={toggleSaveRestaurant} isRestaurantSaved={isRestaurantSaved} />}
@@ -206,7 +223,26 @@ export function DiscoverPage() {
     {viewingSection && ALL_SECTION_DATA[viewingSection] && !detailRestaurant && <SectionListView title={ALL_SECTION_DATA[viewingSection].title} items={ALL_SECTION_DATA[viewingSection].items} onBack={() => { setViewingSection(null); restoreScrollPos(); }} onSelectRestaurant={(r) => setDetailRestaurant(r)} onSaveRestaurant={toggleSaveRestaurant} isRestaurantSaved={isRestaurantSaved} />}
     {viewingNewsList && <NewsListPage onBack={() => navigate("/discover")} onSelect={(id) => navigate(`/discover/news/${id}`)} />}
     {viewingNewsItem && <NewsDetailPage item={viewingNewsItem} onBack={() => navigate("/discover/news")} onSelect={(id) => navigate(`/discover/news/${id}`)} />}
-    {showSearchResults && !detailRestaurant && !selectedLocation && !selectedFood && <SearchResultsView query={searchQuery} results={searchResults} summary={searchPlan ? `${searchPlan.dateLabel} ${searchPlan.timeLabel} Â· ${searchPlan.partySize} ${searchPlan.partySize === 1 ? "person" : "people"}` : undefined} onBack={handleSearchBack} onChangeQuery={(q) => { setSearchQuery(q); if (debounceRef.current) clearTimeout(debounceRef.current); debounceRef.current = setTimeout(() => { setSearchResults(filterSearchResults(q)); }, 400); }} onOpenSearch={() => setShowSearchModal(true)} onSelectLocation={handleSelectLocation} onSelectRestaurant={(r) => setDetailRestaurant(searchResultToRestaurantData(r))} onSelectFood={handleSelectFood} onSelectChef={handleSelectChef} />}
+    {showSearchResults && !detailRestaurant && !selectedLocation && !selectedFood && (
+      <SearchResultsView
+        query={searchQuery}
+        results={searchResults}
+        summary={searchPlan ? formatSearchPlanSummary(searchPlan) : undefined}
+        onBack={handleSearchBack}
+        onChangeQuery={(q) => {
+          setSearchQuery(q);
+          if (debounceRef.current) clearTimeout(debounceRef.current);
+          debounceRef.current = setTimeout(() => {
+            setSearchResults(filterSearchResults(q));
+          }, 400);
+        }}
+        onOpenSearch={() => setShowSearchModal(true)}
+        onSelectLocation={handleSelectLocation}
+        onSelectRestaurant={(r) => setDetailRestaurant(searchResultToRestaurantData(r))}
+        onSelectFood={handleSelectFood}
+        onSelectChef={handleSelectChef}
+      />
+    )}
 
     <div style={{ display: hasSubView ? "none" : undefined }}>
     <div className="sticky top-0 z-20 bg-background/95 backdrop-blur-md pb-2 -mx-4 px-4 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8 pt-3 -mt-6">
@@ -223,16 +259,9 @@ export function DiscoverPage() {
               {searchPlan?.query || searchInput || "Find a restaurant"}
             </span>
             <span className="block text-[0.75rem] text-muted-foreground truncate">
-              {searchPlan ? `${searchPlan.dateLabel} ${searchPlan.timeLabel} Â· ${searchPlan.partySize} ${searchPlan.partySize === 1 ? "person" : "people"}` : "Tonight Â· 7:00 PM Â· 2 people"}
+              {searchPlan ? formatSearchPlanSummary(searchPlan) : "Tonight, 7:00 PM, 2 people"}
             </span>
           </span>
-        </button>
-        <button
-          onClick={() => setShowSearchModal(true)}
-          className="w-12 h-12 rounded-full border border-border bg-card shadow-[0_6px_20px_rgba(0,0,0,0.08)] flex items-center justify-center cursor-pointer"
-          aria-label="Open search filters"
-        >
-          <SlidersHorizontal className="w-4 h-4" />
         </button>
       </div>
     </div>
@@ -266,13 +295,13 @@ export function DiscoverPage() {
             />
           ))}
         </DragScrollContainer>
-      </StaggerItem>      <StaggerItem preset="fadeInUp" className="mt-8"><SectionHeader title="Loved by Locals" action="View All" onAction={() => openSection("loved-by-locals")} /><div className="space-y-3">{LOVED_BY_LOCALS.map((r, idx) => (<div key={r.id} onClick={() => openRestaurant({ ...r, cuisine: r.cuisine.split("\u00b7")[0].trim() })} className="flex items-center gap-3 p-3 rounded-2xl border border-border bg-card hover:bg-secondary/30 transition cursor-pointer group"><div className="relative w-20 h-20 rounded-xl overflow-hidden shrink-0"><ImageWithFallback src={r.image} alt={r.name} className="w-full h-full object-cover" /><Ribbon position="top-left" variant="diagonal" size="sm" color={pickRibbonLabel(r.id) === "Sale" ? "destructive" : "primary"}>{pickRibbonLabel(r.id)}</Ribbon></div><div className="flex-1 min-w-0"><div className="flex items-center gap-2"><p className="text-[0.875rem] truncate" style={{ fontWeight: 600 }}>{r.name}</p><DSBadge variant="soft" color="primary" size="sm">{r.tag}</DSBadge></div><p className="text-[0.75rem] text-muted-foreground mt-0.5">{r.cuisine} Â· {r.price}</p><div className="flex items-center gap-3 mt-1 text-[0.75rem]"><span className="flex items-center gap-1 text-warning"><Star className="w-3 h-3 fill-current" /> {fmtR(r.rating)}</span><span className="text-muted-foreground">({r.reviews.toLocaleString()})</span><span className="text-muted-foreground flex items-center gap-0.5"><MapPin className="w-3 h-3" /> {r.distance}</span></div></div><CardSaveBtn id={r.id} restaurant={{ id: r.id, name: r.name, cuisine: r.cuisine.split("\u00b7")[0].trim(), emoji: "", rating: r.rating, reviews: r.reviews, price: r.price, lng: -122.42, lat: 37.78, open: true, distance: r.distance, image: r.image }} onToggle={toggleSaveRestaurant} variant="inline" /></div>))}</div></StaggerItem>
+      </StaggerItem>      <StaggerItem preset="fadeInUp" className="mt-8"><SectionHeader title="Loved by Locals" action="View All" onAction={() => openSection("loved-by-locals")} /><div className="space-y-3">{LOVED_BY_LOCALS.map((r, idx) => (<div key={r.id} onClick={() => openRestaurant({ ...r, cuisine: r.cuisine.split("\u00b7")[0].trim() })} className="flex items-center gap-3 p-3 rounded-2xl border border-border bg-card hover:bg-secondary/30 transition cursor-pointer group"><div className="relative w-20 h-20 rounded-xl overflow-hidden shrink-0"><ImageWithFallback src={r.image} alt={r.name} className="w-full h-full object-cover" /><Ribbon position="top-left" variant="diagonal" size="sm" color={pickRibbonLabel(r.id) === "Sale" ? "destructive" : "primary"}>{pickRibbonLabel(r.id)}</Ribbon></div><div className="flex-1 min-w-0"><div className="flex items-center gap-2"><p className="text-[0.875rem] truncate" style={{ fontWeight: 600 }}>{r.name}</p><DSBadge variant="soft" color="primary" size="sm">{r.tag}</DSBadge></div><p className="text-[0.75rem] text-muted-foreground mt-0.5">{r.cuisine} / {r.price}</p><div className="flex items-center gap-3 mt-1 text-[0.75rem]"><span className="flex items-center gap-1 text-warning"><Star className="w-3 h-3 fill-current" /> {fmtR(r.rating)}</span><span className="text-muted-foreground">({r.reviews.toLocaleString()})</span><span className="text-muted-foreground flex items-center gap-0.5"><MapPin className="w-3 h-3" /> {r.distance}</span></div></div><CardSaveBtn id={r.id} restaurant={{ id: r.id, name: r.name, cuisine: r.cuisine.split("\u00b7")[0].trim(), emoji: "", rating: r.rating, reviews: r.reviews, price: r.price, lng: -122.42, lat: 37.78, open: true, distance: r.distance, image: r.image }} onToggle={toggleSaveRestaurant} variant="inline" /></div>))}</div></StaggerItem>
       {false && <StaggerItem preset="fadeInUp" className="mt-8"><SectionHeader title="Date Night Picks" action="View All" onAction={() => openSection("date-night")} /><DragScrollContainer className="flex gap-3 pb-1">{DATE_NIGHT.map((r) => (<div key={r.id} className="shrink-0 w-52 cursor-pointer group" onClick={() => openRestaurant(r)}><div className="relative h-36 rounded-xl overflow-hidden mb-2"><ImageWithFallback src={r.image} alt={r.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" /><Ribbon position="top-left" variant="diagonal" size="lg" color={pickRibbonLabel(r.id) === "Sale" ? "destructive" : "primary"}>{pickRibbonLabel(r.id)}</Ribbon><div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" /><div className="absolute bottom-2 right-2 bg-black/50 text-white text-[0.6875rem] px-2 py-0.5 rounded-full">{r.price}</div><CardSaveBtn id={r.id} restaurant={{ id: r.id, name: r.name, cuisine: r.cuisine, emoji: "", rating: r.rating, reviews: 500, price: r.price, lng: -122.42, lat: 37.78, open: true, distance: "0.5 mi", image: r.image }} onToggle={toggleSaveRestaurant} /></div><p className="text-[0.8125rem] truncate" style={{ fontWeight: 600 }}>{r.name}</p><p className="text-[0.6875rem] text-muted-foreground">{r.cuisine}</p><div className="flex items-center gap-1 mt-0.5"><Star className="w-3 h-3 fill-warning text-warning" /><span className="text-[0.75rem]" style={{ fontWeight: 600 }}>{fmtR(r.rating)}</span></div></div>))}</DragScrollContainer></StaggerItem>}
       {false && <StaggerItem preset="fadeInUp" className="mt-8"><SectionHeader title="Weekend Brunch Spots" action="View All" onAction={() => openSection("brunch")} /><DragScrollContainer className="flex gap-3 pb-1">{[{ id: "b1", name: "Morning Table", cuisine: "American \u00b7 Brunch", rating: 4.5, price: "$$", image: "https://images.unsplash.com/photo-1687276287139-88f7333c8ca4?w=400&h=300&fit=crop" },{ id: "b2", name: "Flour & Butter", cuisine: "Bakery \u00b7 Caf\u00e9", rating: 4.6, price: "$$", image: "https://images.unsplash.com/photo-1657502996869-6ccd568b9d41?w=400&h=300&fit=crop" },{ id: "b3", name: "Green Bowl Co.", cuisine: "Healthy \u00b7 Bowls", rating: 4.4, price: "$", image: "https://images.unsplash.com/photo-1692780941487-505d5d908aa6?w=400&h=300&fit=crop" }].map((r) => (<div key={r.id} className="shrink-0 w-44 cursor-pointer group" onClick={() => openRestaurant({ ...r, cuisine: r.cuisine.split("\u00b7")[0].trim() })}><div className="relative h-32 rounded-xl overflow-hidden mb-2"><ImageWithFallback src={r.image} alt={r.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" /><Ribbon position="top-left" variant="diagonal" size="md" color={pickRibbonLabel(r.id) === "Sale" ? "destructive" : "primary"}>{pickRibbonLabel(r.id)}</Ribbon><div className="absolute bottom-2 right-2 bg-black/50 text-white text-[0.6875rem] px-2 py-0.5 rounded-full">{r.price}</div><CardSaveBtn id={r.id} restaurant={{ id: r.id, name: r.name, cuisine: r.cuisine.split("\u00b7")[0].trim(), emoji: "", rating: r.rating, reviews: 500, price: r.price, lng: -122.42, lat: 37.78, open: true, distance: "0.5 mi", image: r.image }} onToggle={toggleSaveRestaurant} /></div><p className="text-[0.8125rem] truncate" style={{ fontWeight: 600 }}>{r.name}</p><p className="text-[0.6875rem] text-muted-foreground">{r.cuisine}</p><div className="flex items-center gap-1 mt-0.5"><Star className="w-3 h-3 fill-warning text-warning" /><span className="text-[0.75rem]" style={{ fontWeight: 600 }}>{fmtR(r.rating)}</span></div></div>))}</DragScrollContainer></StaggerItem>}
       <StaggerItem preset="fadeInUp" className="mt-8"><NewsSection onSelect={(id) => navigate(`/discover/news/${id}`)} onViewAll={() => navigate("/discover/news")} /></StaggerItem>
       <StaggerItem preset="fadeInUp" className="mt-8"><SectionHeader title="New This Week" /><div className="space-y-3">{[{ id: "n1", name: "Sakura Bloom", cuisine: "Japanese \u00b7 Tempura", time: "Opens Today", rating: 4.3, image: "https://images.unsplash.com/photo-1681270507609-e2a5f21969b0?w=400&h=300&fit=crop" },{ id: "n2", name: "Saffron Street", cuisine: "Indian \u00b7 Street Food", time: "3 days ago", rating: 4.1, image: "https://images.unsplash.com/photo-1675150303909-1bb94e33132f?w=400&h=300&fit=crop" },{ id: "n3", name: "Verdant Table", cuisine: "Vegan \u00b7 Organic", time: "1 week ago", rating: 4.4, image: "https://images.unsplash.com/photo-1692780941487-505d5d908aa6?w=400&h=300&fit=crop" }].map((r) => (<div key={r.id} onClick={() => openRestaurant({ ...r, cuisine: r.cuisine.split("\u00b7")[0].trim() })} className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-secondary/30 transition cursor-pointer"><div className="w-16 h-16 rounded-xl overflow-hidden shrink-0"><ImageWithFallback src={r.image} alt={r.name} className="w-full h-full object-cover" /></div><div className="flex-1 min-w-0"><p className="text-[0.875rem] truncate" style={{ fontWeight: 600 }}>{r.name}</p><p className="text-[0.6875rem] text-muted-foreground">{r.cuisine}</p><div className="flex items-center gap-2 mt-0.5 text-[0.6875rem]"><span className="flex items-center gap-1 text-warning"><Star className="w-3 h-3 fill-current" /> {fmtR(r.rating)}</span><span className="text-success flex items-center gap-0.5"><Clock className="w-3 h-3" /> {r.time}</span></div></div><div className="flex items-center gap-1 shrink-0"><DSBadge variant="soft" color="success" size="sm">NEW</DSBadge><CardSaveBtn id={r.id} restaurant={{ id: r.id, name: r.name, cuisine: r.cuisine.split("\u00b7")[0].trim(), emoji: "", rating: r.rating, reviews: 500, price: "$$$", lng: -122.42, lat: 37.78, open: true, distance: "0.5 mi", image: r.image }} onToggle={toggleSaveRestaurant} variant="inline" /></div></div>))}</div></StaggerItem>
       <StaggerItem preset="fadeInUp" className="mt-8"><SectionHeader title="Late Night Eats" action="View All" onAction={() => openSection("late-night")} />
-      <DragScrollContainer className="flex gap-3 pb-1">{[{ id: "ln1", name: "Midnight Ramen", cuisine: "Japanese \u00b7 Ramen", rating: 4.5, price: "$$", image: "https://images.unsplash.com/photo-1731460202531-bf8389d565f7?w=400&h=300&fit=crop", hours: "Open till 3 AM" },{ id: "ln2", name: "After Hours BBQ", cuisine: "Korean \u00b7 BBQ", rating: 4.6, price: "$$$", image: "https://images.unsplash.com/photo-1590189599125-67138c6509ef?w=400&h=300&fit=crop", hours: "Open till 2 AM" },{ id: "ln3", name: "Night Owl Bar", cuisine: "Cocktails \u00b7 Tapas", rating: 4.3, price: "$$$", image: "https://images.unsplash.com/photo-1598990386084-8af4dd12b3b4?w=400&h=300&fit=crop", hours: "Open till 4 AM" }].map((r) => (<div key={r.id} className="shrink-0 w-44 cursor-pointer group" onClick={() => openRestaurant({ ...r, cuisine: r.cuisine.split("\u00b7")[0].trim() })}><div className="relative h-32 rounded-xl overflow-hidden mb-2"><ImageWithFallback src={r.image} alt={r.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" /><Ribbon position="top-left" variant="diagonal" size="md" color={pickRibbonLabel(r.id) === "Sale" ? "destructive" : "primary"}>{pickRibbonLabel(r.id)}</Ribbon><div className="absolute bottom-2 left-2 bg-black/60 text-white text-[0.6875rem] px-2 py-0.5 rounded-full flex items-center gap-1"><Clock className="w-3 h-3" /> {r.hours}</div><CardSaveBtn id={r.id} restaurant={{ id: r.id, name: r.name, cuisine: r.cuisine.split("\u00b7")[0].trim(), emoji: "", rating: r.rating, reviews: 500, price: r.price, lng: -122.42, lat: 37.78, open: true, distance: "0.5 mi", image: r.image }} onToggle={toggleSaveRestaurant} /></div><p className="text-[0.8125rem] truncate" style={{ fontWeight: 600 }}>{r.name}</p><p className="text-[0.6875rem] text-muted-foreground">{r.cuisine} Â· {r.price}</p><div className="flex items-center gap-1 mt-0.5"><Star className="w-3 h-3 fill-warning text-warning" /><span className="text-[0.75rem]" style={{ fontWeight: 600 }}>{fmtR(r.rating)}</span></div></div>))}</DragScrollContainer>
+      <DragScrollContainer className="flex gap-3 pb-1">{[{ id: "ln1", name: "Midnight Ramen", cuisine: "Japanese \u00b7 Ramen", rating: 4.5, price: "$$", image: "https://images.unsplash.com/photo-1731460202531-bf8389d565f7?w=400&h=300&fit=crop", hours: "Open till 3 AM" },{ id: "ln2", name: "After Hours BBQ", cuisine: "Korean \u00b7 BBQ", rating: 4.6, price: "$$$", image: "https://images.unsplash.com/photo-1590189599125-67138c6509ef?w=400&h=300&fit=crop", hours: "Open till 2 AM" },{ id: "ln3", name: "Night Owl Bar", cuisine: "Cocktails \u00b7 Tapas", rating: 4.3, price: "$$$", image: "https://images.unsplash.com/photo-1598990386084-8af4dd12b3b4?w=400&h=300&fit=crop", hours: "Open till 4 AM" }].map((r) => (<div key={r.id} className="shrink-0 w-44 cursor-pointer group" onClick={() => openRestaurant({ ...r, cuisine: r.cuisine.split("\u00b7")[0].trim() })}><div className="relative h-32 rounded-xl overflow-hidden mb-2"><ImageWithFallback src={r.image} alt={r.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" /><Ribbon position="top-left" variant="diagonal" size="md" color={pickRibbonLabel(r.id) === "Sale" ? "destructive" : "primary"}>{pickRibbonLabel(r.id)}</Ribbon><div className="absolute bottom-2 left-2 bg-black/60 text-white text-[0.6875rem] px-2 py-0.5 rounded-full flex items-center gap-1"><Clock className="w-3 h-3" /> {r.hours}</div><CardSaveBtn id={r.id} restaurant={{ id: r.id, name: r.name, cuisine: r.cuisine.split("\u00b7")[0].trim(), emoji: "", rating: r.rating, reviews: 500, price: r.price, lng: -122.42, lat: 37.78, open: true, distance: "0.5 mi", image: r.image }} onToggle={toggleSaveRestaurant} /></div><p className="text-[0.8125rem] truncate" style={{ fontWeight: 600 }}>{r.name}</p><p className="text-[0.6875rem] text-muted-foreground">{r.cuisine} / {r.price}</p><div className="flex items-center gap-1 mt-0.5"><Star className="w-3 h-3 fill-warning text-warning" /><span className="text-[0.75rem]" style={{ fontWeight: 600 }}>{fmtR(r.rating)}</span></div></div>))}</DragScrollContainer>
       </StaggerItem>
     </Stagger>
     <RestaurantsByPrice onSelectRestaurant={openRestaurant} onSaveRestaurant={toggleSaveRestaurant} isRestaurantSaved={isRestaurantSaved} />
@@ -281,3 +310,4 @@ export function DiscoverPage() {
     </>
   );
 }
+
