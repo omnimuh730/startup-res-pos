@@ -9,7 +9,6 @@ import { ForgotPasswordPage } from "./pages/auth/ForgotPasswordPage";
 import { DiscoverPage } from "./pages/discover/DiscoverPage";
 import { DiningPage } from "./pages/dining/DiningPage";
 import { ProfilePage } from "./pages/profile/ProfilePage";
-import { ExplorerPage } from "./pages/explorer/ExplorerPage";
 import { SavedRoute, QRPayRoute } from "./routeWrappers";
 
 const routes = [
@@ -38,11 +37,12 @@ const routes = [
         Component: AppLayout,
         children: [
           { path: "discover/*", Component: DiscoverPage },
-          { path: "explorer/*", Component: ExplorerPage },
+          { path: "explorer/*", element: <Navigate to="/discover" replace /> },
           {
             Component: RequireAuth,
             children: [
-              { path: "saved", Component: SavedRoute },
+              { path: "wishlist", Component: SavedRoute },
+              { path: "saved", element: <Navigate to="/wishlist" replace /> },
               { path: "notifications", element: <Navigate to="/profile/notifications" replace /> },
               { path: "dining/*", Component: DiningPage },
               { path: "profile/*", Component: ProfilePage },

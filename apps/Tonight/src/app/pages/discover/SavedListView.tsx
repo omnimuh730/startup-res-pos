@@ -220,14 +220,6 @@ export function SavedListView({ savedRestaurantsRef, savedFoodsRef, wishlistColl
       
       <div className="px-6 pt-8">
         <div className="mb-6 flex items-center gap-3">
-          <button
-            type="button"
-            onClick={onBack}
-            className="p-2 -ml-2 hover:bg-secondary rounded-full transition-colors cursor-pointer"
-            aria-label="Back"
-          >
-            <ChevronLeft className="w-6 h-6 text-black" />
-          </button>
           <h1 className="text-[2rem] text-black tracking-tight" style={{ fontWeight: 600 }}>Wishlists</h1>
         </div>
         

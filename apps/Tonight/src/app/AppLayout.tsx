@@ -2,8 +2,7 @@
 import React, { useState, useRef, useCallback, useEffect, useSyncExternalStore } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Outlet, useLocation, useNavigate } from "react-router";
-import { Home, Compass, UtensilsCrossed, User } from "lucide-react";
-import { GlobalTopBar } from "./components/GlobalTopBar";
+import { Home, Heart, UtensilsCrossed, User } from "lucide-react";
 import {
   subscribeNotifications, getNotificationSnapshot, getUnreadCount,
 } from "./stores/notificationStore";
@@ -39,7 +38,7 @@ export type AppOutletContext = {
 
 const TABS = [
   { id: "discover", label: "Discover", icon: Home, isLogo: true, path: "/discover" },
-  { id: "explorer", label: "Explorer", icon: Compass, path: "/explorer" },
+  { id: "wishlist", label: "Wishlist", icon: Heart, path: "/wishlist" },
   { id: "dining", label: "Dining", icon: UtensilsCrossed, path: "/dining" },
   { id: "profile", label: "Profile", icon: User, path: "/profile" },
 ] as const;
@@ -184,14 +183,13 @@ export function AppLayout() {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const activeTab: TabId = location.pathname.startsWith("/explorer") ? "explorer"
+  const activeTab: TabId = (location.pathname.startsWith("/wishlist") || location.pathname.startsWith("/saved")) ? "wishlist"
     : location.pathname.startsWith("/dining") ? "dining"
     : location.pathname.startsWith("/profile") ? "profile"
     : "discover";
 
-  const isExplorerRoute = location.pathname.startsWith("/explorer");
   const isDiscoverSearchRoute = location.pathname.startsWith("/discover/search");
-  const shouldLockMainScroll = isExplorerRoute || isDiscoverSearchRoute;
+  const shouldLockMainScroll = isDiscoverSearchRoute;
 
   const [userLocation, setUserLocation] = useState({ name: "Gangnam Station", address: "Gangnam-gu, Seoul", lat: 37.498, lng: 127.0276 });
   const savedRestaurantsRef = useRef<RestaurantData[]>([]);
@@ -373,9 +371,11 @@ export function AppLayout() {
   const dailyClaimed = useSyncExternalStore(dailyBonusStore.subscribe, dailyBonusStore.getSnapshot);
 
   const handleTabSelect = useCallback((id: TabId) => {
-    if ((id === "dining" || id === "profile") && !authStore.getSnapshot()) {
+    if ((id === "wishlist" || id === "dining" || id === "profile") && !authStore.getSnapshot()) {
       setLoginPrompt({ redirect: `/${id}`, message: id === "dining"
         ? "Sign in to view and manage your reservations."
+        : id === "wishlist"
+          ? "Sign in to view your wishlist."
         : "Sign in to access your profile." });
       return;
     }
@@ -403,20 +403,10 @@ export function AppLayout() {
       <SidebarNav activeTab={activeTab} onSelect={handleTabSelect} />
 
       <div className="flex-1 flex flex-col min-w-0 h-full relative">
-        <GlobalTopBar
-          onSavedOpen={() => { if (!authStore.getSnapshot()) { setLoginPrompt({ redirect: "/saved", message: "Sign in to view your saved list." }); return; } navigate("/saved"); }}
-          savedRestaurantsRef={savedRestaurantsRef}
-          savedFoodsRef={savedFoodsRef}
-        />
-
         <main className={`flex-1 min-w-0 min-h-0 ${shouldLockMainScroll ? "overflow-hidden" : "overflow-y-auto"}`}
           style={shouldLockMainScroll ? undefined : { overflowX: "clip" }}>
             <div
-              className={
-                isExplorerRoute
-                  ? "h-full pb-[calc(6rem+var(--safe-area-inset-bottom))]"
-                  : "max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-[calc(6rem+var(--safe-area-inset-bottom))] lg:pb-8 w-full"
-              }
+              className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-[calc(6rem+var(--safe-area-inset-bottom))] lg:pb-8 w-full"
             >
             <AnimatePresence mode="wait">
               <motion.div
@@ -424,7 +414,6 @@ export function AppLayout() {
                 variants={pageVariants}
                 initial="initial" animate="animate" exit="exit"
                 transition={{ duration: 0.25, ease: [0.25, 0.1, 0.25, 1] }}
-                className={isExplorerRoute ? "h-full" : ""}
               >
                 <Outlet context={ctx} />
               </motion.div>

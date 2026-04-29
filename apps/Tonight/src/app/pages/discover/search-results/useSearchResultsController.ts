@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import type { SearchResults } from "../discoverTypes";
 import { ALL_SEARCH_DATA } from "../discoverSearchData";
 import { DEFAULT_FILTERS, type SearchFilterState, type SheetState } from "./types";
-import { filterSearchRestaurants, getFilterCount, getSheetY, mapRestaurantToExplorerLocation } from "./filterUtils";
+import { filterSearchRestaurants, getFilterCount, getSheetY, mapRestaurantToSearchLocation } from "./filterUtils";
 
 export function useSearchResultsController({ query, results, bottomNavHeight, peekHeaderHeight, sheetHeight }: {
   query: string;
@@ -25,7 +25,7 @@ export function useSearchResultsController({ query, results, bottomNavHeight, pe
   }, [query, results.restaurants]);
 
   const mappedRestaurants = useMemo(
-    () => restaurants.map((restaurant, index) => mapRestaurantToExplorerLocation(restaurant, index)),
+    () => restaurants.map((restaurant, index) => mapRestaurantToSearchLocation(restaurant, index)),
     [restaurants]
   );
   const filteredRestaurants = useMemo(

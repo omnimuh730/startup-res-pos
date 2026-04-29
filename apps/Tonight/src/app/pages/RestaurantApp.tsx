@@ -1,15 +1,13 @@
 import React, { useState, useRef, useCallback, useEffect, useSyncExternalStore, useTransition } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Home, Compass, UtensilsCrossed, User } from "lucide-react";
+import { Home, Heart, UtensilsCrossed, User } from "lucide-react";
 import { DiscoverPage } from "./discover/DiscoverPage";
-const ExplorerPage = React.lazy(() => import("./explorer/ExplorerPage").then(m => ({ default: m.ExplorerPage })));
 import { DiningPage } from "./dining/DiningPage";
 import { ProfilePage } from "./profile/ProfilePage";
 import {
   subscribeNotifications, getNotificationSnapshot, getUnreadCount,
 } from "../stores/notificationStore";
 import { QRPayPage } from "./qrpay/QRPayPage";
-import { GlobalTopBar } from "../components/GlobalTopBar";
 import { SavedListView } from "./discover/SavedListView";
 import { NotificationsView } from "./discover/NotificationsView";
 import type { RestaurantData } from "./detail/RestaurantDetailView";
@@ -18,7 +16,7 @@ import { _savedRIds, _savedFNames, _notifySaved, incrementSavedSnapshot } from "
 
 const TABS = [
   { id: "discover", label: "Discover", icon: Home, isLogo: true },
-  { id: "explorer", label: "Explorer", icon: Compass },
+  { id: "wishlist", label: "Wishlist", icon: Heart },
   { id: "dining", label: "Dining", icon: UtensilsCrossed },
   { id: "profile", label: "Profile", icon: User },
 ] as const;
@@ -297,15 +295,6 @@ export default function RestaurantApp() {
 
       {/* Main area */}
       <div className="flex-1 flex flex-col min-w-0 h-full relative">
-        {/* Global sticky top bar */}
-        {!showNotifications && !showSavedList && (
-        <GlobalTopBar
-          onSavedOpen={() => setShowSavedList(true)}
-          savedRestaurantsRef={savedRestaurantsRef}
-          savedFoodsRef={savedFoodsRef}
-        />
-        )}
-
         {/* Saved / Notifications overlays */}
         {showSavedList && (
           <div className="absolute inset-0 z-30 bg-background overflow-y-auto">
@@ -331,8 +320,8 @@ export default function RestaurantApp() {
         )}
 
         {/* Content */}
-        <main className={`flex-1 min-w-0 min-h-0 ${activeTab === "explorer" ? "overflow-hidden" : "overflow-y-auto"}`} style={activeTab === "explorer" ? undefined : { overflowX: "clip" }}>
-          <div className={`${activeTab === "explorer" ? "h-full" : "max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-24 lg:pb-8 w-full"}`}>
+        <main className="flex-1 min-w-0 min-h-0 overflow-y-auto" style={{ overflowX: "clip" }}>
+          <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-24 lg:pb-8 w-full">
             <AnimatePresence mode="wait">
               <motion.div
                 key={activeTab}
@@ -341,11 +330,9 @@ export default function RestaurantApp() {
                 animate="animate"
                 exit="exit"
                 transition={{ duration: 0.25, ease: [0.25, 0.1, 0.25, 1] }}
-                className={activeTab === "explorer" ? "h-full" : ""}
               >
                 {activeTab === "discover" && (
                   <DiscoverPage
-                    onNavigateExplorer={() => handleTabChange("explorer")}
                     userLocation={userLocation}
                     onLocationChange={setUserLocation}
                     savedRestaurantsRef={savedRestaurantsRef}
@@ -354,7 +341,17 @@ export default function RestaurantApp() {
                     toggleSaveFood={toggleSaveFood}
                   />
                 )}
-                {activeTab === "explorer" && <React.Suspense fallback={<div className="h-full flex items-center justify-center text-muted-foreground">Loading map...</div>}><ExplorerPage /></React.Suspense>}
+                {activeTab === "wishlist" && (
+                  <SavedListView
+                    savedRestaurantsRef={savedRestaurantsRef}
+                    savedFoodsRef={savedFoodsRef}
+                    onBack={() => handleTabChange("discover")}
+                    onSelectRestaurant={() => {}}
+                    onSelectFood={() => {}}
+                    onRemoveRestaurant={toggleSaveRestaurant}
+                    onRemoveFood={toggleSaveFood}
+                  />
+                )}
                 {activeTab === "dining" && <DiningPage />}
                 {activeTab === "profile" && <ProfilePage />}
               </motion.div>
@@ -373,7 +370,7 @@ export default function RestaurantApp() {
                   onSelect={() => handleTabChange(tab.id)}
                   badgeCount={tab.id === "profile" ? unreadCount : undefined}
                 />
-                {/* FAB between Explorer (idx 1) and Dining (idx 2) */}
+                {/* FAB between Wishlist (idx 1) and Dining (idx 2) */}
                 {idx === 1 && (
                   <div className="relative flex items-center justify-center" style={{ width: 0 }}>
                     <button

@@ -1,4 +1,4 @@
-/* Explorer page data: restaurants, categories, filter options, map styles */
+/* Search result map data: restaurants, categories, filter options, map styles */
 import type { RestaurantData } from "../detail/restaurantDetailData";
 
 export function fmtR(n: number): string {

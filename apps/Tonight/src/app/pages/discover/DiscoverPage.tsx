@@ -16,7 +16,7 @@ import { fmtR } from "./discoverTypes";
 import { _savedRIds, _savedFNames, _notifySaved, incrementSavedSnapshot } from "./savedStore";
 import { QUICK_CATEGORIES, CITIES, FOOD_TYPES, MONTHLY_BEST, LOVED_BY_LOCALS, DATE_NIGHT } from "./discoverData";
 import { ALL_SEARCH_DATA, searchResultToRestaurantData, filterSearchResults, ALL_SECTION_DATA } from "./discoverSearchData";
-import { CardSaveBtn, SavedCountBadge, NotificationBellBtn, SectionHeader } from "./SaveButtons";
+import { CardSaveBtn, SectionHeader } from "./SaveButtons";
 import { CategoryIcon } from "./CategoryIcon";
 import { BannerCarousel } from "./BannerCarousel";
 import { BannerGalleryModal } from "./BannerGalleryModal";
@@ -50,7 +50,6 @@ export function DiscoverPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const ctx = useOutletContext<AppOutletContext>();
   const { savedRestaurantsRef, savedFoodsRef, toggleSaveRestaurant: toggleSaveRestaurantProp, toggleSaveFood: toggleSaveFoodProp, requireAuth } = ctx;
-  const onNavigateExplorer = () => navigate("/explorer");
 
   // Parse sub-view from URL: /discover/(type)/(id)[/action]
   const subPath = location.pathname.replace(/^\/discover\/?/, "");
@@ -179,10 +178,7 @@ export function DiscoverPage() {
   };
   const handleSearchBack = () => { setSearchInput(""); navigate("/discover"); };
 
-  const handleSelectLocation = (_loc: SearchResultLocation) => {
-    if (onNavigateExplorer) { setShowSearchResults(false); setSearchQuery(""); onNavigateExplorer(); }
-    else { saveScrollPos(); setSelectedLocation(_loc); }
-  };
+  const handleSelectLocation = (_loc: SearchResultLocation) => { saveScrollPos(); setSelectedLocation(_loc); };
   const handleSelectFood = (f: SearchResultFood) => { saveScrollPos(); setSelectedFood(f); };
   const handleSelectChef = (c: SearchResultChef) => {
     const linked = ALL_SEARCH_DATA.restaurants.find((r) => r.id === c.restaurantId);
@@ -213,7 +209,7 @@ export function DiscoverPage() {
     <>
     <style>{`.discover-ribbon > div > div { padding: 4px 40px !important; font-size: 0.75rem !important; letter-spacing: 0.04em !important; line-height: 1.3 !important; }`}</style>
     {detailRestaurant && (<>
-      <RestaurantDetailView restaurant={detailRestaurant} onBack={() => { setDetailRestaurant(null); restoreScrollPos(); }} onBookTable={(r) => setBookingRestaurant(r)} onDirections={(r) => navigate(`/explorer?directions=${r.id}`)} onSave={toggleSaveRestaurant} isSaved={isRestaurantSaved(detailRestaurant.id)} onSaveFood={toggleSaveFoodName} savedFoodNames={savedFoodNames} />
+      <RestaurantDetailView restaurant={detailRestaurant} onBack={() => { setDetailRestaurant(null); restoreScrollPos(); }} onBookTable={(r) => setBookingRestaurant(r)} onDirections={(r) => navigate(`/discover/search?q=${encodeURIComponent(r.name)}`)} onSave={toggleSaveRestaurant} isSaved={isRestaurantSaved(detailRestaurant.id)} onSaveFood={toggleSaveFoodName} savedFoodNames={savedFoodNames} />
       {bookingRestaurant && <BookTableFlow restaurant={bookingRestaurant} initialReservation={bookingReservationPlan} onBack={() => setBookingRestaurant(null)} onComplete={() => { setBookingRestaurant(null); setDetailRestaurant(null); }} />}
     </>)}
 
@@ -267,7 +263,7 @@ export function DiscoverPage() {
     </div>
     <Stagger stagger={0.06} className="pb-6">
       <StaggerItem preset="fadeInUp" className="mt-4"><BannerCarousel onBannerClick={(bannerId) => { saveScrollPos(); const bannerMap: Record<string, () => void> = { "1": () => setSelectedCategory({ id: "michelin", label: "Michelin", icon: "" }), "2": () => setSelectedCategory({ id: "best-kbbq", label: "Best K-BBQ", icon: "" }), "3": () => setViewingSection("date-night"), "4": () => setSelectedCategory({ id: "michelin", label: "Chef's Table", icon: "" }), "5": () => setSelectedLocation({ id: "ny", name: "NEW YORK", count: 50 }), "6": () => setSelectedCategory({ id: "banner-sushi", label: "Sushi Masters", icon: "" }) }; bannerMap[bannerId]?.(); }} onViewAll={() => setShowBannerGallery(true)} /><BannerGalleryModal open={showBannerGallery} onClose={() => setShowBannerGallery(false)} onSelect={(bannerId) => { setShowBannerGallery(false); saveScrollPos(); const bannerMap: Record<string, () => void> = { "1": () => setSelectedCategory({ id: "michelin", label: "Michelin", icon: "" }), "2": () => setSelectedCategory({ id: "best-kbbq", label: "Best K-BBQ", icon: "" }), "3": () => setViewingSection("date-night"), "4": () => setSelectedCategory({ id: "michelin", label: "Chef's Table", icon: "" }), "5": () => setSelectedLocation({ id: "ny", name: "NEW YORK", count: 50 }), "6": () => setSelectedCategory({ id: "banner-sushi", label: "Sushi Masters", icon: "" }) }; bannerMap[bannerId]?.(); }} /></StaggerItem>
-      <StaggerItem preset="fadeInUp" className="mt-6"><div className="grid grid-cols-4 gap-y-3 gap-x-1">{QUICK_CATEGORIES.map((cat) => (<button key={cat.id} onClick={() => { if (cat.id === "nearby-me") { if (!requireAuth("/explorer/nearby", "Sign in to find restaurants near your current location.")) return; navigate("/explorer/nearby"); return; } if (cat.id === "local-fav") { if (!requireAuth("/explorer", "Sign in to see local favourites based on your area.")) return; navigate("/explorer"); return; } saveScrollPos(); setSelectedCategory(cat); }} className="flex flex-col items-center gap-1 cursor-pointer group"><div className="group-hover:scale-110 transition-transform"><CategoryIcon id={cat.id} className="w-11 h-11" /></div><span className="text-[0.75rem] text-center whitespace-pre-line leading-tight" style={{ fontWeight: 500 }}>{cat.label}</span></button>))}</div></StaggerItem>
+      <StaggerItem preset="fadeInUp" className="mt-6"><div className="grid grid-cols-4 gap-y-3 gap-x-1">{QUICK_CATEGORIES.map((cat) => (<button key={cat.id} onClick={() => { if (cat.id === "nearby-me") { if (!requireAuth("/discover/search?q=Gangnam", "Sign in to find restaurants near your current location.")) return; navigate("/discover/search?q=Gangnam"); return; } if (cat.id === "local-fav") { saveScrollPos(); openSection("loved-by-locals"); return; } saveScrollPos(); setSelectedCategory(cat); }} className="flex flex-col items-center gap-1 cursor-pointer group"><div className="group-hover:scale-110 transition-transform"><CategoryIcon id={cat.id} className="w-11 h-11" /></div><span className="text-[0.75rem] text-center whitespace-pre-line leading-tight" style={{ fontWeight: 500 }}>{cat.label}</span></button>))}</div></StaggerItem>
       <StaggerItem preset="fadeInUp" className="mt-8"><SectionHeader title="Where to Eat?" onAction={() => openSection("where-to-eat")} /><DragScrollContainer className="flex gap-3 pb-1">{CITIES.map((city) => (<button key={city.id} onClick={() => openCity(city)} className="relative shrink-0 w-32 h-20 rounded-xl overflow-hidden cursor-pointer group"><ImageWithFallback src={city.image} alt={city.label} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" /><div className="absolute inset-0 bg-black/35 group-hover:bg-black/45 transition-colors" /><span className="absolute inset-0 flex items-center justify-center text-white text-[0.8125rem] tracking-wider" style={{ fontWeight: 700 }}>{city.label}</span></button>))}<button onClick={() => openSection("where-to-eat")} className="shrink-0 w-16 h-20 rounded-xl flex items-center justify-center text-primary cursor-pointer hover:bg-secondary transition"><div className="flex flex-col items-center gap-1"><ChevronRight className="w-6 h-6" /><span className="text-[0.6875rem]" style={{ fontWeight: 500 }}>More</span></div></button></DragScrollContainer></StaggerItem>
       <StaggerItem preset="fadeInUp" className="mt-8"><SectionHeader title="Top Picks by Food Type" action="More" onAction={() => openSection("top-picks-food")} /><DragScrollContainer className="flex gap-3 pb-1">{FOOD_TYPES.map((f) => (<button key={f.id} onClick={() => openFoodType(f)} className="relative shrink-0 w-28 h-20 rounded-xl overflow-hidden cursor-pointer group"><ImageWithFallback src={f.image} alt={f.label} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" /><div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" /><span className="absolute bottom-2 left-2 right-2 text-white text-[0.75rem]" style={{ fontWeight: 600 }}>{f.label}</span></button>))}</DragScrollContainer></StaggerItem>
       <StaggerItem preset="fadeInUp" className="mt-8">

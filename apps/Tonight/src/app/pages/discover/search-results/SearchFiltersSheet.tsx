@@ -10,7 +10,7 @@ import {
   RATING_OPTIONS,
   SEATING_OPTIONS,
   SORT_OPTIONS,
-} from "../../explorer/explorerData";
+} from "./searchMapData";
 import { getFilterCount, toggleFilterValue } from "./filterUtils";
 import type { SearchFilterState } from "./types";
 

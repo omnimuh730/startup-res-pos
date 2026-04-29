@@ -2,7 +2,6 @@ import { useEffect, useState, type RefObject } from "react";
 
 const MOBILE_NAV_CLEARANCE_FALLBACK = 76;
 const PEEK_CONTENT_HEIGHT = 60;
-const GLOBAL_TOP_BAR_FALLBACK = 5.5 * 16;
 const SEARCH_HEADER_FALLBACK = 5.25 * 16;
 
 type UseSearchResultsLayoutParams = {
@@ -14,9 +13,7 @@ type UseSearchResultsLayoutParams = {
 export function useSearchResultsLayout({ sheetRef, searchHeaderRef, peekHeaderRef }: UseSearchResultsLayoutParams) {
   const [sheetHeight, setSheetHeight] = useState(0);
   const [bottomNavHeight, setBottomNavHeight] = useState(MOBILE_NAV_CLEARANCE_FALLBACK);
-  const [globalTopBarHeight, setGlobalTopBarHeight] = useState(() => {
-    return typeof window !== "undefined" && window.innerWidth >= 1024 ? 0 : GLOBAL_TOP_BAR_FALLBACK;
-  });
+  const [globalTopBarHeight] = useState(0);
   const [searchHeaderHeight, setSearchHeaderHeight] = useState(SEARCH_HEADER_FALLBACK);
   const [peekHeaderHeight, setPeekHeaderHeight] = useState(PEEK_CONTENT_HEIGHT);
 
@@ -54,20 +51,6 @@ export function useSearchResultsLayout({ sheetRef, searchHeaderRef, peekHeaderRe
       ro?.disconnect();
     };
   }, [peekHeaderRef]);
-
-  useEffect(() => {
-    const updateGlobalTopBarHeight = () => {
-      const el = document.querySelector('[data-global-topbar="true"]') as HTMLElement | null;
-      if (!el) {
-        setGlobalTopBarHeight(typeof window !== "undefined" && window.innerWidth >= 1024 ? 0 : GLOBAL_TOP_BAR_FALLBACK);
-        return;
-      }
-      setGlobalTopBarHeight(el.getBoundingClientRect().height || GLOBAL_TOP_BAR_FALLBACK);
-    };
-    updateGlobalTopBarHeight();
-    window.addEventListener("resize", updateGlobalTopBarHeight);
-    return () => window.removeEventListener("resize", updateGlobalTopBarHeight);
-  }, []);
 
   useEffect(() => {
     const measure = () => {

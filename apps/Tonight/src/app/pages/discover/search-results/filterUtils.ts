@@ -1,5 +1,5 @@
 import type { SearchResultRestaurant } from "../discoverTypes";
-import { RESTAURANTS } from "../../explorer/explorerData";
+import { RESTAURANTS } from "./searchMapData";
 import type { MappedSearchRestaurant, SearchFilterState, SheetState } from "./types";
 
 const HALF_VISIBLE_RATIO = 0.62;
@@ -22,7 +22,7 @@ export function getNearestSheetState(projectedY: number, height: number, peekHei
   ).state;
 }
 
-export function mapRestaurantToExplorerLocation(restaurant: SearchResultRestaurant, index: number): MappedSearchRestaurant {
+export function mapRestaurantToSearchLocation(restaurant: SearchResultRestaurant, index: number): MappedSearchRestaurant {
   const cuisine = restaurant.cuisine?.replace(" BBQ", "").toLowerCase();
   const byName = RESTAURANTS.find((candidate) => candidate.name.toLowerCase() === restaurant.name.toLowerCase());
   const byCuisine = cuisine ? RESTAURANTS.find((candidate) => candidate.cuisine.toLowerCase().includes(cuisine)) : null;

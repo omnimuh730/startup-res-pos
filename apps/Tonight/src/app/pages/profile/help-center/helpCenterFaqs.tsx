@@ -3,7 +3,7 @@ import type { FAQ } from "./types";
 export function createHelpCenterFaqs(jumpTo: (id: string) => void): FAQ[] {
   return [
     { q: "Is CatchTable free to use?", a: "Yes. Browsing and searching are free. Some optional features (like Pro) have a small monthly fee." },
-    { q: "Can I use the app without signing in?", a: <>You can browse Discover and Explorer freely. To save, book, or pay you'll need to <button className="text-primary underline" onClick={() => jumpTo("signin")}>sign in</button>.</> },
+    { q: "Can I use the app without signing in?", a: <>You can browse Discover freely. To save, book, or pay you'll need to <button className="text-primary underline" onClick={() => jumpTo("signin")}>sign in</button>.</> },
     { q: "Do I need to pay a deposit to book?", a: <>Yes — a small deposit holds your table and is fully refunded after you arrive and pay. See <button className="text-primary underline" onClick={() => jumpTo("policy")}>Reservation policy</button>.</> },
     { q: "Can I cancel a booking and get my deposit back?", a: <><b>Cancel more than 2 hours before</b> your seating for a 100% refund. Inside the 2-hour window the booking is locked, and a no-show means the restaurant keeps the deposit. Details in <button className="text-primary underline" onClick={() => jumpTo("policy")}>Reservation policy</button>.</> },
     { q: "How does the restaurant know I actually showed up?", a: <>In the <button className="text-primary underline" onClick={() => jumpTo("dining")}>Dining</button> tab, tap <b>Scan QR</b> at the restaurant — or show your QR for staff to scan. That marks your booking as arrived and protects your deposit.</> },

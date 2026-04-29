@@ -113,7 +113,7 @@ export function DiningPage() {
           onScanPay={() => { setScanQRInitialStep("bill"); setScanQRBooking(latestBooking); }}
           onInvite={() => setInviteBooking(latestBooking)}
           onOpenRestaurantProfile={() => navigate(`/discover/restaurant/${latestBooking.id}`, { state: { restaurant: bookingToRestaurant(latestBooking) } })}
-          onOpenDirections={() => navigate(`/explorer?directions=${latestBooking.id}`)}
+          onOpenDirections={() => navigate(`/discover/search?q=${encodeURIComponent(latestBooking.restaurant)}`)}
         />
         {renderModals()}
       </>

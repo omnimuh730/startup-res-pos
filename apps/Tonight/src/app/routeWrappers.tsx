@@ -1,7 +1,6 @@
 /* Route wrapper components that bridge URL to existing page components */
 import { useNavigate, useOutletContext } from "react-router";
 import { SavedListView } from "./pages/discover/SavedListView";
-import { NotificationsView } from "./pages/discover/NotificationsView";
 import { QRPayPage } from "./pages/qrpay/QRPayPage";
 import type { AppOutletContext } from "./AppLayout";
 
@@ -20,11 +19,6 @@ export function SavedRoute() {
       onRemoveFood={ctx.toggleSaveFood}
     />
   );
-}
-
-export function NotificationsRoute() {
-  const navigate = useNavigate();
-  return <NotificationsView onBack={() => navigate(-1)} />;
 }
 
 export function QRPayRoute() {

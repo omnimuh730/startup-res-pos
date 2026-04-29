@@ -1,4 +1,4 @@
-import { CheckCircle2, Compass, Heart, Home, LogIn, MapPin, ShieldCheck, Sparkles } from "lucide-react";
+import { CheckCircle2, Heart, Home, LogIn, ShieldCheck, Sparkles } from "lucide-react";
 import { Card } from "../../../../components/ds/Card";
 import { Text } from "../../../../components/ds/Text";
 import { InlineLink, Step, Tip } from "../HelpCenterPrimitives";
@@ -23,7 +23,7 @@ export function createFoundationsSections(): Section[] {
           </Text>
           <div className="space-y-3">
             <Step n={1}>Open the app. The first thing you see is the <InlineLink to="discover" onJump={jumpTo}>Discover</InlineLink> page.</Step>
-            <Step n={2}>At the bottom of the screen are four big buttons: Discover, Explorer, Dining, and Profile. In the middle is a round QR button.</Step>
+            <Step n={2}>At the bottom of the screen are four big buttons: Discover, Wishlist, Dining, and Profile. In the middle is a round QR button.</Step>
             <Step n={3}>Tap any card or picture to see more about a restaurant or a food.</Step>
             <Step n={4}>When you're ready, tap the heart to save a place, or tap <b>Book</b> to reserve a table.</Step>
           </div>
@@ -45,7 +45,7 @@ export function createFoundationsSections(): Section[] {
       render: (jumpTo) => (
         <div className="space-y-4">
           <Text className="text-[0.9375rem] leading-relaxed">
-            Browsing <InlineLink to="discover" onJump={jumpTo}>Discover</InlineLink> and <InlineLink to="explorer" onJump={jumpTo}>Explorer</InlineLink> is always free — no sign-in required. You'll be asked to sign in <b>only</b> when you use features that need your personal data.
+            Browsing <InlineLink to="discover" onJump={jumpTo}>Discover</InlineLink> is always free — no sign-in required. You'll be asked to sign in <b>only</b> when you use features that need your personal data.
           </Text>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Card variant="default" padding="md" radius="lg">
@@ -59,7 +59,7 @@ export function createFoundationsSections(): Section[] {
             <Card variant="default" padding="md" radius="lg">
               <div className="flex items-center gap-2 mb-1.5"><LogIn className="w-4 h-4" style={{ color: "var(--primary)" }} /><Text style={{ fontWeight: 600 }}>Sign-in required</Text></div>
               <ul className="text-[0.875rem] text-muted-foreground space-y-1 list-disc pl-4">
-                <li><InlineLink to="saved" onJump={jumpTo}>Saving to your Heart list</InlineLink></li>
+                <li><InlineLink to="saved" onJump={jumpTo}>Saving to your Wishlist</InlineLink></li>
                 <li><InlineLink to="book" onJump={jumpTo}>Booking a table</InlineLink></li>
                 <li><InlineLink to="qrpay" onJump={jumpTo}>QR Pay</InlineLink></li>
                 <li>Dining &amp; Profile tabs</li>
@@ -80,7 +80,7 @@ export function createFoundationsSections(): Section[] {
       keywords: "discover home search banners categories monthly best",
       image: "https://images.unsplash.com/photo-1552566626-52f8b828add9?w=1200&h=600&fit=crop",
       readMins: 3,
-      related: ["saved", "book", "explorer"],
+      related: ["saved", "book", "signin"],
       video: { title: "Browsing Discover", length: "1:05" },
       render: (jumpTo) => (
         <div className="space-y-4">
@@ -101,34 +101,34 @@ export function createFoundationsSections(): Section[] {
       ),
     },
     {
-      id: "explorer",
-      title: "Explorer (map)",
-      icon: Compass,
-      summary: "Find restaurants on a map near you.",
-      keywords: "explorer map directions gps location near",
+      id: "wishlist",
+      title: "Wishlist",
+      icon: Heart,
+      summary: "Keep saved restaurants and foods together.",
+      keywords: "wishlist saved favorites heart bookmark",
       image: "https://images.unsplash.com/photo-1569336415962-a4bd9f69cd83?w=1200&h=600&fit=crop",
       readMins: 2,
       related: ["discover", "signin"],
       render: () => (
         <div className="space-y-4">
           <Text className="text-[0.9375rem] leading-relaxed">
-            The <b>Explorer</b> tab shows a big map with pins for nearby restaurants. It's great when you want to see what's close to where you are.
+            The <b>Wishlist</b> tab keeps your saved restaurants and foods in one place.
           </Text>
           <div className="space-y-3">
-            <Step n={1}>Open the Explorer tab (bottom bar, compass icon).</Step>
-            <Step n={2}>Drag the map, or pinch to zoom in and out.</Step>
-            <Step n={3}>Tap any pin to open that restaurant's page.</Step>
-            <Step n={4}>Tap <b>Directions</b> from a restaurant's page to see the route on the map.</Step>
+            <Step n={1}>Open the Wishlist tab from the bottom navigation.</Step>
+            <Step n={2}>Tap a collection to see saved places.</Step>
+            <Step n={3}>Tap any saved restaurant to open it again.</Step>
+            <Step n={4}>Tap the heart again when you want to remove something.</Step>
           </div>
-          <Tip tone="warn" icon={MapPin}>
-            Map features may ask your phone for permission to use your location. If you say no, the map still works — you just won't see "you are here".
+          <Tip icon={Heart}>
+            Wishlist is private to your account, so it is available after sign-in.
           </Tip>
         </div>
       ),
     },
     {
       id: "saved",
-      title: "Saving to your Heart list",
+      title: "Saving to your Wishlist",
       icon: Heart,
       summary: "Keep your favourites in one place.",
       keywords: "save favorite favourite heart bookmark list wishlist",
@@ -138,16 +138,16 @@ export function createFoundationsSections(): Section[] {
       render: (jumpTo) => (
         <div className="space-y-4">
           <Text className="text-[0.9375rem] leading-relaxed">
-            Tap the little heart on any restaurant or food picture to add it to your <b>Heart list</b>. A red heart means it is saved. Tap again to remove.
+            Tap the little heart on any restaurant or food picture to add it to your <b>Wishlist</b>. A red heart means it is saved. Tap again to remove.
           </Text>
           <div className="space-y-3">
             <Step n={1}>Tap the heart icon on a card. If you aren't signed in, a pop-up will ask you to <InlineLink to="signin" onJump={jumpTo}>sign in first</InlineLink>.</Step>
-            <Step n={2}>Open your list by tapping the big heart at the top-right of the <InlineLink to="discover" onJump={jumpTo}>Discover</InlineLink> page.</Step>
-            <Step n={3}>Switch between <b>Restaurants</b> and <b>Foods</b> tabs.</Step>
+            <Step n={2}>Open your list from the <b>Wishlist</b> button in the bottom navigation.</Step>
+            <Step n={3}>Open a collection to browse saved restaurants and foods.</Step>
             <Step n={4}>Tap any saved item to open it again, or tap its heart to remove it from the list.</Step>
           </div>
           <Tip icon={Heart}>
-            Saving is free and private — only you can see your Heart list.
+            Saving is free and private — only you can see your Wishlist.
           </Tip>
         </div>
       ),

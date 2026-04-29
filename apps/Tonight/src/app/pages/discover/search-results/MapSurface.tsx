@@ -2,8 +2,8 @@ import { useState, useRef } from "react";
 import MapLibre, { Marker, type MapRef } from "react-map-gl/maplibre";
 import { MapPin } from "lucide-react";
 import { ALL_SEARCH_DATA } from "../discoverSearchData";
-import { LIGHT_STYLE, USER_LOCATION } from "../../explorer/explorerData";
-import { mapRestaurantToExplorerLocation } from "./filterUtils";
+import { LIGHT_STYLE, USER_LOCATION } from "./searchMapData";
+import { mapRestaurantToSearchLocation } from "./filterUtils";
 import type { MappedSearchRestaurant } from "./types";
 
 export function MapSurface({
@@ -24,7 +24,7 @@ export function MapSurface({
   const mapRef = useRef<MapRef>(null);
   const markers = restaurants.length > 0
     ? restaurants
-    : ALL_SEARCH_DATA.restaurants.slice(0, 6).map((restaurant, index) => mapRestaurantToExplorerLocation(restaurant, index));
+    : ALL_SEARCH_DATA.restaurants.slice(0, 6).map((restaurant, index) => mapRestaurantToSearchLocation(restaurant, index));
   const [viewState, setViewState] = useState({
     longitude: USER_LOCATION.lng,
     latitude: USER_LOCATION.lat,
