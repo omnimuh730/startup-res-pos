@@ -1,7 +1,22 @@
 /* In-app support chat — Full page view simulating human support */
 import { useState, useRef, useEffect } from "react";
-import { motion } from "motion/react";
-import { ArrowLeft, Send, Plus, CheckCheck } from "lucide-react";
+import { motion } from "framer-motion";
+import { ArrowLeft, Send, Plus, CheckCheck, Phone } from "lucide-react";
+
+// Custom Brand Logo
+const BrandLogo = ({ className = "w-8 h-8" }) => (
+  <svg viewBox="0 0 120 100" fill="none" xmlns="http://www.w3.org/2000/svg" className={className}>
+    <g transform="translate(0, 0)">
+      <circle cx="20" cy="50" r="12" fill="#D93844" />
+      <path
+        fillRule="evenodd"
+        clipRule="evenodd"
+        d="M75 85C94.33 85 110 69.33 110 50C110 30.67 94.33 15 75 15C55.67 15 40 30.67 40 50C40 69.33 55.67 85 75 85ZM75 62C81.627 62 87 56.627 87 50C87 43.373 81.627 38 75 38C68.373 38 63 43.373 63 50C63 56.627 68.373 62 75 62Z"
+        fill="#D93844"
+      />
+    </g>
+  </svg>
+);
 
 export type Sender = "agent" | "user";
 
@@ -13,10 +28,13 @@ export interface ChatMessage {
   ts: number;
 }
 
+// Upgraded ChatSession with topic and ticketId to prevent monotonous lists
 export interface ChatSession {
   id: string;
   date: string;
-  status: "Open" | "Closed";
+  status: "Open" | "Resolved";
+  topic: string;
+  ticketId: string;
   lastMessage: string;
   messages: ChatMessage[];
 }
@@ -34,7 +52,6 @@ const HUMAN_QUICK_REPLIES: { label: string; payload: string }[] = [
   { label: "I'd rather type out my issue", payload: "type" },
 ];
 
-// Simulated human agent responses
 function agentReply(payload: string): ChatMessage[] {
   const now = Date.now();
   const base = (text: string, extras: Partial<ChatMessage> = {}): ChatMessage => ({
@@ -78,7 +95,6 @@ export function HelpChatModal({ session, onClose, onUpdateSession }: HelpChatScr
   const [typing, setTyping] = useState(false);
   const listRef = useRef<HTMLDivElement>(null);
 
-  // Load session or initialize a new one
   useEffect(() => {
     if (session && session.messages.length > 0) {
       setMessages(session.messages);
@@ -93,7 +109,6 @@ export function HelpChatModal({ session, onClose, onUpdateSession }: HelpChatScr
     }
   }, [session]);
 
-  // Auto-scroll to bottom
   useEffect(() => {
     if (listRef.current) {
       listRef.current.scrollTo({ top: listRef.current.scrollHeight, behavior: "smooth" });
@@ -117,10 +132,9 @@ export function HelpChatModal({ session, onClose, onUpdateSession }: HelpChatScr
   const send = (payload: string, displayText?: string) => {
     const updatedMsgs = displayText ? pushUser(displayText) : messages;
     setInput("");
-    if (payload === "type") return; // Let user type freely
+    if (payload === "type") return; 
     
     setTyping(true);
-    // Simulate human typing delay
     setTimeout(() => {
       setTyping(false);
       pushAgent(updatedMsgs, agentReply(payload));
@@ -131,13 +145,12 @@ export function HelpChatModal({ session, onClose, onUpdateSession }: HelpChatScr
     e.preventDefault();
     const text = input.trim();
     if (!text) return;
-    send(text, text); // Treat raw text as unknown payload
+    send(text, text);
   };
 
   if (!session) return null;
 
   return (
-    // Fixed full screen container with solid white background (No modal overlay!)
     <motion.div
       initial={{ x: "100%" }}
       animate={{ x: 0 }}
@@ -145,32 +158,31 @@ export function HelpChatModal({ session, onClose, onUpdateSession }: HelpChatScr
       transition={{ type: "spring", damping: 28, stiffness: 220 }}
       className="fixed inset-0 z-[300] bg-white flex flex-col font-sans"
     >
-      {/* Header - Airbnb Style */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-black/[0.04] bg-white shrink-0">
-        <button onClick={onClose} className="w-10 h-10 -ml-2 rounded-full hover:bg-gray-100 flex items-center justify-center text-black transition cursor-pointer">
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 py-5 border-b border-black/[0.04] bg-white shrink-0 shadow-sm relative z-10">
+        <button onClick={onClose} className="w-10 h-10 -ml-2 rounded-full hover:bg-gray-50 flex items-center justify-center text-black transition cursor-pointer">
           <ArrowLeft className="w-5 h-5" />
         </button>
         
-        <div className="flex flex-col items-center justify-center">
-          <div className="w-7 h-7 bg-black text-white rounded-full flex items-center justify-center mb-1">
-            <span className="font-bold text-[0.625rem] tracking-wider">CT</span>
-          </div>
-          <span className="text-[0.6875rem] font-bold text-black tracking-tight">Support Team</span>
+        {/* Header Branding + Phone Number */}
+        <div className="flex flex-col items-center justify-center absolute left-1/2 -translate-x-1/2">
+        <p className="text-[1.25rem] font-medium text-black">
+             Support Team
+             </p>
+          <a href="tel:+18001234567" className="group flex items-center gap-1 mt-1 text-[0.6875rem] text-gray-500 font-medium hover:text-[#D93844] transition-colors cursor-pointer">
+            <Phone className="w-2.5 h-2.5 group-hover:text-[#D93844] transition-colors" />
+            +1 (800) 123-4567
+          </a>
         </div>
-
-        <button className="text-[0.875rem] font-medium text-black px-3 py-1.5 rounded-full hover:bg-gray-100 transition cursor-pointer">
-          Details
-        </button>
       </div>
 
       {/* Messages Area */}
       <div ref={listRef} className="flex-1 overflow-y-auto px-4 py-6 bg-white space-y-6 pb-8">
         <div className="text-center">
-          <span className="text-[0.6875rem] font-bold text-gray-500 tracking-tight">Today</span>
+          <span className="text-[0.875rem] font-bold text-gray-500 tracking-tight">Today</span>
         </div>
         
         {messages.map((m, idx) => {
-          // Only show avatar for the last message in a consecutive block from the agent
           const isAgent = m.sender === "agent";
           const nextMessage = messages[idx + 1];
           const isLastInGroup = isAgent && (!nextMessage || nextMessage.sender !== "agent");
@@ -187,12 +199,12 @@ export function HelpChatModal({ session, onClose, onUpdateSession }: HelpChatScr
         
         {/* Typing indicator */}
         {typing && (
-          <div className="flex flex-col items-start">
-            <div className="flex items-end gap-2 max-w-[85%]">
-              <div className="w-8 h-8 rounded-full bg-black text-white flex items-center justify-center shrink-0 shadow-sm">
-                <span className="font-bold text-[0.625rem] tracking-wider">CT</span>
+          <div className="flex flex-col items-start mt-2">
+            <div className="flex items-end gap-3 max-w-[85%]">
+              <div className="w-12 h-12 rounded-full flex items-center justify-center shrink-0 shadow-sm mb-1">
+                <BrandLogo className="w-12 h-12" />
               </div>
-              <div className="bg-[#f1f1f1] px-4 py-3.5 rounded-2xl rounded-bl-sm flex gap-1 items-center h-[2.875rem]">
+              <div className="bg-[#f3f4f6] px-4 py-3.5 rounded-2xl rounded-bl-sm flex gap-1 items-center h-[2.875rem]">
                 {[0, 1, 2].map((i) => (
                   <motion.span key={i} className="w-1.5 h-1.5 rounded-full bg-gray-400"
                     animate={{ opacity: [0.4, 1, 0.4], y: [0, -2, 0] }}
@@ -200,7 +212,7 @@ export function HelpChatModal({ session, onClose, onUpdateSession }: HelpChatScr
                 ))}
               </div>
             </div>
-            <span className="text-[0.6875rem] text-gray-500 mt-1.5 ml-10">Support Team is typing...</span>
+            <span className="text-[0.6875rem] text-gray-400 mt-1.5 ml-11">Support Team is typing...</span>
           </div>
         )}
       </div>
@@ -208,31 +220,33 @@ export function HelpChatModal({ session, onClose, onUpdateSession }: HelpChatScr
       {/* Input Area */}
       <div className="p-4 border-t border-black/[0.06] bg-white shrink-0" style={{ paddingBottom: "calc(1rem + env(safe-area-inset-bottom))" }}>
         <form onSubmit={onSubmit} className="flex items-center gap-3 max-w-4xl mx-auto">
-          <button type="button" className="w-9 h-9 rounded-full border border-gray-300 hover:bg-gray-50 flex items-center justify-center text-black transition cursor-pointer shrink-0">
-            <Plus className="w-5 h-5" />
+          <button type="button" className="w-[38px] h-[38px] shrink-0 rounded-full border border-gray-300 hover:bg-gray-50 flex items-center justify-center text-black transition cursor-pointer shadow-sm">
+            <Plus className="w-5 h-5" strokeWidth={2} />
           </button>
           
-          <input
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder="Type a message"
-            className="flex-1 px-4 py-2.5 rounded-full border border-gray-300 bg-white text-[0.9375rem] text-black outline-none focus:border-black focus:ring-1 focus:ring-black transition placeholder:text-gray-400"
-          />
-          
-          <button
-            type="submit"
-            disabled={!input.trim()}
-            className="w-10 h-10 rounded-full flex items-center justify-center bg-black text-white disabled:opacity-30 disabled:bg-gray-200 disabled:text-gray-400 cursor-pointer transition shrink-0"
-          >
-            <Send className="w-4 h-4 ml-0.5" />
-          </button>
+          <div className="flex-1 relative flex items-center">
+            <input
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder="Type a message"
+              className="w-full pl-4 pr-12 py-[10px] bg-white border border-gray-300 rounded-full text-[0.9375rem] text-black outline-none focus:border-black/30 transition-colors placeholder:text-gray-400 shadow-sm"
+            />
+            <button 
+              type="submit"
+              disabled={!input.trim()}
+              className={`absolute right-1.5 w-[30px] h-[30px] flex items-center justify-center rounded-full transition-all cursor-pointer ${
+                input.trim() ? 'bg-black text-white shadow-md' : 'bg-gray-50 text-gray-400 hover:text-black'
+              }`}
+            >
+              <Send className="w-4 h-4 ml-[-2px]" strokeWidth={2} /> 
+            </button>
+          </div>
         </form>
       </div>
     </motion.div>
   );
 }
 
-// Sub-component for rendering individual messages
 function ChatBubble({ msg, showAvatar, onOptionClick }: {
   msg: ChatMessage;
   showAvatar?: boolean;
@@ -241,15 +255,15 @@ function ChatBubble({ msg, showAvatar, onOptionClick }: {
   const isUser = msg.sender === "user";
   
   return (
-    <div className={`flex flex-col ${isUser ? "items-end" : "items-start"}`}>
-      <div className={`flex items-end gap-2 max-w-[85%] ${isUser ? "flex-row-reverse" : ""}`}>
+    <div className={`flex flex-col mt-2 ${isUser ? "items-end" : "items-start"}`}>
+      <div className={`flex items-end gap-3 max-w-[85%] ${isUser ? "flex-row-reverse" : ""}`}>
         
-        {/* Agent Avatar Spacer/Renderer */}
+        {/* Agent Avatar */}
         {!isUser && (
-          <div className="w-8 h-8 shrink-0 flex items-end justify-center">
+          <div className="w-12 h-12 shrink-0 flex items-end justify-center mb-1">
             {showAvatar && (
-               <div className="w-8 h-8 rounded-full bg-black text-white flex items-center justify-center shadow-sm">
-                 <span className="font-bold text-[0.625rem] tracking-wider">CT</span>
+               <div className="w-12 h-12 rounded-full flex items-center justify-center shadow-sm">
+                 <BrandLogo className="w-12 h-12" />
                </div>
             )}
           </div>
@@ -258,25 +272,25 @@ function ChatBubble({ msg, showAvatar, onOptionClick }: {
         <div className="space-y-1.5 w-full">
           {msg.text && (
             <div
-              className={`px-4 py-3 rounded-[1.25rem] text-[0.9375rem] leading-relaxed ${
+              className={`px-4 py-3 rounded-[1.25rem] text-[0.9375rem] leading-relaxed shadow-sm ${
                 isUser
-                  ? "bg-[#222222] text-white rounded-br-sm shadow-sm"
-                  : "bg-[#f1f1f1] text-black rounded-bl-sm"
+                  ? "bg-[#1A1A1A] text-white rounded-br-sm"
+                  : "bg-[#f3f4f6] text-black rounded-bl-sm"
               }`}
             >
               {msg.text}
             </div>
           )}
           
-          {/* Stacked Options (Airbnb Style) */}
+          {/* Stacked Options */}
           {msg.options && msg.options.length > 0 && (
-            <div className="flex flex-col rounded-[1rem] border border-gray-200 overflow-hidden bg-white shadow-[0_2px_8px_rgba(0,0,0,0.04)] mt-2">
+            <div className="flex flex-col bg-white border border-black/[0.08] rounded-2xl overflow-hidden mt-2 shadow-sm">
               {msg.options.map((opt, i) => (
                 <button
                   key={opt.payload}
                   onClick={() => onOptionClick(opt)}
-                  className={`px-4 py-4 text-left text-[0.9375rem] text-black hover:bg-gray-50 active:bg-gray-100 transition cursor-pointer ${
-                    i > 0 ? "border-t border-gray-200" : ""
+                  className={`px-4 py-3.5 text-left font-medium text-[0.9375rem] text-black hover:bg-gray-50 active:bg-gray-100 transition cursor-pointer ${
+                    i > 0 ? "border-t border-black/[0.06]" : ""
                   }`}
                 >
                   {opt.label}
@@ -289,12 +303,12 @@ function ChatBubble({ msg, showAvatar, onOptionClick }: {
       
       {/* Time / Status */}
       {isUser && (
-        <span className="text-[0.625rem] text-gray-400 mt-1.5 flex items-center gap-0.5 font-medium mr-1">
-          <CheckCheck className="w-3 h-3" /> {new Date(msg.ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+        <span className="text-[0.6875rem] text-gray-400 mt-1 flex items-center gap-1 font-medium mr-2">
+          <CheckCheck className="w-[14px] h-[14px]" /> {new Date(msg.ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
         </span>
       )}
       {!isUser && showAvatar && !msg.options && (
-        <span className="text-[0.6875rem] text-gray-400 mt-1 ml-10">Support Team {new Date(msg.ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+        <span className="text-[0.6875rem] text-gray-400 mt-1.5 ml-11">Support Team {new Date(msg.ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
       )}
     </div>
   );
