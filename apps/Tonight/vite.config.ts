@@ -17,7 +17,11 @@ function figmaAssetResolver() {
 }
 
 // @ts-expect-error process is a nodejs global
-const host = process.env.TAURI_DEV_HOST;
+const tauriDevHost = process.env.TAURI_DEV_HOST;
+// When unset, desktop dev binds to localhost only. When Tauri sets TAURI_DEV_HOST for mobile,
+// we must listen on 0.0.0.0 — using the raw IP string (e.g. "10.8.0.2") as `server.host` binds only
+// that interface and breaks adb reverse / emulator routing (blank WebView).
+const useTauriMobileDev = Boolean(tauriDevHost);
 
 // https://vite.dev/config/
 export default defineConfig(async () => ({
@@ -51,11 +55,11 @@ export default defineConfig(async () => ({
   server: {
     port: 1420,
     strictPort: true,
-    host: host || false,
-    hmr: host
+    host: useTauriMobileDev ? "0.0.0.0" : false,
+    hmr: useTauriMobileDev
       ? {
           protocol: "ws",
-          host,
+          host: tauriDevHost,
           port: 1421,
         }
       : undefined,

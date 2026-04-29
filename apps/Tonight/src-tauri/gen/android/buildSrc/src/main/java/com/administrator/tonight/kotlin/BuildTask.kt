@@ -50,9 +50,16 @@ open class BuildTask : DefaultTask() {
         val release = release ?: throw GradleException("release cannot be null")
         val args = listOf("tauri", "android", "android-studio-script");
 
+        val rust16kPage =
+            "-C link-arg=-Wl,-z,max-page-size=16384 -C link-arg=-Wl,-z,common-page-size=16384"
+
         project.exec {
             workingDir(File(project.projectDir, rootDirRel))
             executable(executable)
+            environment("CARGO_TARGET_X86_64_LINUX_ANDROID_RUSTFLAGS", rust16kPage)
+            environment("CARGO_TARGET_AARCH64_LINUX_ANDROID_RUSTFLAGS", rust16kPage)
+            environment("CARGO_TARGET_ARMV7_LINUX_ANDROIDEABI_RUSTFLAGS", rust16kPage)
+            environment("CARGO_TARGET_I686_LINUX_ANDROID_RUSTFLAGS", rust16kPage)
             args(args)
             if (project.logger.isEnabled(LogLevel.DEBUG)) {
                 args("-vv")

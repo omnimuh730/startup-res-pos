@@ -15,7 +15,13 @@ val tauriProperties = Properties().apply {
 
 android {
     compileSdk = 36
+    ndkVersion = "30.0.14904198"
     namespace = "com.administrator.tonight"
+    packaging {
+        jniLibs {
+            useLegacyPackaging = false
+        }
+    }
     defaultConfig {
         manifestPlaceholders["usesCleartextTraffic"] = "false"
         applicationId = "com.administrator.tonight"
