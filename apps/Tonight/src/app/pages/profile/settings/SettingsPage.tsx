@@ -118,9 +118,9 @@ export function SettingsPage({ onBack }: { onBack: () => void }) {
                 <Text style={{ fontWeight: 600 }}>Change Password</Text>
                 <button onClick={() => setShowPasswordForm(false)} className="p-1.5 hover:bg-background/50 rounded-lg"><X className="w-4 h-4" /></button>
               </div>
-              <PasswordInput label="Current Password" value={currentPassword} onChange={e => setCurrentPassword(e.target.value)} fullWidth />
-              <PasswordInput label="New Password" value={newPassword} onChange={e => setNewPassword(e.target.value)} fullWidth />
-              <PasswordInput label="Confirm New Password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} fullWidth />
+              <PasswordInput label="Current Password" value={currentPassword} onChange={e => setCurrentPassword(e.target.value)} />
+              <PasswordInput label="New Password" value={newPassword} onChange={e => setNewPassword(e.target.value)} />
+              <PasswordInput label="Confirm New Password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} />
               <Button variant="primary" fullWidth onClick={handleChangePassword}>Update Password</Button>
             </div>
           ) : (

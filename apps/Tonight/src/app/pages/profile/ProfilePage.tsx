@@ -109,7 +109,7 @@ export function ProfilePage() {
   if (page === "contactSupport") return <ContactSupportPage onBack={goBack} />;
 
   // Common shadow class for the Airbnb look
-  const cardShadow = "shadow-[0_6px_12px_rgba(0,0,0,0.18)] border border-black/[0.04]";
+  const cardShadow = "shadow-[0_6px_6px_rgba(0,0,0,0.18)] border border-black/[0.04]";
 
   return (
     <div className="min-h-screen bg-white text-foreground font-sans">

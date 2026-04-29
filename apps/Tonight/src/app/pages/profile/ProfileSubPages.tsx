@@ -1,5 +1,5 @@
-export { ProfileEditPage } from "./sub-pages/ProfileEditPage";
+export { ProfileEditPage } from "./account/ProfileEditPage";
 export { TopUpPage } from "./topup/TopUpPage";
-export { SendGiftPage } from "./sub-pages/SendGiftPage";
+export { SendGiftPage } from "./gift/SendGiftPage";
 export { HistoryPage } from "./history/HistoryPage";
 //export { OrdersPage, ThisMonthPage } from "./sub-pages/SimplePages";
