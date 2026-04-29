@@ -99,7 +99,7 @@ export function DiscoverSearchModal({ open, initialQuery, onClose, onSearch }: D
     <AnimatePresence>
       {open && (
         <motion.div
-          className="fixed inset-0 z-[260] bg-white text-[#222222]"
+          className="fixed inset-0 z-[260] bg-white text-[#222222] safe-area-pad-top"
           initial={{ opacity: 0, y: 28, scale: 0.98 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 28, scale: 0.98 }}

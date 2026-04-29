@@ -39,7 +39,7 @@ export function GlobalTopBar({
           currentLocation={userLocation}
         />
       )}
-      <div className="sticky top-0 z-40 bg-background/95 backdrop-blur-md border-b border-border/50 px-4 sm:px-6 lg:px-8 py-3 max-w-3xl mx-auto w-full lg:hidden">
+      <div className="sticky top-0 z-40 bg-background/95 backdrop-blur-md border-b border-border/50 px-4 sm:px-6 lg:px-8 py-3 safe-area-pad-top max-w-3xl mx-auto w-full lg:hidden">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button

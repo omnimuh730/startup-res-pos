@@ -56,10 +56,14 @@ open class BuildTask : DefaultTask() {
         project.exec {
             workingDir(File(project.projectDir, rootDirRel))
             executable(executable)
-            environment("CARGO_TARGET_X86_64_LINUX_ANDROID_RUSTFLAGS", rust16kPage)
-            environment("CARGO_TARGET_AARCH64_LINUX_ANDROID_RUSTFLAGS", rust16kPage)
-            environment("CARGO_TARGET_ARMV7_LINUX_ANDROIDEABI_RUSTFLAGS", rust16kPage)
-            environment("CARGO_TARGET_I686_LINUX_ANDROID_RUSTFLAGS", rust16kPage)
+            // Apply 16KiB page-size linker flags only for release builds.
+            // They are required for production artifacts; during dev, they appear to trigger a native crash on your emulator.
+            if (release) {
+                environment("CARGO_TARGET_X86_64_LINUX_ANDROID_RUSTFLAGS", rust16kPage)
+                environment("CARGO_TARGET_AARCH64_LINUX_ANDROID_RUSTFLAGS", rust16kPage)
+                environment("CARGO_TARGET_ARMV7_LINUX_ANDROIDEABI_RUSTFLAGS", rust16kPage)
+                environment("CARGO_TARGET_I686_LINUX_ANDROID_RUSTFLAGS", rust16kPage)
+            }
             args(args)
             if (project.logger.isEnabled(LogLevel.DEBUG)) {
                 args("-vv")
