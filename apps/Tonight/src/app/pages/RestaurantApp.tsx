@@ -9,7 +9,7 @@ import {
 } from "../stores/notificationStore";
 import { QRPayPage } from "./qrpay/QRPayPage";
 import { SavedListView } from "./discover/SavedListView";
-import { NotificationsView } from "./discover/NotificationsView";
+import { NotificationsView } from "./profile/notification/NotificationsView";
 import type { RestaurantData } from "./detail/RestaurantDetailView";
 import type { SearchResultFood } from "./discover/discoverTypes";
 import { _savedRIds, _savedFNames, _notifySaved, incrementSavedSnapshot } from "./discover/savedStore";

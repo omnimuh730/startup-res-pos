@@ -15,16 +15,20 @@ import {
 import { subscribePlan, getPlanSnapshot, getPlan } from "../../stores/subscriptionStore";
 import { subscribeNotifications, getNotificationSnapshot, getUnreadCount } from "../../stores/notificationStore";
 import type { AppOutletContext } from "../../AppLayout";
-import { TopUpPage, SendGiftPage, HistoryPage } from "./ProfileSubPages";
+import { TopUpPage } from "./topup/TopUpPage";
+import { SendGiftPage } from "./gift/SendGiftPage";
+import { HistoryPage } from "./history/HistoryPage";
+import { ProfileEditPage } from "./account/ProfileEditPage";
 import { WalletCardStack } from "./wallet/WalletCardStack";
 import { DailyBonusModal, dailyBonusStore, markDailyBonusClaimed, type DailyBonusReward } from "./dailyreward/DailyBonusModal";
-import { ReferPage, FriendsPage, TierBenefitsPage } from "./SavedAndSocialPages";
+import { ReferPage } from "./refer/ReferPage";
+import { FriendsPage } from "./friends/FriendsPage";
 import { SettingsPage } from "./settings/SettingsPage";
 import { SubscriptionPage } from "./subscription/SubscriptionPage";
 import { HelpCenterPage } from "./help-center/HelpCenterPage";
 import { ContactSupportPage } from "./support/ContactSupportPage";
 import { LocationPickerModal } from "../shared/LocationPickerModal";
-import { NotificationsView } from "../discover/NotificationsView";
+import { NotificationsView } from "./notification/NotificationsView";
 
 const PRESET_AVATARS: { id: string; src: string; label: string }[] = [
   { id: "a1", src: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=240&h=240&fit=crop&crop=faces", label: "Classic" },
@@ -41,10 +45,10 @@ const PAGE_MAP: Record<string, string> = {
   topup: "topUp",
   "send-gift": "sendGift",
   history: "history",
+  edit: "profileEdit",
   refer: "refer",
   friends: "friends",
   settings: "settings",
-  "tier-benefits": "tierBenefits",
   subscription: "subscription",
   help: "help",
   "contact-support": "contactSupport",
@@ -82,7 +86,6 @@ export function ProfilePage() {
   const [pendingAvatar, setPendingAvatar] = useState<string | null>(null);
   const dailyClaimed = useSyncExternalStore(dailyBonusStore.subscribe, dailyBonusStore.getSnapshot);
   const [bonusOpen, setBonusOpen] = useState(false);
-  const [tierBenefitsOpen, setTierBenefitsOpen] = useState(false);
   const handleClaimBonus = (reward: DailyBonusReward) => { markDailyBonusClaimed(); console.info("Daily bonus claimed:", reward); };
   const openNotifications = () => {
     if (outletCtx?.requireAuth && !outletCtx.requireAuth("/profile/notifications", "Sign in to view your notifications.")) return;
@@ -92,10 +95,10 @@ export function ProfilePage() {
   if (page === "topUp") return <TopUpPage onBack={goBack} />;
   if (page === "sendGift") return <SendGiftPage onBack={goBack} />;
   if (page === "history") return <HistoryPage onBack={goBack} />;
+  if (page === "profileEdit") return <ProfileEditPage onBack={goBack} />;
   if (page === "refer") return <ReferPage onBack={goBack} />;
   if (page === "friends") return <FriendsPage onBack={goBack} />;
   if (page === "settings") return <SettingsPage onBack={goBack} />;
-  if (page === "tierBenefits") return <TierBenefitsPage onBack={goBack} />;
   if (page === "subscription") return <SubscriptionPage onBack={goBack} />;
   if (page === "notifications") return <NotificationsView onBack={goBack} />;
   if (page === "help") return (
@@ -109,7 +112,7 @@ export function ProfilePage() {
   if (page === "contactSupport") return <ContactSupportPage onBack={goBack} />;
 
   // Common shadow class for the Airbnb look
-  const cardShadow = "shadow-[0_6px_6px_rgba(0,0,0,0.18)] border border-black/[0.04]";
+  const cardShadow = "shadow-[0_4px_8px_rgba(0,0,0,0.18)] border border-black/[0.04]";
 
   return (
     <div className="min-h-screen bg-white text-foreground font-sans">
@@ -117,7 +120,7 @@ export function ProfilePage() {
         
         {/* Header */}
         <div className="px-6 pt-12 pb-2 flex items-center justify-between sticky top-0 z-30 bg-white/90 backdrop-blur-md">
-          <h1 className="text-[2rem] font-bold tracking-tight">Profile</h1>
+          <h1 className="text-[2rem] font-bold">Profile</h1>
           <button 
             onClick={openNotifications} 
             className="relative w-11 h-11 flex items-center justify-center bg-white rounded-full shadow-[0_2px_8px_rgba(0,0,0,0.08)] border border-black/5 hover:bg-gray-50 transition cursor-pointer"
@@ -156,14 +159,14 @@ export function ProfilePage() {
               </button>
             </div>
 
-            <h2 className="text-[1.5rem] font-bold tracking-tight text-black">Alex Chen</h2>
+            <h2 className="text-[1.5rem] font-bold text-black">Alex Chen</h2>
             <div className="flex items-center gap-2 mt-1 mb-5">
               <p className="text-[0.875rem] text-gray-500 font-medium">Guest</p>
             </div>
 
             {/* Subtle Tier Progress */}
             <button
-              onClick={() => setTierBenefitsOpen(true)}
+              onClick={() => setPage("profileEdit")}
               className="w-full bg-gray-50 hover:bg-gray-100 transition-colors rounded-[1rem] p-3.5 text-left cursor-pointer active:scale-[0.99] border border-gray-100"
             >
               <div className="flex items-center justify-between mb-2">
@@ -202,7 +205,7 @@ export function ProfilePage() {
                 <div className={`w-12 h-12 rounded-full flex items-center justify-center ${a.color} shadow-sm`}>
                   <a.icon className="w-6 h-6" strokeWidth={2.5} />
                 </div>
-                <span className="text-[0.8rem] tracking-tight">{a.label}</span>
+                <span className="text-[0.875rem] font-medium">{a.label}</span>
               </button>
             ))}
           </div>
@@ -211,7 +214,7 @@ export function ProfilePage() {
         {/* Promotional / Call to Action Cards */}
         <div className="space-y-4">
 
-        {(
+        {!dailyClaimed && (
             <StaggerItem preset="fadeInUp">
               <button
                 onClick={() => setBonusOpen(true)}
@@ -323,7 +326,7 @@ export function ProfilePage() {
             <div className="w-full md:max-w-md bg-white rounded-t-[2rem] md:rounded-[2rem] shadow-2xl" onClick={(e) => e.stopPropagation()}>
               <div className="flex items-center justify-between px-6 pt-6 pb-4">
                 <div>
-                  <Text className="text-xl font-bold tracking-tight text-black">Choose Photo</Text>
+                  <Text className="text-xl font-bold text-black">Choose Photo</Text>
                   <Text className="text-gray-500 text-[0.875rem] mt-1">Pick from our curated collection</Text>
                 </div>
                 <button onClick={() => setPickerOpen(false)} className="w-9 h-9 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center cursor-pointer text-black" aria-label="Close">
@@ -371,59 +374,6 @@ export function ProfilePage() {
           }}
           currentLocation={userLocation}
         />
-
-        {tierBenefitsOpen && (
-          <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => setTierBenefitsOpen(false)}>
-            <div
-              className="w-full md:max-w-md bg-white rounded-t-[2rem] md:rounded-[2rem] shadow-2xl flex flex-col"
-              style={{ maxHeight: "min(85dvh, 720px)" }}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="flex items-center justify-between px-6 pt-6 pb-4 shrink-0 border-b border-gray-100">
-                <div className="flex items-center gap-3">
-                  <Crown className="w-6 h-6 text-amber-500" strokeWidth={2} />
-                  <Text className="text-xl font-bold tracking-tight text-black">Tier Benefits</Text>
-                </div>
-                <button onClick={() => setTierBenefitsOpen(false)} className="w-9 h-9 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center cursor-pointer text-black" aria-label="Close">
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-              <div className="px-6 py-6 overflow-y-auto flex-1" style={{ paddingBottom: "max(1.5rem, env(safe-area-inset-bottom))" }}>
-                <div className="rounded-[1.25rem] p-5 mb-6 bg-gradient-to-r from-amber-500 to-amber-400 text-white shadow-md">
-                  <Text className="text-[0.6875rem] uppercase text-white/80 font-bold tracking-widest">Current Tier</Text>
-                  <Text className="text-[1.5rem] font-bold tracking-tight mt-1">GOLD · Level 2</Text>
-                  <Text className="text-white/90 text-[0.875rem] mt-1">2,340 pts · 660 to Platinum</Text>
-                </div>
-                <div className="space-y-4">
-                  {[
-                    { tier: "Silver", min: 0, perks: ["Standard reservations", "Basic support", "5% birthday bonus"] },
-                    { tier: "Gold", min: 1000, perks: ["Priority booking window", "10% wallet bonus", "Free cancellation up to 2h", "Dedicated chat support"] },
-                    { tier: "Platinum", min: 5000, perks: ["Concierge reservations", "20% wallet bonus", "Complimentary welcome drink", "Exclusive chef tables"] },
-                    { tier: "Diamond", min: 10000, perks: ["Private dining priority", "30% wallet bonus", "VIP event invites", "Personal sommelier picks"] },
-                  ].map((t) => {
-                    const isCurrent = t.tier === "Gold";
-                    return (
-                      <div key={t.tier} className={`rounded-[1.25rem] p-5 border transition ${isCurrent ? "border-amber-500 bg-amber-50/50 shadow-sm" : "border-gray-200 bg-transparent"}`}>
-                        <div className="flex items-center justify-between mb-3">
-                          <Text className="text-[1.125rem] font-bold text-black">{t.tier}</Text>
-                          <Text className="text-gray-500 text-[0.8125rem] font-medium">{t.min.toLocaleString()}+ pts</Text>
-                        </div>
-                        <ul className="space-y-2">
-                          {t.perks.map((p) => (
-                            <li key={p} className="flex items-start gap-3 text-[0.875rem] text-gray-600">
-                              <Check className={`w-4 h-4 mt-0.5 shrink-0 ${isCurrent ? 'text-amber-500' : 'text-gray-400'}`} strokeWidth={2.5} />
-                              <span className="leading-snug">{p}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
       </Stagger>
     </div>
   );

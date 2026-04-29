@@ -25,9 +25,9 @@ import {
   clearRead,
   clearUnread,
   type Notification,
-} from "../../stores/notificationStore";
-import { BOOKINGS } from "../dining/diningData";
-import { ALL_SEARCH_DATA, searchResultToRestaurantData } from "./discoverSearchData";
+} from "../../../stores/notificationStore";
+import { BOOKINGS } from "../../dining/diningData";
+import { ALL_SEARCH_DATA, searchResultToRestaurantData } from "../../discover/discoverSearchData";
 
 type NotificationTab = "all" | "unread" | "read";
 
@@ -140,7 +140,7 @@ function getNotificationDeepLink(notification: Notification): DeepLinkTarget {
 
   if (notification.icon === "reward") {
     if (haystack.includes("tier") || haystack.includes("platinum")) {
-      return { to: "/profile/tier-benefits" };
+      return { to: "/profile/edit" };
     }
     return { to: "/profile/history" };
   }
@@ -429,8 +429,8 @@ function NotificationCard({ notification }: { notification: Notification }) {
                         ? "bg-[#EAF8F1] text-[#008A5B]"
                         : "text-[#717171] hover:bg-[#F7F7F7] hover:text-[#222222]"
                     }`}
-                    aria-label="Mark as read"
-                    title="Mark as read"
+                    aria-label="Mark all as read"
+                    title="Mark all as read"
                   >
                     <AnimatePresence>
                       {action === "mark" && (
@@ -555,7 +555,6 @@ export function NotificationsView({ onBack }: { onBack: () => void }) {
           </button>
 
           <div className="min-w-0 flex-1">
-            <p className="text-[0.6875rem] font-semibold uppercase tracking-[0.12em] text-[#E31C5F]">Tonight inbox</p>
             <h1 className="mt-0.5 truncate text-[1.625rem] font-semibold leading-none tracking-tight text-[#222222]">
               Notifications
             </h1>
