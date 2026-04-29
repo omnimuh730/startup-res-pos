@@ -28,7 +28,7 @@ type MappedSearchRestaurant = SearchResultRestaurant & {
 };
 
 const MOBILE_NAV_CLEARANCE = 76;
-const PEEK_CONTENT_HEIGHT = 40;
+const PEEK_CONTENT_HEIGHT = 60;
 const PEEK_HEIGHT = MOBILE_NAV_CLEARANCE + PEEK_CONTENT_HEIGHT;
 const HALF_VISIBLE_RATIO = 0.62;
 
@@ -351,7 +351,7 @@ export function SearchResultsView({
               setSheetState("peek");
               setPreviewIndex(null);
             }}
-            className="absolute bottom-[5.25rem] left-1/2 z-40 flex -translate-x-1/2 items-center gap-2 rounded-full bg-[#222222] px-4 py-2.5 text-[0.8125rem] text-white shadow-[0_8px_18px_rgba(0,0,0,0.25)]"
+            className="absolute bottom-[6.25rem] left-1/2 z-40 flex -translate-x-1/2 items-center gap-2 rounded-full bg-[#222222] px-4 py-2.5 text-[0.8125rem] text-white shadow-[0_8px_18px_rgba(0,0,0,0.25)]"
             style={{ fontWeight: 700 }}
           >
             Map
