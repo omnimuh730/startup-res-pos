@@ -157,8 +157,16 @@ export const SEATING_OPTIONS = [
 ];
 export const AMENITY_OPTIONS = [
   { emoji: "", label: "Parking" }, { emoji: "", label: "Valet" }, { emoji: "", label: "Corkage-free" },
-  { emoji: "", label: "Kids Welcome" }, { emoji: "", label: "Pet" },
-  { emoji: "", label: "Wi-Fi" }, { emoji: "", label: "Accessible" },
+  { emoji: "", label: "Kids Welcome" }, { emoji: "", label: "Pet Friendly" },
+  { emoji: "", label: "Wi-Fi" }, { emoji: "", label: "Wheelchair Accessible" },
+  { emoji: "", label: "Outdoor Seating" }, { emoji: "", label: "Private Dining" },
+  { emoji: "", label: "Chef Counter" }, { emoji: "", label: "Bar Seating" },
+  { emoji: "", label: "Vegan Options" }, { emoji: "", label: "Vegetarian Options" },
+  { emoji: "", label: "Gluten-Free Options" }, { emoji: "", label: "Wine Pairing" },
+  { emoji: "", label: "Tasting Menu" }, { emoji: "", label: "Takeout" },
+  { emoji: "", label: "Delivery" }, { emoji: "", label: "Open Late" },
+  { emoji: "", label: "Live Music" }, { emoji: "", label: "Rooftop" },
+  { emoji: "", label: "High Chairs" }, { emoji: "", label: "No Booking Fee" },
 ];
 
 export type DrawerMode = null | "all" | "sort" | "price" | "cuisine" | "amenities" | "datetime";

@@ -1,14 +1,26 @@
 /* Airbnb-style map + draggable restaurant results */
-import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
-import { motion } from "motion/react";
+import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
+import { AnimatePresence, motion } from "motion/react";
 import MapLibre, { Marker, type MapRef } from "react-map-gl/maplibre";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { ArrowLeft, Heart, Map as MapIcon, MapPin, Search, Star, X } from "lucide-react";
+import { ArrowLeft, Check, Heart, Map as MapIcon, MapPin, Search, SlidersHorizontal, Star, X, Zap } from "lucide-react";
 import { ImageWithFallback } from "../../components/figma/ImageWithFallback";
 import type { SearchResults, SearchResultLocation, SearchResultRestaurant, SearchResultFood, SearchResultChef } from "./discoverTypes";
 import { ALL_SEARCH_DATA } from "./discoverSearchData";
 import { fmtR } from "./discoverTypes";
-import { LIGHT_STYLE, RESTAURANTS, USER_LOCATION } from "../explorer/explorerData";
+import {
+  AMENITY_OPTIONS,
+  CUISINE_OPTIONS,
+  DISTANCE_OPTIONS,
+  LIGHT_STYLE,
+  OCCASION_OPTIONS,
+  PRICE_OPTIONS,
+  RATING_OPTIONS,
+  RESTAURANTS,
+  SEATING_OPTIONS,
+  SORT_OPTIONS,
+  USER_LOCATION,
+} from "../explorer/explorerData";
 
 const CARD_DETAILS = [
   { wait: "Tables tonight", area: "Gangnam", offer: "Free cancellation" },
@@ -27,22 +39,47 @@ type MappedSearchRestaurant = SearchResultRestaurant & {
   mapImage: string;
 };
 
-const MOBILE_NAV_CLEARANCE = 76;
+type SearchFilterState = {
+  sortBy: string;
+  prices: string[];
+  cuisines: string[];
+  rating: string;
+  distance: string;
+  amenities: string[];
+  occasions: string[];
+  seating: string[];
+  openNow: boolean;
+  instantBook: boolean;
+};
+
+const DEFAULT_FILTERS: SearchFilterState = {
+  sortBy: "Recommended",
+  prices: [],
+  cuisines: [],
+  rating: "Any",
+  distance: "Any Distance",
+  amenities: [],
+  occasions: [],
+  seating: [],
+  openNow: false,
+  instantBook: false,
+};
+
+const MOBILE_NAV_CLEARANCE_FALLBACK = 76;
 const PEEK_CONTENT_HEIGHT = 60;
-const PEEK_HEIGHT = MOBILE_NAV_CLEARANCE + PEEK_CONTENT_HEIGHT;
 const HALF_VISIBLE_RATIO = 0.62;
 
-function getSheetY(state: SheetState, height: number) {
+function getSheetY(state: SheetState, height: number, peekHeight: number) {
   if (state === "full") return 0;
-  if (state === "peek") return Math.max(0, height - PEEK_HEIGHT);
+  if (state === "peek") return Math.max(0, height - peekHeight);
   return Math.max(0, height * (1 - HALF_VISIBLE_RATIO));
 }
 
-function getNearestSheetState(projectedY: number, height: number): SheetState {
+function getNearestSheetState(projectedY: number, height: number, peekHeight: number): SheetState {
   const positions: Array<{ state: SheetState; y: number }> = [
-    { state: "full", y: getSheetY("full", height) },
-    { state: "half", y: getSheetY("half", height) },
-    { state: "peek", y: getSheetY("peek", height) },
+    { state: "full", y: getSheetY("full", height, peekHeight) },
+    { state: "half", y: getSheetY("half", height, peekHeight) },
+    { state: "peek", y: getSheetY("peek", height, peekHeight) },
   ];
 
   return positions.reduce((nearest, option) =>
@@ -65,6 +102,81 @@ function mapRestaurantToExplorerLocation(restaurant: SearchResultRestaurant, ind
     distance: match.distance,
     mapImage: restaurant.image.replace("w=100&h=100", "w=400&h=300"),
   };
+}
+
+function toggleFilterValue(values: string[], value: string) {
+  return values.includes(value) ? values.filter((item) => item !== value) : [...values, value];
+}
+
+function getFilterCount(filters: SearchFilterState) {
+  return (
+    filters.prices.length +
+    filters.cuisines.length +
+    filters.amenities.length +
+    filters.occasions.length +
+    filters.seating.length +
+    (filters.sortBy !== "Recommended" ? 1 : 0) +
+    (filters.rating !== "Any" ? 1 : 0) +
+    (filters.distance !== "Any Distance" ? 1 : 0) +
+    (filters.openNow ? 1 : 0) +
+    (filters.instantBook ? 1 : 0)
+  );
+}
+
+function getRestaurantSeed(restaurant: MappedSearchRestaurant, index: number) {
+  const numeric = Number(restaurant.id.replace(/\D/g, ""));
+  return Number.isFinite(numeric) && numeric > 0 ? numeric : index + 1;
+}
+
+function hasMockFeature(seed: number, label: string) {
+  return (seed + label.length) % 3 !== 1;
+}
+
+function getPriceRank(price?: string) {
+  return Math.max(1, price?.length || 2);
+}
+
+function getDistanceMiles(distance?: string) {
+  return Number(distance?.match(/[\d.]+/)?.[0] || 99);
+}
+
+function filterSearchRestaurants(restaurants: MappedSearchRestaurant[], filters: SearchFilterState) {
+  const filtered = restaurants.map((restaurant, index) => ({ restaurant, index })).filter(({ restaurant, index }) => {
+    const seed = getRestaurantSeed(restaurant, index);
+
+    if (filters.prices.length > 0 && !filters.prices.includes(restaurant.price || "$$")) return false;
+    if (filters.cuisines.length > 0) {
+      const cuisine = `${restaurant.cuisine || restaurant.subtitle}`.toLowerCase();
+      if (!filters.cuisines.some((item) => cuisine.includes(item.toLowerCase().replace("grilled ", "")))) return false;
+    }
+    if (filters.rating !== "Any") {
+      const minRating = Number(filters.rating.replace("+", ""));
+      if ((restaurant.rating || 0) < minRating) return false;
+    }
+    if (filters.distance !== "Any Distance") {
+      const maxDistance = Number(filters.distance.match(/[\d.]+/)?.[0] || 99);
+      const distance = Number((restaurant.distance || "1").match(/[\d.]+/)?.[0] || 1);
+      if (distance > maxDistance) return false;
+    }
+    if (filters.openNow && restaurant.open === false) return false;
+    if (filters.instantBook && seed % 4 === 0) return false;
+    if (filters.amenities.length > 0 && !filters.amenities.every((item) => hasMockFeature(seed, item))) return false;
+    if (filters.occasions.length > 0 && !filters.occasions.some((item) => hasMockFeature(seed + 2, item))) return false;
+    if (filters.seating.length > 0 && !filters.seating.some((item) => hasMockFeature(seed + 4, item))) return false;
+
+    return true;
+  });
+
+  filtered.sort((a, b) => {
+    if (filters.sortBy === "Highest Rated") return (b.restaurant.rating || 0) - (a.restaurant.rating || 0) || a.index - b.index;
+    if (filters.sortBy === "Nearest") return getDistanceMiles(a.restaurant.distance) - getDistanceMiles(b.restaurant.distance) || a.index - b.index;
+    if (filters.sortBy === "Price: Low to High") return getPriceRank(a.restaurant.price) - getPriceRank(b.restaurant.price) || a.index - b.index;
+    if (filters.sortBy === "Price: High to Low") return getPriceRank(b.restaurant.price) - getPriceRank(a.restaurant.price) || a.index - b.index;
+    if (filters.sortBy === "Most Reviewed") return (b.restaurant.reviews || 0) - (a.restaurant.reviews || 0) || a.index - b.index;
+    return a.index - b.index;
+  });
+
+  return filtered.map(({ restaurant }) => restaurant);
 }
 
 export function SearchResultsView({
@@ -91,9 +203,21 @@ export function SearchResultsView({
   const [activeMarker, setActiveMarker] = useState(0);
   const [previewIndex, setPreviewIndex] = useState<number | null>(null);
   const sheetRef = useRef<HTMLElement | null>(null);
+  const searchHeaderRef = useRef<HTMLDivElement | null>(null);
+  const peekHeaderRef = useRef<HTMLButtonElement | null>(null);
   const resultsListRef = useRef<HTMLDivElement | null>(null);
   const listPullRef = useRef({ active: false, dragging: false, startX: 0, startY: 0, lastY: 0 });
   const [sheetHeight, setSheetHeight] = useState(0);
+  const [bottomNavHeight, setBottomNavHeight] = useState(MOBILE_NAV_CLEARANCE_FALLBACK);
+  const [globalTopBarHeight, setGlobalTopBarHeight] = useState(() => {
+    // GlobalTopBar is `lg:hidden`, so on desktop it won't exist.
+    return typeof window !== "undefined" && window.innerWidth >= 1024 ? 0 : 5.5 * 16;
+  });
+  const [searchHeaderHeight, setSearchHeaderHeight] = useState(5.25 * 16);
+  const [peekHeaderHeight, setPeekHeaderHeight] = useState(PEEK_CONTENT_HEIGHT);
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [filters, setFilters] = useState<SearchFilterState>(DEFAULT_FILTERS);
+  const [draftFilters, setDraftFilters] = useState<SearchFilterState>(DEFAULT_FILTERS);
   const restaurants = useMemo(() => {
     if (results.restaurants.length > 0) return results.restaurants;
     if (query.trim()) return ALL_SEARCH_DATA.restaurants.slice(0, 6);
@@ -103,11 +227,21 @@ export function SearchResultsView({
     () => restaurants.map((restaurant, index) => mapRestaurantToExplorerLocation(restaurant, index)),
     [restaurants]
   );
+  const filteredRestaurants = useMemo(
+    () => filterSearchRestaurants(mappedRestaurants, filters),
+    [mappedRestaurants, filters]
+  );
+  const draftResultCount = useMemo(
+    () => filterSearchRestaurants(mappedRestaurants, draftFilters).length,
+    [mappedRestaurants, draftFilters]
+  );
+  const activeFilterCount = getFilterCount(filters);
 
-  const hasResults = mappedRestaurants.length > 0;
+  const hasResults = filteredRestaurants.length > 0;
   const title = hasResults ? "Over 1,000 results" : "No restaurants found";
-  const previewRestaurant = previewIndex !== null ? mappedRestaurants[previewIndex] : null;
-  const sheetY = getSheetY(sheetState, sheetHeight);
+  const previewRestaurant = previewIndex !== null ? filteredRestaurants[previewIndex] : null;
+  const peekHeight = bottomNavHeight + peekHeaderHeight;
+  const sheetY = getSheetY(sheetState, sheetHeight, peekHeight);
   const isPeek = sheetState === "peek";
 
   useEffect(() => {
@@ -125,6 +259,84 @@ export function SearchResultsView({
       observer.disconnect();
       window.removeEventListener("resize", updateHeight);
     };
+  }, []);
+
+  useEffect(() => {
+    // Measure the "peek" header height so the title can't be clipped by the bottom nav.
+    const measure = () => {
+      const el = peekHeaderRef.current;
+      if (!el) return;
+      setPeekHeaderHeight(el.getBoundingClientRect().height || PEEK_CONTENT_HEIGHT);
+    };
+
+    const raf = window.requestAnimationFrame(measure);
+    const el = peekHeaderRef.current;
+    let ro: ResizeObserver | null = null;
+    if (el) {
+      ro = new ResizeObserver(() => measure());
+      ro.observe(el);
+    }
+
+    window.addEventListener("resize", measure);
+    return () => {
+      window.cancelAnimationFrame(raf);
+      window.removeEventListener("resize", measure);
+      ro?.disconnect();
+    };
+  }, []);
+
+  useEffect(() => {
+    const updateGlobalTopBarHeight = () => {
+      const el = document.querySelector('[data-global-topbar="true"]') as HTMLElement | null;
+      if (!el) {
+        setGlobalTopBarHeight(typeof window !== "undefined" && window.innerWidth >= 1024 ? 0 : 5.5 * 16);
+        return;
+      }
+      const next = el.getBoundingClientRect().height;
+      setGlobalTopBarHeight(next || 5.5 * 16);
+    };
+    updateGlobalTopBarHeight();
+    window.addEventListener("resize", updateGlobalTopBarHeight);
+    return () => window.removeEventListener("resize", updateGlobalTopBarHeight);
+  }, []);
+
+  useEffect(() => {
+    // Measure the page-internal search header height. The sheet/map "top" must be positioned
+    // relative to the boundary immediately below this header (not the full screen).
+    const measure = () => {
+      const el = searchHeaderRef.current;
+      if (!el) return;
+      const next = el.getBoundingClientRect().height;
+      if (Number.isFinite(next) && next > 0) setSearchHeaderHeight(next);
+    };
+
+    measure();
+    let ro: ResizeObserver | null = null;
+    if (searchHeaderRef.current) {
+      ro = new ResizeObserver(() => measure());
+      ro.observe(searchHeaderRef.current);
+    }
+    window.addEventListener("resize", measure);
+    return () => {
+      window.removeEventListener("resize", measure);
+      ro?.disconnect();
+    };
+  }, []);
+
+  useEffect(() => {
+    const updateBottomNavHeight = () => {
+      const el = document.querySelector('nav[data-bottom-nav="true"]') as HTMLElement | null;
+      if (!el) {
+        setBottomNavHeight(MOBILE_NAV_CLEARANCE_FALLBACK);
+        return;
+      }
+      const next = el.getBoundingClientRect().height;
+      setBottomNavHeight(next || MOBILE_NAV_CLEARANCE_FALLBACK);
+    };
+
+    updateBottomNavHeight();
+    window.addEventListener("resize", updateBottomNavHeight);
+    return () => window.removeEventListener("resize", updateBottomNavHeight);
   }, []);
 
   useEffect(() => {
@@ -158,9 +370,31 @@ export function SearchResultsView({
     };
   }, []);
 
+  useEffect(() => {
+    if (activeMarker >= filteredRestaurants.length) setActiveMarker(0);
+    if (previewIndex !== null && previewIndex >= filteredRestaurants.length) setPreviewIndex(null);
+  }, [activeMarker, filteredRestaurants.length, previewIndex]);
+
   const expandSheet = () => {
     setPreviewIndex(null);
     setSheetState((current) => (current === "peek" ? "half" : current === "half" ? "full" : "half"));
+  };
+
+  const openFilters = () => {
+    setDraftFilters(filters);
+    setFiltersOpen(true);
+  };
+
+  const applyFilters = () => {
+    setFilters(draftFilters);
+    setPreviewIndex(null);
+    setActiveMarker(0);
+    setSheetState("half");
+    setFiltersOpen(false);
+  };
+
+  const clearFilters = () => {
+    setDraftFilters(DEFAULT_FILTERS);
   };
 
   const resetListPull = () => {
@@ -220,9 +454,15 @@ export function SearchResultsView({
   };
 
   return (
-    <div className="tonight-search-results -mx-4 -mt-6 h-[calc(100vh-5.5rem)] min-h-[640px] overflow-hidden bg-white sm:-mx-6 lg:-mx-8">
+    <div
+      className="tonight-search-results -mx-4 -mt-6 min-h-[640px] overflow-hidden bg-white sm:-mx-6 lg:-mx-8"
+      style={{ height: `calc(100vh - ${Math.round(globalTopBarHeight)}px)` }}
+    >
       <div className="relative h-full overflow-hidden bg-[#f5f1ea]">
-        <div className="absolute left-0 right-0 top-0 z-30 border-b border-[#DDDDDD] bg-white/96 px-4 pb-3 pt-4 backdrop-blur-xl">
+        <div
+          ref={searchHeaderRef}
+          className="absolute left-0 right-0 top-0 z-30 border-b border-[#DDDDDD] bg-white/96 px-4 pb-3 pt-4 backdrop-blur-xl"
+        >
           <div className="flex items-center gap-3">
             <button
               onClick={onBack}
@@ -252,11 +492,24 @@ export function SearchResultsView({
                 </button>
               )}
             </div>
+            <button
+              type="button"
+              onClick={openFilters}
+              className="relative flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full border border-[#DDDDDD] bg-white shadow-[0_4px_14px_rgba(0,0,0,0.08)] transition hover:scale-[1.03]"
+              aria-label="Open filters"
+            >
+              <SlidersHorizontal className="h-4 w-4 text-[#222222]" />
+              {activeFilterCount > 0 && (
+                <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-[#FF385C] px-1 text-[0.625rem] text-white" style={{ fontWeight: 800 }}>
+                  {activeFilterCount}
+                </span>
+              )}
+            </button>
           </div>
         </div>
 
         <MapSurface
-          restaurants={mappedRestaurants}
+          restaurants={filteredRestaurants}
           activeMarker={activeMarker}
           onMarkerSelect={(index) => {
             setActiveMarker(index);
@@ -265,13 +518,14 @@ export function SearchResultsView({
           }}
           onMapClick={() => setPreviewIndex(null)}
           query={query}
+          topOffset={searchHeaderHeight}
         />
 
         <motion.section
           ref={sheetRef}
           drag="y"
           dragElastic={0.04}
-          dragConstraints={{ top: 0, bottom: getSheetY("peek", sheetHeight) }}
+          dragConstraints={{ top: 0, bottom: getSheetY("peek", sheetHeight, peekHeight) }}
           onDragStart={() => setPreviewIndex(null)}
           onDragEnd={(_, info) => {
             const projectedY = sheetY + info.offset.y + info.velocity.y * 0.16;
@@ -283,14 +537,15 @@ export function SearchResultsView({
               setSheetState(sheetState === "full" ? "half" : "peek");
               return;
             }
-            setSheetState(getNearestSheetState(projectedY, sheetHeight));
+            setSheetState(getNearestSheetState(projectedY, sheetHeight, peekHeight));
           }}
           animate={{ y: sheetY }}
           transition={{ type: "spring", damping: 34, stiffness: 320 }}
-          className="absolute bottom-0 left-0 right-0 top-[5.25rem] z-20 rounded-t-[1.75rem] bg-white shadow-[0_-10px_30px_rgba(0,0,0,0.12)]"
-          style={{ touchAction: sheetState === "full" ? "pan-y" : "none" }}
+          className="absolute bottom-0 left-0 right-0 z-20 rounded-t-[1.75rem] bg-white shadow-[0_-10px_30px_rgba(0,0,0,0.12)]"
+          style={{ top: searchHeaderHeight, touchAction: sheetState === "full" ? "pan-y" : "none" }}
         >
           <button
+            ref={peekHeaderRef}
             type="button"
             onClick={expandSheet}
             className="block w-full cursor-grab px-5 pb-3 pt-2 active:cursor-grabbing"
@@ -305,8 +560,12 @@ export function SearchResultsView({
           {!hasResults ? (
             <div className={`px-6 py-12 text-center transition-opacity ${isPeek ? "pointer-events-none opacity-0" : "opacity-100"}`}>
               <Search className="mx-auto mb-3 h-11 w-11 text-[#717171]/30" />
-              <p className="text-[0.9375rem] text-[#222222]" style={{ fontWeight: 700 }}>No results for "{query}"</p>
-              <p className="mt-1 text-[0.8125rem] text-[#717171]">Try a cuisine, restaurant name, or neighborhood.</p>
+              <p className="text-[0.9375rem] text-[#222222]" style={{ fontWeight: 700 }}>
+                {activeFilterCount > 0 ? "No restaurants match these filters" : `No results for "${query}"`}
+              </p>
+              <p className="mt-1 text-[0.8125rem] text-[#717171]">
+                {activeFilterCount > 0 ? "Clear a few filters to see more places." : "Try a cuisine, restaurant name, or neighborhood."}
+              </p>
             </div>
           ) : (
             <div
@@ -326,12 +585,17 @@ export function SearchResultsView({
                   setSheetState("half");
                 }
               }}
-              className={`h-[calc(100%-4.5rem)] px-4 pb-14 transition-opacity ${
+              className={`px-4 pb-0 transition-opacity ${
+                // Keep list content clear of the fixed bottom nav and device safe-area.
                 isPeek ? "pointer-events-none overflow-hidden opacity-0" : sheetState === "full" ? "overflow-y-auto overscroll-contain opacity-100" : "overflow-hidden opacity-100"
               }`}
+              style={{
+                height: `calc(100% - ${Math.round(peekHeaderHeight)}px)`,
+                paddingBottom: `${Math.round(bottomNavHeight + 56)}px`,
+              }}
             >
               <div className="space-y-6">
-                {restaurants.map((restaurant, index) => (
+                {filteredRestaurants.map((restaurant, index) => (
                   <RestaurantResultCard
                     key={restaurant.id}
                     restaurant={restaurant}
@@ -351,8 +615,8 @@ export function SearchResultsView({
               setSheetState("peek");
               setPreviewIndex(null);
             }}
-            className="absolute bottom-[6.25rem] left-1/2 z-40 flex -translate-x-1/2 items-center gap-2 rounded-full bg-[#222222] px-4 py-2.5 text-[0.8125rem] text-white shadow-[0_8px_18px_rgba(0,0,0,0.25)]"
-            style={{ fontWeight: 700 }}
+            className="absolute left-1/2 z-40 flex -translate-x-1/2 items-center gap-2 rounded-full bg-[#222222] px-4 py-2.5 text-[0.8125rem] text-white shadow-[0_8px_18px_rgba(0,0,0,0.25)]"
+            style={{ fontWeight: 700, bottom: `${Math.round(bottomNavHeight + 24)}px` }}
           >
             Map
             <MapIcon className="h-4 w-4" />
@@ -363,11 +627,292 @@ export function SearchResultsView({
           <MapPreviewCard
             restaurant={previewRestaurant}
             index={previewIndex ?? 0}
+            bottomNavHeight={bottomNavHeight}
             onSelect={() => onSelectRestaurant(previewRestaurant)}
           />
         )}
+
+        <AnimatePresence>
+          {filtersOpen && (
+            <SearchFiltersSheet
+              filters={draftFilters}
+              onChange={setDraftFilters}
+              onClose={() => setFiltersOpen(false)}
+              onClear={clearFilters}
+              onApply={applyFilters}
+              resultCount={draftResultCount}
+            />
+          )}
+        </AnimatePresence>
       </div>
     </div>
+  );
+}
+
+function SearchFiltersSheet({
+  filters,
+  onChange,
+  onClose,
+  onClear,
+  onApply,
+  resultCount,
+}: {
+  filters: SearchFilterState;
+  onChange: (filters: SearchFilterState) => void;
+  onClose: () => void;
+  onClear: () => void;
+  onApply: () => void;
+  resultCount: number;
+}) {
+  const activeCount = getFilterCount(filters);
+  const update = (patch: Partial<SearchFilterState>) => onChange({ ...filters, ...patch });
+  const toggleList = (key: "prices" | "cuisines" | "amenities" | "occasions" | "seating", value: string) => {
+    update({ [key]: toggleFilterValue(filters[key], value) });
+  };
+
+  return (
+    <motion.div
+      className="fixed inset-0 z-[90] flex justify-center bg-black/30"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      onClick={onClose}
+    >
+      <motion.div
+        className="absolute bottom-0 flex h-[min(88vh,760px)] w-full max-w-[430px] flex-col overflow-hidden rounded-t-[1.75rem] bg-white text-[#222222] shadow-[0_-18px_50px_rgba(0,0,0,0.2)]"
+        initial={{ y: "100%" }}
+        animate={{ y: 0 }}
+        exit={{ y: "100%" }}
+        transition={{ type: "spring", damping: 34, stiffness: 320 }}
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="relative flex h-14 shrink-0 items-center justify-center border-b border-[#DDDDDD]">
+          <button
+            type="button"
+            onClick={onClose}
+            className="absolute right-4 flex h-9 w-9 items-center justify-center rounded-full transition hover:bg-[#F7F7F7]"
+            aria-label="Close filters"
+          >
+            <X className="h-5 w-5" />
+          </button>
+          <p className="text-[1rem]" style={{ fontWeight: 800 }}>Filters</p>
+        </div>
+
+        <div className="flex-1 overflow-y-auto px-6 pb-28 pt-6">
+          <FilterSection title="Sort by">
+            <div className="flex flex-wrap gap-2">
+              {SORT_OPTIONS.map((option) => (
+                <FilterPill
+                  key={option}
+                  label={option}
+                  active={filters.sortBy === option}
+                  onClick={() => update({ sortBy: option })}
+                />
+              ))}
+            </div>
+          </FilterSection>
+
+          <FilterSection title="Recommended for you">
+            <div className="grid grid-cols-3 gap-3">
+              <RecommendedFilterCard
+                label="Open now"
+                active={filters.openNow}
+                icon={<span className="text-[1.65rem]">●</span>}
+                onClick={() => update({ openNow: !filters.openNow })}
+              />
+              <RecommendedFilterCard
+                label="Instant Book"
+                active={filters.instantBook}
+                icon={<Zap className="h-8 w-8 text-[#FF385C]" />}
+                onClick={() => update({ instantBook: !filters.instantBook })}
+              />
+              <RecommendedFilterCard
+                label="Parking"
+                active={filters.amenities.includes("Parking")}
+                icon={<span className="text-[1.75rem]">P</span>}
+                onClick={() => toggleList("amenities", "Parking")}
+              />
+            </div>
+          </FilterSection>
+
+          <FilterSection title="Cuisine">
+            <div className="flex flex-wrap gap-2">
+              {CUISINE_OPTIONS.slice(0, 12).map((option) => (
+                <FilterPill
+                  key={option.label}
+                  label={option.label}
+                  active={filters.cuisines.includes(option.label)}
+                  onClick={() => toggleList("cuisines", option.label)}
+                />
+              ))}
+            </div>
+          </FilterSection>
+
+          <FilterSection title="Price range" subtitle="Average table price, includes fees">
+            <div className="mb-4 mt-3 flex h-20 items-end gap-1">
+              {Array.from({ length: 34 }).map((_, index) => {
+                const height = 8 + Math.round(Math.sin((index / 33) * Math.PI) * 54) + (index % 5) * 3;
+                return <span key={index} className="flex-1 rounded-t-sm bg-[#FF385C]" style={{ height }} />;
+              })}
+            </div>
+            <div className="grid grid-cols-4 gap-2">
+              {PRICE_OPTIONS.map((price) => (
+                <button
+                  key={price}
+                  type="button"
+                  onClick={() => toggleList("prices", price)}
+                  className={`h-11 rounded-full border text-[0.875rem] transition ${
+                    filters.prices.includes(price) ? "border-[#222222] bg-[#222222] text-white" : "border-[#DDDDDD] bg-white text-[#222222]"
+                  }`}
+                  style={{ fontWeight: 700 }}
+                >
+                  {price}
+                </button>
+              ))}
+            </div>
+          </FilterSection>
+
+          <FilterSection title="Rating">
+            <div className="flex flex-wrap gap-2">
+              {RATING_OPTIONS.map((rating) => (
+                <FilterPill
+                  key={rating}
+                  label={rating}
+                  active={filters.rating === rating}
+                  onClick={() => update({ rating })}
+                />
+              ))}
+            </div>
+          </FilterSection>
+
+          <FilterSection title="Distance">
+            <div className="flex flex-wrap gap-2">
+              {DISTANCE_OPTIONS.map((distance) => (
+                <FilterPill
+                  key={distance}
+                  label={distance}
+                  active={filters.distance === distance}
+                  onClick={() => update({ distance })}
+                />
+              ))}
+            </div>
+          </FilterSection>
+
+          <FilterSection title="Amenities">
+            <div className="flex flex-wrap gap-2">
+              {AMENITY_OPTIONS.map((option) => (
+                <FilterPill
+                  key={option.label}
+                  label={option.label}
+                  active={filters.amenities.includes(option.label)}
+                  onClick={() => toggleList("amenities", option.label)}
+                />
+              ))}
+            </div>
+          </FilterSection>
+
+          <FilterSection title="Seating">
+            <div className="flex flex-wrap gap-2">
+              {SEATING_OPTIONS.map((option) => (
+                <FilterPill
+                  key={option.label}
+                  label={option.label}
+                  active={filters.seating.includes(option.label)}
+                  onClick={() => toggleList("seating", option.label)}
+                />
+              ))}
+            </div>
+          </FilterSection>
+
+          <FilterSection title="Occasion">
+            <div className="flex flex-wrap gap-2">
+              {OCCASION_OPTIONS.map((option) => (
+                <FilterPill
+                  key={option.label}
+                  label={option.label}
+                  active={filters.occasions.includes(option.label)}
+                  onClick={() => toggleList("occasions", option.label)}
+                />
+              ))}
+            </div>
+          </FilterSection>
+        </div>
+
+        <div className="absolute bottom-0 left-0 right-0 flex items-center justify-between gap-4 border-t border-[#DDDDDD] bg-white/95 px-6 py-4 backdrop-blur-xl">
+          <button
+            type="button"
+            onClick={onClear}
+            disabled={activeCount === 0}
+            className="text-[0.9375rem] underline disabled:text-[#B0B0B0] disabled:no-underline"
+            style={{ fontWeight: 700 }}
+          >
+            Clear all
+          </button>
+          <button
+            type="button"
+            onClick={onApply}
+            className="rounded-lg bg-[#222222] px-7 py-3 text-[0.9375rem] text-white disabled:bg-[#DDDDDD]"
+            style={{ fontWeight: 800 }}
+            disabled={resultCount === 0}
+          >
+            {resultCount > 0 ? "Show 1,000+ places" : "No matches"}
+          </button>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+}
+
+function FilterSection({ title, subtitle, children }: { title: string; subtitle?: string; children: ReactNode }) {
+  return (
+    <section className="border-b border-[#EBEBEB] py-6 first:pt-0">
+      <h3 className="text-[1.125rem] text-[#222222]" style={{ fontWeight: 800 }}>{title}</h3>
+      {subtitle && <p className="mt-0.5 text-[0.875rem] text-[#717171]">{subtitle}</p>}
+      <div className="mt-4">{children}</div>
+    </section>
+  );
+}
+
+function RecommendedFilterCard({
+  label,
+  icon,
+  active,
+  onClick,
+}: {
+  label: string;
+  icon: ReactNode;
+  active: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button type="button" onClick={onClick} className="text-center">
+      <span className={`relative flex aspect-square items-center justify-center rounded-xl border bg-white transition ${
+        active ? "border-[#222222] ring-2 ring-[#222222]" : "border-[#DDDDDD]"
+      }`}>
+        {icon}
+        {active && (
+          <span className="absolute right-2 top-2 flex h-5 w-5 items-center justify-center rounded-full bg-[#222222] text-white">
+            <Check className="h-3 w-3" />
+          </span>
+        )}
+      </span>
+      <span className="mt-2 block text-[0.8125rem] text-[#222222]">{label}</span>
+    </button>
+  );
+}
+
+function FilterPill({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`rounded-full border px-4 py-2.5 text-[0.875rem] transition ${
+        active ? "border-[#222222] bg-[#222222] text-white" : "border-[#DDDDDD] bg-white text-[#222222]"
+      }`}
+      style={{ fontWeight: active ? 700 : 500 }}
+    >
+      {label}
+    </button>
   );
 }
 
@@ -377,12 +922,14 @@ function MapSurface({
   onMarkerSelect,
   onMapClick,
   query,
+  topOffset,
 }: {
   restaurants: MappedSearchRestaurant[];
   activeMarker: number;
   onMarkerSelect: (index: number) => void;
   onMapClick: () => void;
   query: string;
+  topOffset: number;
 }) {
   const mapRef = useRef<MapRef>(null);
   const markers = restaurants.length > 0
@@ -397,7 +944,10 @@ function MapSurface({
   });
 
   return (
-    <div className="absolute inset-x-0 bottom-0 top-[5.25rem] overflow-hidden bg-[#f4f0e8]">
+    <div
+      className="absolute inset-x-0 bottom-0 overflow-hidden bg-[#f4f0e8]"
+      style={{ top: topOffset }}
+    >
       <MapLibre
         ref={mapRef}
         {...viewState}
@@ -522,10 +1072,12 @@ function RestaurantResultCard({
 function MapPreviewCard({
   restaurant,
   index,
+  bottomNavHeight,
   onSelect,
 }: {
   restaurant: MappedSearchRestaurant;
   index: number;
+  bottomNavHeight: number;
   onSelect: () => void;
 }) {
   const detail = CARD_DETAILS[index % CARD_DETAILS.length];
@@ -537,7 +1089,8 @@ function MapPreviewCard({
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, y: 20, scale: 0.96 }}
       transition={{ type: "spring", damping: 24, stiffness: 280 }}
-      className="absolute bottom-44 left-4 right-4 z-40 overflow-hidden rounded-2xl bg-white shadow-[0_12px_30px_rgba(0,0,0,0.28)]"
+      className="absolute left-4 right-4 z-40 overflow-hidden rounded-2xl bg-white shadow-[0_12px_30px_rgba(0,0,0,0.28)]"
+      style={{ bottom: `${Math.round(bottomNavHeight + 100)}px` }}
       onClick={onSelect}
     >
       <div className="relative h-40 bg-[#F7F7F7]">

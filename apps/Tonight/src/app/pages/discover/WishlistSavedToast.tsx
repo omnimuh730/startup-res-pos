@@ -17,7 +17,10 @@ export function WishlistSavedToast({
   onChange: (restaurant: RestaurantData) => void;
 }) {
   return (
-    <div className="pointer-events-none fixed inset-x-0 bottom-[5.75rem] z-[470] flex justify-center px-4 sm:bottom-8">
+    <div
+      className="pointer-events-none fixed inset-x-0 z-[470] flex justify-center px-4 sm:bottom-8"
+      style={{ bottom: "calc(5.75rem + var(--safe-area-inset-bottom))" }}
+    >
       <AnimatePresence mode="wait">
         {toast && (
           <motion.div

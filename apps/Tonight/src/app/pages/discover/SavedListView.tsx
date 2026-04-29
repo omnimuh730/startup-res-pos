@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Search, Heart, MessageSquare, User, X, ChevronLeft } from "lucide-react";
+import { Heart, X, ChevronLeft } from "lucide-react";
 import { motion, AnimatePresence, type Variants } from "framer-motion";
 import { ImageWithFallback } from "../../components/figma/ImageWithFallback";
 import { useSavedVersion } from "./savedStore";
@@ -216,7 +216,7 @@ export function SavedListView({ savedRestaurantsRef, savedFoodsRef, wishlistColl
   ];
 
   return (
-    <div className="min-h-[calc(100vh-120px)] bg-white relative pb-24 overflow-x-hidden"> 
+    <div className="min-h-[calc(100vh-120px)] bg-white relative overflow-x-hidden">
       
       <div className="px-6 pt-8">
         <div className="mb-6 flex items-center gap-3">
@@ -262,10 +262,13 @@ export function SavedListView({ savedRestaurantsRef, savedFoodsRef, wishlistColl
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: 20 }}
             transition={{ type: "spring", damping: 25, stiffness: 200 }}
-            className="fixed inset-0 z-50 bg-white overflow-y-auto pb-24"
+            className="fixed inset-0 z-50 bg-white overflow-y-auto pb-[calc(6rem+var(--safe-area-inset-bottom))]"
           >
             {/* Top Navigation Bar */}
-            <div className="sticky top-0 bg-white/90 backdrop-blur-md z-10 flex items-center justify-between px-4 py-4">
+            <div
+              className="sticky top-0 bg-white/90 backdrop-blur-md z-10 flex items-center justify-between px-4 pb-4"
+              style={{ paddingTop: "calc(var(--safe-area-inset-top) + 1rem)" }}
+            >
                  <button
                    type="button"
                  onClick={() => setSelectedCollection(null)} 
@@ -352,31 +355,6 @@ export function SavedListView({ savedRestaurantsRef, savedFoodsRef, wishlistColl
           <GatheredModal onClose={() => setShowModal(false)} images={recentImages} />
         )}
       </AnimatePresence>
-
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 flex justify-between items-center px-6 py-3 z-40 pb-safe">
-        <button className="flex flex-col items-center gap-1 text-muted-foreground hover:text-black transition">
-          <Search className="w-6 h-6" />
-          <span className="text-[0.625rem] font-medium">Explore</span>
-        </button>
-        <button className="flex flex-col items-center gap-1 text-[#E51D53]">
-          <Heart className="w-6 h-6" />
-          <span className="text-[0.625rem] font-medium">Wishlists</span>
-        </button>
-        <button className="flex flex-col items-center gap-1 text-muted-foreground hover:text-black transition">
-          <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          <span className="text-[0.625rem] font-medium">Trips</span>
-        </button>
-        <button className="flex flex-col items-center gap-1 text-muted-foreground hover:text-black transition">
-          <MessageSquare className="w-6 h-6" />
-          <span className="text-[0.625rem] font-medium">Messages</span>
-        </button>
-        <button className="flex flex-col items-center gap-1 text-muted-foreground hover:text-black transition">
-          <User className="w-6 h-6" />
-          <span className="text-[0.625rem] font-medium">Profile</span>
-        </button>
-      </div>
 
     </div>
   );

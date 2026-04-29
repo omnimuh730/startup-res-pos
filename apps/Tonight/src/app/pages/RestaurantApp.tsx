@@ -300,9 +300,6 @@ export default function RestaurantApp() {
         {/* Global sticky top bar */}
         {!showNotifications && !showSavedList && (
         <GlobalTopBar
-          userLocation={userLocation}
-          onLocationChange={setUserLocation}
-          onNotificationsOpen={() => setShowNotifications(true)}
           onSavedOpen={() => setShowSavedList(true)}
           savedRestaurantsRef={savedRestaurantsRef}
           savedFoodsRef={savedFoodsRef}

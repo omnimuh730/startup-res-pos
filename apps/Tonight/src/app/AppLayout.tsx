@@ -202,7 +202,8 @@ export function AppLayout() {
   const [savedToast, setSavedToast] = useState<WishlistSavedToastState | null>(null);
   const savedToastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const authed = useSyncExternalStore(authStore.subscribe, authStore.getSnapshot);
+  // Subscribe for auth changes so the layout updates (we don't need the value here).
+  useSyncExternalStore(authStore.subscribe, authStore.getSnapshot);
   const [loginPrompt, setLoginPrompt] = useState<null | { title?: string; message?: string; redirect: string }>(null);
 
   const requireAuth = useCallback((redirect: string, message?: string): boolean => {
@@ -397,28 +398,26 @@ export function AppLayout() {
     requireAuth,
   };
 
-  // Hide GlobalTopBar only on saved/notifications overlay routes (they render their own header)
-  const hideTopBar = /^\/(saved|notifications|profile)/.test(location.pathname);
-
   return (
     <div className="h-screen bg-background flex overflow-hidden">
       <SidebarNav activeTab={activeTab} onSelect={handleTabSelect} />
 
       <div className="flex-1 flex flex-col min-w-0 h-full relative">
-        {!hideTopBar && (
-          <GlobalTopBar
-            userLocation={userLocation}
-            onLocationChange={setUserLocation}
-            onNotificationsOpen={() => { if (!authStore.getSnapshot()) { setLoginPrompt({ redirect: "/notifications", message: "Sign in to view your notifications." }); return; } navigate("/notifications"); }}
-            onSavedOpen={() => { if (!authStore.getSnapshot()) { setLoginPrompt({ redirect: "/saved", message: "Sign in to view your saved list." }); return; } navigate("/saved"); }}
-            savedRestaurantsRef={savedRestaurantsRef}
-            savedFoodsRef={savedFoodsRef}
-          />
-        )}
+        <GlobalTopBar
+          onSavedOpen={() => { if (!authStore.getSnapshot()) { setLoginPrompt({ redirect: "/saved", message: "Sign in to view your saved list." }); return; } navigate("/saved"); }}
+          savedRestaurantsRef={savedRestaurantsRef}
+          savedFoodsRef={savedFoodsRef}
+        />
 
         <main className={`flex-1 min-w-0 min-h-0 ${shouldLockMainScroll ? "overflow-hidden" : "overflow-y-auto"}`}
           style={shouldLockMainScroll ? undefined : { overflowX: "clip" }}>
-          <div className={isExplorerRoute ? "h-full" : "max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-24 lg:pb-8 w-full"}>
+            <div
+              className={
+                isExplorerRoute
+                  ? "h-full pb-[calc(6rem+var(--safe-area-inset-bottom))]"
+                  : "max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-[calc(6rem+var(--safe-area-inset-bottom))] lg:pb-8 w-full"
+              }
+            >
             <AnimatePresence mode="wait">
               <motion.div
                 key={activeTab}
@@ -433,8 +432,11 @@ export function AppLayout() {
           </div>
         </main>
 
-        <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-card/95 backdrop-blur-md border-t border-border z-50">
-          <div className="flex items-stretch pb-[max(0.25rem,env(safe-area-inset-bottom))]">
+        <nav
+          data-bottom-nav="true"
+          className="lg:hidden fixed bottom-0 left-0 right-0 bg-card/95 backdrop-blur-md border-t border-border z-50"
+        >
+          <div className="flex items-stretch pb-[max(0.25rem,var(--safe-area-inset-bottom))]">
             {TABS.map((tab, idx) => (
               <React.Fragment key={tab.id}>
                 <TabButton tab={tab} isActive={activeTab === tab.id}

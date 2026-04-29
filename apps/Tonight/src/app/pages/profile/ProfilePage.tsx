@@ -1,6 +1,6 @@
 /* Main Profile Page — routes to sub-pages */
 import { useState, useSyncExternalStore } from "react";
-import { useLocation, useNavigate } from "react-router";
+import { useLocation, useNavigate, useOutletContext } from "react-router";
 import { Card } from "../../components/ds/Card";
 import { Text, Heading } from "../../components/ds/Text";
 import { Button } from "../../components/ds/Button";
@@ -12,9 +12,11 @@ import {
   ChevronRight, ArrowUpRight, Gift, Clock,
   Users,
   Settings, Smartphone, Crown, LifeBuoy, MessageCircle,
-  Pencil, Check, X, Sparkles,
+  Pencil, Check, X, Sparkles, MapPin, Bell,
 } from "lucide-react";
 import { subscribePlan, getPlanSnapshot, getPlan } from "../../stores/subscriptionStore";
+import { subscribeNotifications, getNotificationSnapshot, getUnreadCount } from "../../stores/notificationStore";
+import type { AppOutletContext } from "../../AppLayout";
 import { TopUpPage, SendGiftPage, HistoryPage } from "./ProfileSubPages";
 import { WalletCardStack } from "./WalletCardStack";
 import { DailyBonusModal, dailyBonusStore, markDailyBonusClaimed, type DailyBonusReward } from "../discover/DailyBonusModal";
@@ -23,6 +25,7 @@ import { SettingsPage } from "./SettingsPage";
 import { SubscriptionPage } from "./SubscriptionPage";
 import { HelpCenterPage } from "./HelpCenterPage";
 import { ContactSupportPage } from "./ContactSupportPage";
+import { LocationPickerModal } from "../shared/LocationPickerModal";
 
 const PRESET_AVATARS: { id: string; src: string; label: string }[] = [
   { id: "a1", src: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=240&h=240&fit=crop&crop=faces", label: "Classic" },
@@ -66,16 +69,25 @@ export function ProfilePage() {
     }
   };
   const goBack = () => navigate("/profile");
+  const outletCtx = useOutletContext<AppOutletContext | undefined>();
   useSyncExternalStore(subscribePlan, getPlanSnapshot);
+  useSyncExternalStore(subscribeNotifications, getNotificationSnapshot);
   const currentPlan = getPlan();
+  const unreadCount = getUnreadCount();
+  const userLocation = outletCtx?.userLocation ?? { name: "Gangnam Station", address: "Gangnam-gu, Seoul", lat: 37.498, lng: 127.0276 };
   const [showBalance, setShowBalance] = useState(false);
   const [selectedAvatar, setSelectedAvatar] = useState<string | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [locationPickerOpen, setLocationPickerOpen] = useState(false);
   const [pendingAvatar, setPendingAvatar] = useState<string | null>(null);
   const dailyClaimed = useSyncExternalStore(dailyBonusStore.subscribe, dailyBonusStore.getSnapshot);
   const [bonusOpen, setBonusOpen] = useState(false);
   const [tierBenefitsOpen, setTierBenefitsOpen] = useState(false);
   const handleClaimBonus = (reward: DailyBonusReward) => { markDailyBonusClaimed(); console.info("Daily bonus claimed:", reward); };
+  const openNotifications = () => {
+    if (outletCtx?.requireAuth && !outletCtx.requireAuth("/notifications", "Sign in to view your notifications.")) return;
+    navigate("/notifications");
+  };
 
   if (page === "topUp") return <TopUpPage onBack={goBack} />;
   if (page === "sendGift") return <SendGiftPage onBack={goBack} />;
@@ -149,7 +161,8 @@ export function ProfilePage() {
     <Stagger stagger={0.06} className="relative space-y-5 pb-4">
       <div className="-mx-4 sm:-mx-6 lg:-mx-8 -mt-6 sticky top-0 z-30">
         <div
-          className="relative bg-background text-foreground px-5 sm:px-6 lg:px-8 pt-10 pb-5 border-b border-border"
+          className="relative bg-background text-foreground px-5 sm:px-6 lg:px-8 pt-0 pb-5 border-b border-border"
+          style={{ paddingTop: "calc(var(--safe-area-inset-top) + 2.5rem)" }} // pt-10 (2.5rem) + safe-area
         >
           <div className="relative z-10 flex items-center gap-4 max-w-3xl mx-auto">
             <button
@@ -241,6 +254,32 @@ export function ProfilePage() {
                 ))}
               </div>
             </div>
+        </div>
+      </StaggerItem>
+      <StaggerItem preset="fadeInUp">
+        <div className="space-y-2 rounded-2xl bg-card overflow-hidden" style={{ boxShadow: "0 12px 28px -16px color-mix(in srgb, var(--foreground) 28%, transparent), 0 4px 10px -6px color-mix(in srgb, var(--foreground) 15%, transparent)" }}>
+          <ListGroup
+            items={[
+              {
+                id: "location",
+                label: "Location",
+                description: userLocation.address,
+                icon: <MapPin className="w-4 h-4" />,
+                onClick: () => setLocationPickerOpen(true),
+                rightContent: <span className="block max-w-[8.5rem] truncate text-[0.75rem] text-muted-foreground">{userLocation.name}</span>,
+              },
+              {
+                id: "notifications",
+                label: "Notifications",
+                description: unreadCount > 0 ? `${unreadCount} unread updates` : "No unread notifications",
+                icon: <Bell className="w-4 h-4" />,
+                onClick: openNotifications,
+                rightContent: unreadCount > 0 ? <DSBadge color="primary" size="sm">{unreadCount}</DSBadge> : undefined,
+              },
+            ]}
+            showChevron
+            hoverable
+          />
         </div>
       </StaggerItem>
       {!dailyClaimed && (
@@ -343,6 +382,15 @@ export function ProfilePage() {
         </div>
       )}
       <DailyBonusModal open={bonusOpen} onClose={() => setBonusOpen(false)} onClaim={handleClaimBonus} />
+      <LocationPickerModal
+        open={locationPickerOpen}
+        onClose={() => setLocationPickerOpen(false)}
+        onSelect={(loc) => {
+          outletCtx?.setUserLocation(loc);
+          setLocationPickerOpen(false);
+        }}
+        currentLocation={userLocation}
+      />
       {tierBenefitsOpen && (
         <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/50 backdrop-blur-sm" onClick={() => setTierBenefitsOpen(false)}>
           <div
