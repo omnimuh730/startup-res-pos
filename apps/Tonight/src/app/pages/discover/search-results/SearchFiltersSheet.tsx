@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { motion } from "motion/react";
-import { Check, X, Zap } from "lucide-react";
+import { Check, X, Zap, Clock, CarFront } from "lucide-react";
 import {
   AMENITY_OPTIONS,
   CUISINE_OPTIONS,
@@ -77,24 +77,32 @@ export function SearchFiltersSheet({
             </div>
           </FilterSection>
 
+
+          // ... inside your component ...
+
           <FilterSection title="Recommended for you">
             <div className="grid grid-cols-3 gap-3">
               <RecommendedFilterCard
                 label="Open now"
                 active={filters.openNow}
-                icon={<span className="text-[1.65rem]">●</span>}
+                icon={<Clock className="h-12 w-12 text-slate-700" strokeWidth={1.5} />}
                 onClick={() => update({ openNow: !filters.openNow })}
               />
               <RecommendedFilterCard
                 label="Instant Book"
                 active={filters.instantBook}
-                icon={<Zap className="h-8 w-8 text-[#FF385C]" />}
+                icon={
+                  <Zap 
+                    className="h-12 w-12 text-[#FF385C] fill-[#FF385C]/10" 
+                    strokeWidth={1.5} 
+                  />
+                }
                 onClick={() => update({ instantBook: !filters.instantBook })}
               />
               <RecommendedFilterCard
                 label="Parking"
                 active={filters.amenities.includes("Parking")}
-                icon={<span className="text-[1.75rem]">P</span>}
+                icon={<CarFront className="h-12 w-12 text-slate-700" strokeWidth={1.5} />}
                 onClick={() => toggleList("amenities", "Parking")}
               />
             </div>
