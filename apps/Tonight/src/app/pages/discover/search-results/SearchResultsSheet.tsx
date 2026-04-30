@@ -21,7 +21,6 @@ type SearchResultsSheetProps = {
   sheetY: number;
   searchHeaderHeight: number;
   peekHeaderHeight: number;
-  bottomNavHeight: number;
   onListPointerDown: (event: ReactPointerEvent<HTMLDivElement>) => void;
   onListPointerMove: (event: ReactPointerEvent<HTMLDivElement>) => void;
   onListPointerEnd: (event: ReactPointerEvent<HTMLDivElement>) => void;
@@ -44,7 +43,6 @@ export function SearchResultsSheet({
   sheetY,
   searchHeaderHeight,
   peekHeaderHeight,
-  bottomNavHeight,
   onListPointerDown,
   onListPointerMove,
   onListPointerEnd,
@@ -112,7 +110,7 @@ export function SearchResultsSheet({
           className={`px-4 pb-0 transition-opacity ${
             isPeek ? "pointer-events-none overflow-hidden opacity-0" : sheetState === "full" ? "overflow-y-auto overscroll-contain opacity-100" : "overflow-hidden opacity-100"
           }`}
-          style={{ height: `calc(100% - ${Math.round(peekHeaderHeight)}px)`, paddingBottom: `${Math.round(bottomNavHeight + 56)}px` }}
+          style={{ height: `calc(100% - ${Math.round(peekHeaderHeight)}px)`, paddingBottom: sheetState === "full" ? "5rem" : "1.5rem" }}
         >
           <div className="space-y-6">
             {filteredRestaurants.map((restaurant, index) => (

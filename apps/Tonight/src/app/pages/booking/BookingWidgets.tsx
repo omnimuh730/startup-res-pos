@@ -107,7 +107,7 @@ export function CustomDatePickerModal({ value, onSelect, onClose }: { value: Dat
   const isSameDay = (d: Date, day: number) => d.getFullYear() === year && d.getMonth() === month && d.getDate() === day;
 
   return (
-    <div className="fixed inset-0 z-[400] flex items-center justify-center bg-black/50" onClick={onClose}>
+    <div className="fixed inset-0 z-[500] flex items-center justify-center bg-black/50" onClick={onClose}>
       <div className="bg-background rounded-2xl p-5 w-[20rem] shadow-xl" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-4">
           <button onClick={() => setViewMonth(new Date(year, month - 1, 1))} className="p-1.5 rounded-full hover:bg-secondary cursor-pointer transition"><ArrowLeft className="w-4 h-4" /></button>
@@ -149,7 +149,7 @@ export function ConfettiEffect() {
   return (
     <>
       <style>{`@keyframes confettiFall { 0% { opacity: 1; transform: translateY(0) rotate(0deg); } 100% { opacity: 0; transform: translateY(60vh) rotate(720deg); } }`}</style>
-      <div className="fixed inset-0 z-[500] pointer-events-none overflow-hidden">{pieces}</div>
+      <div className="fixed inset-0 z-[501] pointer-events-none overflow-hidden">{pieces}</div>
     </>
   );
 }

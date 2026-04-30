@@ -156,7 +156,8 @@ export function SupportChatView({ session, onClose, onUpdateSession }: HelpChatS
       animate={{ x: 0 }}
       exit={{ x: "100%" }}
       transition={{ type: "spring", damping: 28, stiffness: 220 }}
-      className="fixed inset-0 z-[300] bg-white flex flex-col font-sans"
+      className="fixed left-0 right-0 top-0 z-[300] flex flex-col bg-white font-sans"
+      style={{ bottom: "var(--app-bottom-chrome-height, 0px)" }}
     >
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-5 border-b border-black/[0.04] bg-white shrink-0 shadow-sm relative z-10">
@@ -218,7 +219,7 @@ export function SupportChatView({ session, onClose, onUpdateSession }: HelpChatS
       </div>
 
       {/* Input Area */}
-      <div className="p-4 border-t border-black/[0.06] bg-white shrink-0" style={{ paddingBottom: "calc(1rem + env(safe-area-inset-bottom))" }}>
+      <div className="shrink-0 border-t border-black/[0.06] bg-white p-4">
         <form onSubmit={onSubmit} className="flex items-center gap-3 max-w-4xl mx-auto">
           <button type="button" className="w-[38px] h-[38px] shrink-0 rounded-full border border-gray-300 hover:bg-gray-50 flex items-center justify-center text-black transition cursor-pointer shadow-sm">
             <Plus className="w-5 h-5" strokeWidth={2} />

@@ -37,7 +37,7 @@ export function SearchFiltersSheet({
 
   return (
     <motion.div
-      className="fixed inset-0 z-[90] flex justify-center bg-black/30"
+      className="fixed inset-0 z-[500] flex justify-center bg-black/30"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}

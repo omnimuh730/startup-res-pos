@@ -1,6 +1,5 @@
 import { useEffect, useState, type RefObject } from "react";
 
-const MOBILE_NAV_CLEARANCE_FALLBACK = 76;
 const PEEK_CONTENT_HEIGHT = 60;
 const SEARCH_HEADER_FALLBACK = 5.25 * 16;
 
@@ -12,8 +11,6 @@ type UseSearchResultsLayoutParams = {
 
 export function useSearchResultsLayout({ sheetRef, searchHeaderRef, peekHeaderRef }: UseSearchResultsLayoutParams) {
   const [sheetHeight, setSheetHeight] = useState(0);
-  const [bottomNavHeight, setBottomNavHeight] = useState(MOBILE_NAV_CLEARANCE_FALLBACK);
-  const [globalTopBarHeight] = useState(0);
   const [searchHeaderHeight, setSearchHeaderHeight] = useState(SEARCH_HEADER_FALLBACK);
   const [peekHeaderHeight, setPeekHeaderHeight] = useState(PEEK_CONTENT_HEIGHT);
 
@@ -73,20 +70,6 @@ export function useSearchResultsLayout({ sheetRef, searchHeaderRef, peekHeaderRe
   }, [searchHeaderRef]);
 
   useEffect(() => {
-    const updateBottomNavHeight = () => {
-      const el = document.querySelector('nav[data-bottom-nav="true"]') as HTMLElement | null;
-      if (!el) {
-        setBottomNavHeight(MOBILE_NAV_CLEARANCE_FALLBACK);
-        return;
-      }
-      setBottomNavHeight(el.getBoundingClientRect().height || MOBILE_NAV_CLEARANCE_FALLBACK);
-    };
-    updateBottomNavHeight();
-    window.addEventListener("resize", updateBottomNavHeight);
-    return () => window.removeEventListener("resize", updateBottomNavHeight);
-  }, []);
-
-  useEffect(() => {
     const id = "tonight-search-results-scrollbars";
     if (document.getElementById(id)) return;
     const style = document.createElement("style");
@@ -115,8 +98,6 @@ export function useSearchResultsLayout({ sheetRef, searchHeaderRef, peekHeaderRe
 
   return {
     sheetHeight,
-    bottomNavHeight,
-    globalTopBarHeight,
     searchHeaderHeight,
     peekHeaderHeight,
   };

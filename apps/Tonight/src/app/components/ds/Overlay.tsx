@@ -1,4 +1,5 @@
 import { useEffect, useCallback, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 
 type OverlayBlur = "none" | "sm" | "md" | "lg";
 
@@ -30,7 +31,7 @@ export function Overlay({
   color,
   closeOnClick = true,
   closeOnEsc = true,
-  zIndex = 50,
+  zIndex = 500,
   children,
   className = "",
 }: OverlayProps) {
@@ -55,7 +56,7 @@ export function Overlay({
 
   const bgColor = color ?? `rgba(0, 0, 0, ${opacity})`;
 
-  return (
+  return createPortal(
     <div
       className={`fixed inset-0 ${blurMap[blur]} transition-opacity ${className}`}
       style={{ zIndex, backgroundColor: color ? undefined : bgColor }}
@@ -73,6 +74,7 @@ export function Overlay({
           {children}
         </div>
       )}
-    </div>
+    </div>,
+    document.body
   );
 }

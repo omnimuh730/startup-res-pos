@@ -8,6 +8,9 @@
   --safe-area-inset-right: env(safe-area-inset-right, 0px);
   --safe-area-inset-bottom: env(safe-area-inset-bottom, 0px);
   --safe-area-inset-left: env(safe-area-inset-left, 0px);
+  --app-bottom-nav-height: 0px;
+  --app-bottom-nav-overhang: 0px;
+  --app-bottom-chrome-height: 0px;
   --font-size: clamp(15px, 1.2vw + 7px, 17px);
   --background: #ffffff;
   --foreground: #222222;
@@ -61,6 +64,9 @@
   --safe-area-inset-right: env(safe-area-inset-right, 0px);
   --safe-area-inset-bottom: env(safe-area-inset-bottom, 0px);
   --safe-area-inset-left: env(safe-area-inset-left, 0px);
+  --app-bottom-nav-height: 0px;
+  --app-bottom-nav-overhang: 0px;
+  --app-bottom-chrome-height: 0px;
   --background: #0E0E11;
   --foreground: #F8F8FA;
   --card: #18181B;

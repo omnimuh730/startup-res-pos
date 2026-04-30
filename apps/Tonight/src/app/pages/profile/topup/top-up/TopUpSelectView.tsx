@@ -183,7 +183,7 @@ export function TopUpSelectView({
 
       {/* Provider Selection Sheet */}
       {providerSheet && (
-        <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/50 backdrop-blur-sm" onClick={() => setProviderSheet(false)}>
+        <div className="fixed inset-0 z-[500] flex items-end justify-center bg-black/50 backdrop-blur-sm md:items-center" onClick={() => setProviderSheet(false)}>
           <div className="w-full md:max-w-md bg-background rounded-t-3xl md:rounded-3xl border border-border shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between px-5 pt-5 pb-3">
               <div><Text style={{ fontWeight: 600 }}>Pay With</Text><Text className="text-muted-foreground text-[0.75rem]">Choose your payment method</Text></div>

@@ -43,7 +43,7 @@ export function ProfileEditPage({ onBack }: { onBack: () => void }) {
         <Button variant="primary" onClick={onBack} className="flex-1">Save Changes</Button>
       </div>
       {tierBenefitsOpen && (
-        <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => setTierBenefitsOpen(false)}>
+        <div className="fixed inset-0 z-[500] flex items-end justify-center bg-black/40 backdrop-blur-sm md:items-center" onClick={() => setTierBenefitsOpen(false)}>
           <div
             className="w-full md:max-w-md bg-white rounded-t-[2rem] md:rounded-[2rem] shadow-2xl flex flex-col"
             style={{ maxHeight: "min(85dvh, 720px)" }}
@@ -58,7 +58,7 @@ export function ProfileEditPage({ onBack }: { onBack: () => void }) {
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <div className="px-6 py-6 overflow-y-auto flex-1" style={{ paddingBottom: "max(1.5rem, env(safe-area-inset-bottom))" }}>
+            <div className="flex-1 overflow-y-auto px-6 py-6">
               <div className="rounded-[1.25rem] p-5 mb-6 bg-gradient-to-r from-amber-500 to-amber-400 text-white shadow-md">
                 <Text className="text-[0.6875rem] uppercase text-white/80 font-bold tracking-widest">Current Tier</Text>
                 <Text className="text-[1.5rem] font-bold mt-1">GOLD · Level 2</Text>

@@ -4,10 +4,9 @@ import { ALL_SEARCH_DATA } from "../discoverSearchData";
 import { DEFAULT_FILTERS, type SearchFilterState, type SheetState } from "./types";
 import { filterSearchRestaurants, getFilterCount, getSheetY, mapRestaurantToSearchLocation } from "./filterUtils";
 
-export function useSearchResultsController({ query, results, bottomNavHeight, peekHeaderHeight, sheetHeight }: {
+export function useSearchResultsController({ query, results, peekHeaderHeight, sheetHeight }: {
   query: string;
   results: SearchResults;
-  bottomNavHeight: number;
   peekHeaderHeight: number;
   sheetHeight: number;
 }) {
@@ -38,7 +37,7 @@ export function useSearchResultsController({ query, results, bottomNavHeight, pe
   );
   const activeFilterCount = getFilterCount(filters);
   const previewRestaurant = previewIndex !== null ? filteredRestaurants[previewIndex] : null;
-  const peekHeight = bottomNavHeight + peekHeaderHeight;
+  const peekHeight = peekHeaderHeight;
   const sheetY = getSheetY(sheetState, sheetHeight, peekHeight);
   const isPeek = sheetState === "peek";
 

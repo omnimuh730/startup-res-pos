@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 
 type BottomSheetSnap = "min" | "half" | "full";
@@ -36,17 +37,17 @@ export function BottomSheet({
     return () => { document.body.style.overflow = ""; };
   }, [open]);
 
-  return (
+  return createPortal(
     <>
       <div
-        className={`fixed inset-0 z-40 bg-black/40 transition-opacity duration-300 ${
+        className={`fixed inset-0 z-[500] bg-black/40 transition-opacity duration-300 ${
           open ? "opacity-100" : "opacity-0 pointer-events-none"
         }`}
         onClick={onClose}
       />
       <div
         className={`
-          fixed bottom-0 left-0 right-0 z-50 bg-background rounded-t-2xl shadow-2xl
+          fixed bottom-0 left-0 right-0 z-[501] bg-background rounded-t-2xl shadow-2xl
           transition-transform duration-300 ease-out
           ${open ? "translate-y-0" : "translate-y-full"}
           ${snapHeights[snap]}
@@ -75,6 +76,7 @@ export function BottomSheet({
           <div className="border-t border-border px-5 py-4 shrink-0">{footer}</div>
         )}
       </div>
-    </>
+    </>,
+    document.body
   );
 }

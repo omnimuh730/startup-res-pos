@@ -32,7 +32,7 @@ export function LocationResultsView({ location, onBack, onSelectRestaurant, onSa
   const cityImage = CITIES.find((c) => c.label === location.name)?.image;
 
   return (
-    <div className="min-h-[calc(100vh-120px)]">
+    <div className="min-h-full">
       {cityImage ? (
         <div className="relative -mx-4 sm:-mx-6 lg:-mx-8 -mt-6 mb-5">
           <div className="relative h-48 sm:h-56 overflow-hidden">

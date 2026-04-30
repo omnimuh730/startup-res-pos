@@ -34,7 +34,7 @@ export function SearchResultsView({
   const searchHeaderRef = useRef<HTMLDivElement | null>(null);
   const peekHeaderRef = useRef<HTMLButtonElement | null>(null);
   const resultsListRef = useRef<HTMLDivElement | null>(null);
-  const { sheetHeight, bottomNavHeight, globalTopBarHeight, searchHeaderHeight, peekHeaderHeight } = useSearchResultsLayout({
+  const { sheetHeight, searchHeaderHeight, peekHeaderHeight } = useSearchResultsLayout({
     sheetRef,
     searchHeaderRef,
     peekHeaderRef,
@@ -63,7 +63,6 @@ export function SearchResultsView({
   } = useSearchResultsController({
     query,
     results,
-    bottomNavHeight,
     peekHeaderHeight,
     sheetHeight,
   });
@@ -77,8 +76,7 @@ export function SearchResultsView({
 
   return (
     <div
-      className="tonight-search-results -mx-4 -mt-6 min-h-[640px] overflow-hidden bg-white sm:-mx-6 lg:-mx-8"
-      style={{ height: `calc(100vh - ${Math.round(globalTopBarHeight)}px)` }}
+      className="tonight-search-results h-full min-h-0 overflow-hidden bg-white"
     >
       <div className="relative h-full overflow-hidden bg-[#f5f1ea]">
         <SearchResultsHeader
@@ -121,7 +119,6 @@ export function SearchResultsView({
           sheetY={sheetY}
           searchHeaderHeight={searchHeaderHeight}
           peekHeaderHeight={peekHeaderHeight}
-          bottomNavHeight={bottomNavHeight}
           onListPointerDown={handleListPointerDown}
           onListPointerMove={handleListPointerMove}
           onListPointerEnd={handleListPointerEnd}
@@ -129,7 +126,6 @@ export function SearchResultsView({
         />
 
         <SearchResultsOverlays
-          bottomNavHeight={bottomNavHeight}
           draftFilters={draftFilters}
           draftResultCount={draftResultCount}
           filtersOpen={filtersOpen}
@@ -146,6 +142,7 @@ export function SearchResultsView({
           }}
           previewIndex={previewIndex}
           previewRestaurant={previewRestaurant}
+          previewBottomOffset={peekHeaderHeight + 16}
           sheetState={sheetState}
         />
       </div>

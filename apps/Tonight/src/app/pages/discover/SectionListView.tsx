@@ -15,7 +15,7 @@ export function SectionListView({ title, items, onBack, onSelectRestaurant, onSa
   isRestaurantSaved?: (id: string) => boolean;
 }) {
   return (
-    <div className="min-h-[calc(100vh-120px)]">
+    <div className="min-h-full">
       <div className="flex items-center gap-3 mb-6">
         <button onClick={onBack} className="p-1.5 hover:bg-secondary rounded-full transition cursor-pointer shrink-0">
           <ArrowLeft className="w-5 h-5" />

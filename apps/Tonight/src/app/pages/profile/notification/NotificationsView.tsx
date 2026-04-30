@@ -541,7 +541,7 @@ export function NotificationsView({ onBack }: { onBack: () => void }) {
       variants={pageVariants}
       initial="hidden"
       animate="visible"
-      className="relative min-h-[calc(100vh-120px)] overflow-x-hidden bg-white pb-24 text-[#222222]"
+      className="relative min-h-full overflow-x-hidden bg-white pb-4 text-[#222222]"
     >
       <header className="sticky top-0 z-20 border-b border-transparent bg-white/95 px-4 pb-2.5 pt-4 backdrop-blur-xl">
         <motion.div variants={sectionVariants} className="flex items-center gap-2">

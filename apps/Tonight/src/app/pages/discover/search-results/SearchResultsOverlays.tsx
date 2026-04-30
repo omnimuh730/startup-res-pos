@@ -6,7 +6,6 @@ import type { MappedSearchRestaurant } from "./types";
 import { DEFAULT_FILTERS, type SearchFilterState, type SheetState } from "./types";
 
 export function SearchResultsOverlays({
-  bottomNavHeight,
   draftFilters,
   draftResultCount,
   filtersOpen,
@@ -18,9 +17,9 @@ export function SearchResultsOverlays({
   onSelectPreview,
   previewIndex,
   previewRestaurant,
+  previewBottomOffset,
   sheetState,
 }: {
-  bottomNavHeight: number;
   draftFilters: SearchFilterState;
   draftResultCount: number;
   filtersOpen: boolean;
@@ -32,6 +31,7 @@ export function SearchResultsOverlays({
   onSelectPreview: () => void;
   previewIndex: number | null;
   previewRestaurant: MappedSearchRestaurant | null;
+  previewBottomOffset: number;
   sheetState: SheetState;
 }) {
   return (
@@ -41,7 +41,7 @@ export function SearchResultsOverlays({
           type="button"
           onClick={onOpenMap}
           className="absolute left-1/2 z-40 flex -translate-x-1/2 items-center gap-2 rounded-full bg-[#222222] px-4 py-2.5 text-[0.8125rem] text-white shadow-[0_8px_18px_rgba(0,0,0,0.25)]"
-          style={{ fontWeight: 700, bottom: `${Math.round(bottomNavHeight + 24)}px` }}
+          style={{ fontWeight: 700, bottom: "1.5rem" }}
         >
           Map
           <MapIcon className="h-4 w-4" />
@@ -52,7 +52,7 @@ export function SearchResultsOverlays({
         <MapPreviewCard
           restaurant={previewRestaurant}
           index={previewIndex ?? 0}
-          bottomNavHeight={bottomNavHeight}
+          bottomOffset={previewBottomOffset}
           onSelect={onSelectPreview}
         />
       )}

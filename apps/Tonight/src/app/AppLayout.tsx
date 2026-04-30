@@ -145,7 +145,7 @@ function TabButton({ tab, isActive, onSelect, badgeCount, showDot }: {
 
 function SidebarNav({ activeTab, onSelect }: { activeTab: TabId; onSelect: (id: TabId) => void }) {
   return (
-    <aside className="hidden lg:flex flex-col w-60 xl:w-64 border-r border-border bg-card shrink-0 sticky top-0 h-screen">
+    <aside className="hidden lg:flex flex-col w-60 xl:w-64 border-r border-border bg-card shrink-0 sticky top-0 h-dvh">
       <div className="p-6 pb-4">
         <h1 className="text-[1.25rem] text-primary" style={{ fontWeight: 700 }}>CatchTable</h1>
         <p className="text-muted-foreground text-[0.75rem] mt-0.5">Restaurant Reservations</p>
@@ -182,6 +182,9 @@ const pageVariants = {
 export function AppLayout() {
   const location = useLocation();
   const navigate = useNavigate();
+  const shellRef = useRef<HTMLDivElement>(null);
+  const bottomNavRef = useRef<HTMLElement>(null);
+  const qrActionRef = useRef<HTMLButtonElement>(null);
 
   const activeTab: TabId = (location.pathname.startsWith("/wishlist") || location.pathname.startsWith("/saved")) ? "wishlist"
     : location.pathname.startsWith("/dining") ? "dining"
@@ -190,6 +193,41 @@ export function AppLayout() {
 
   const isDiscoverSearchRoute = location.pathname.startsWith("/discover/search");
   const shouldLockMainScroll = isDiscoverSearchRoute;
+
+  useEffect(() => {
+    const shell = shellRef.current;
+    if (!shell) return;
+
+    const updateBottomNavHeight = () => {
+      const nav = bottomNavRef.current;
+      const isHidden = !nav || window.getComputedStyle(nav).display === "none";
+      const navRect = nav?.getBoundingClientRect();
+      const actionRect = qrActionRef.current?.getBoundingClientRect();
+      const height = isHidden || !navRect ? 0 : navRect.height;
+      const overhang = !isHidden && navRect && actionRect ? Math.max(0, navRect.top - actionRect.top) : 0;
+      const chromeHeight = height + overhang;
+
+      shell.style.setProperty("--app-bottom-nav-height", `${Math.round(height)}px`);
+      shell.style.setProperty("--app-bottom-nav-overhang", `${Math.round(overhang)}px`);
+      shell.style.setProperty("--app-bottom-chrome-height", `${Math.round(chromeHeight)}px`);
+      document.documentElement.style.setProperty("--app-bottom-nav-height", `${Math.round(height)}px`);
+      document.documentElement.style.setProperty("--app-bottom-nav-overhang", `${Math.round(overhang)}px`);
+      document.documentElement.style.setProperty("--app-bottom-chrome-height", `${Math.round(chromeHeight)}px`);
+    };
+
+    updateBottomNavHeight();
+    const observer = new ResizeObserver(updateBottomNavHeight);
+    if (bottomNavRef.current) observer.observe(bottomNavRef.current);
+    window.addEventListener("resize", updateBottomNavHeight);
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", updateBottomNavHeight);
+      document.documentElement.style.removeProperty("--app-bottom-nav-height");
+      document.documentElement.style.removeProperty("--app-bottom-nav-overhang");
+      document.documentElement.style.removeProperty("--app-bottom-chrome-height");
+    };
+  }, []);
 
   const [userLocation, setUserLocation] = useState({ name: "Gangnam Station", address: "Gangnam-gu, Seoul", lat: 37.498, lng: 127.0276 });
   const savedRestaurantsRef = useRef<RestaurantData[]>([]);
@@ -399,18 +437,23 @@ export function AppLayout() {
   };
 
   return (
-    <div className="h-screen bg-background flex overflow-hidden">
+    <div ref={shellRef} className="flex overflow-hidden bg-background" style={{ height: "100dvh" }}>
       <SidebarNav activeTab={activeTab} onSelect={handleTabSelect} />
 
-      <div className="flex-1 flex flex-col min-w-0 h-full relative">
+      <div className="relative flex h-full min-w-0 flex-1 flex-col overflow-hidden">
         <main className={`flex-1 min-w-0 min-h-0 ${shouldLockMainScroll ? "overflow-hidden" : "overflow-y-auto"}`}
           style={shouldLockMainScroll ? undefined : { overflowX: "clip" }}>
             <div
-              className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-[calc(6rem+var(--safe-area-inset-bottom))] lg:pb-8 w-full"
+              className={
+                shouldLockMainScroll
+                  ? "mx-auto h-full w-full max-w-3xl"
+                  : "relative mx-auto min-h-full w-full max-w-3xl px-4 pb-6 pt-6 sm:px-6 lg:px-8 lg:pb-8"
+              }
             >
             <AnimatePresence mode="wait">
               <motion.div
                 key={activeTab}
+                className={shouldLockMainScroll ? "h-full" : undefined}
                 variants={pageVariants}
                 initial="initial" animate="animate" exit="exit"
                 transition={{ duration: 0.25, ease: [0.25, 0.1, 0.25, 1] }}
@@ -422,10 +465,11 @@ export function AppLayout() {
         </main>
 
         <nav
+          ref={bottomNavRef}
           data-bottom-nav="true"
-          className="lg:hidden fixed bottom-0 left-0 right-0 bg-card/95 backdrop-blur-md border-t border-border z-50"
+          className="z-50 shrink-0 border-t border-border bg-card/95 backdrop-blur-md lg:hidden"
         >
-          <div className="flex items-stretch pb-[max(0.25rem,var(--safe-area-inset-bottom))]">
+          <div className="flex items-stretch" style={{ paddingBottom: "var(--safe-area-inset-bottom)" }}>
             {TABS.map((tab, idx) => (
               <React.Fragment key={tab.id}>
                 <TabButton tab={tab} isActive={activeTab === tab.id}
@@ -434,7 +478,7 @@ export function AppLayout() {
                   showDot={tab.id === "profile" && !dailyClaimed} />
                 {idx === 1 && (
                   <div className="relative flex items-center justify-center" style={{ width: 0 }}>
-                    <button onClick={handleQRPay}
+                    <button ref={qrActionRef} onClick={handleQRPay}
                       className="absolute -top-5 w-[3.75rem] h-[3.75rem] rounded-full flex items-center justify-center shadow-lg transition-transform active:scale-90 z-10 border-4 border-card"
                       style={{ background: "var(--primary)", color: "var(--primary-foreground)" }} aria-label="QR Pay">
                       <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

@@ -88,7 +88,7 @@ const GatheredModal = ({ onClose, images }: { onClose: () => void, images: strin
   return (
     <motion.div 
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm"
+      className="fixed inset-0 z-[500] flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm"
       onClick={onClose}
     >
       <motion.div 
@@ -216,7 +216,7 @@ export function SavedListView({ savedRestaurantsRef, savedFoodsRef, wishlistColl
   ];
 
   return (
-    <div className="min-h-[calc(100vh-120px)] bg-white relative overflow-x-hidden">
+    <div className="relative min-h-full overflow-x-hidden bg-white">
       
       <div className="px-6 pt-8">
         <div className="mb-6 flex items-center gap-3">
@@ -254,7 +254,7 @@ export function SavedListView({ savedRestaurantsRef, savedFoodsRef, wishlistColl
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: 20 }}
             transition={{ type: "spring", damping: 25, stiffness: 200 }}
-            className="fixed inset-0 z-50 bg-white overflow-y-auto pb-[calc(6rem+var(--safe-area-inset-bottom))]"
+            className="fixed inset-0 z-[500] overflow-y-auto bg-white pb-6"
           >
             {/* Top Navigation Bar */}
             <div

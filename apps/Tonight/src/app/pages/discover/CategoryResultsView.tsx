@@ -25,7 +25,7 @@ function CategoryDatePickerModal({ value, onSelect, onClose }: {
   const isSameDay = (d: Date, day: number) =>
     d.getFullYear() === year && d.getMonth() === month && d.getDate() === day;
   return (
-    <div className="fixed inset-0 z-[400] flex items-center justify-center bg-black/50" onClick={onClose}>
+    <div className="fixed inset-0 z-[500] flex items-center justify-center bg-black/50" onClick={onClose}>
       <div className="bg-background rounded-2xl p-5 w-[20rem] shadow-xl" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-4">
           <button onClick={() => setViewMonth(new Date(year, month - 1, 1))} className="p-1.5 rounded-full hover:bg-secondary cursor-pointer transition"><ArrowLeft className="w-4 h-4" /></button>
@@ -98,7 +98,7 @@ export function CategoryResultsView({ category, onBack, onSelectRestaurant, onBo
   });
 
   return (
-    <div className="min-h-[calc(100vh-120px)]">
+    <div className="min-h-full">
       <div className="sticky top-0 z-10 bg-background -mx-4 px-4 sm:-mx-6 sm:px-6 lg:-mx-4 lg:px-4 pb-3 pt-3 -mt-6">
         <div className="flex items-center gap-3 mb-4">
           <button onClick={onBack} className="p-1.5 hover:bg-secondary rounded-full transition cursor-pointer shrink-0">

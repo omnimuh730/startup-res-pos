@@ -99,7 +99,7 @@ export function HelpCenterPage({ onBack, topicId = null, onNavigateTopic, onCont
   const goIndex = () => (onNavigateTopic ? onNavigateTopic(null) : onBack());
 
   return (
-    <div className="fixed inset-0 z-[250] bg-background flex flex-col">
+    <div className="fixed left-0 right-0 top-0 z-[250] flex flex-col bg-background" style={{ bottom: "var(--app-bottom-chrome-height, 0px)" }}>
       <div className="shrink-0 sticky top-0 z-10 bg-background/95 backdrop-blur-md border-b border-border">
         <div className="flex items-center gap-2 px-3 sm:px-4 py-3 max-w-3xl mx-auto w-full">
           <button onClick={activeTopic ? goIndex : onBack} className="w-10 h-10 rounded-full hover:bg-secondary flex items-center justify-center cursor-pointer transition">
@@ -119,7 +119,7 @@ export function HelpCenterPage({ onBack, topicId = null, onNavigateTopic, onCont
       </div>
 
       <div ref={scrollRef} className="flex-1 overflow-y-auto relative">
-        <div className="max-w-3xl mx-auto w-full px-4 sm:px-6 pt-5 pb-24 space-y-7">
+        <div className="mx-auto w-full max-w-3xl space-y-7 px-4 pb-6 pt-5 sm:px-6">
           {!activeTopic && (
             <>
               <div className="relative overflow-hidden rounded-3xl p-5 sm:p-6" style={{ background: "linear-gradient(135deg, color-mix(in oklab, var(--primary) 18%, transparent), color-mix(in oklab, var(--info, var(--primary)) 14%, transparent))" }}>
@@ -251,7 +251,7 @@ export function HelpCenterPage({ onBack, topicId = null, onNavigateTopic, onCont
 
         <AnimatePresence>
           {showTop && (
-            <motion.button initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }} onClick={() => scrollRef.current?.scrollTo({ top: 0, behavior: "smooth" })} className="fixed bottom-36 right-5 w-11 h-11 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center cursor-pointer hover:scale-105 active:scale-95 transition z-10" aria-label="Back to top">
+            <motion.button initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }} onClick={() => scrollRef.current?.scrollTo({ top: 0, behavior: "smooth" })} className="fixed right-5 z-10 flex h-11 w-11 cursor-pointer items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg transition hover:scale-105 active:scale-95" style={{ bottom: "calc(var(--app-bottom-chrome-height, 0px) + 1rem)" }} aria-label="Back to top">
               <ArrowUp className="w-5 h-5" />
             </motion.button>
           )}

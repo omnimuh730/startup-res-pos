@@ -85,7 +85,7 @@ export function Drawer({
       {/* Overlay */}
       {overlay && (
         <div
-          className={`fixed inset-0 z-[100] bg-black/40 transition-opacity duration-300 ${
+          className={`fixed inset-0 z-[500] bg-black/40 transition-opacity duration-300 ${
             open ? "opacity-100 animate-in fade-in" : "opacity-0 pointer-events-none"
           }`}
           onClick={onClose}
@@ -95,7 +95,7 @@ export function Drawer({
       {/* Drawer panel */}
       <div
         className={`
-          fixed z-[101] ${pos.base} ${sizeMap[side][size]}
+          fixed z-[501] ${pos.base} ${sizeMap[side][size]}
           bg-card border-border shadow-2xl
           transition-transform duration-300 ease-out
           ${open ? pos.open : pos.closed}

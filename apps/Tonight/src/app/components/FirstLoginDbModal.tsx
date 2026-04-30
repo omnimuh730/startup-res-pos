@@ -60,7 +60,7 @@ export function FirstLoginDbModal() {
   const canDismiss = stage === "ask";
 
   return (
-    <div className="fixed inset-0 z-[60] bg-black/55 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => canDismiss && setOpen(false)}>
+    <div className="fixed inset-0 z-[500] bg-black/55 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => canDismiss && setOpen(false)}>
       <div className="bg-background w-full max-w-md rounded-3xl overflow-hidden shadow-2xl border border-border" onClick={(e) => e.stopPropagation()}>
         <div className="relative px-6 pt-6 pb-4">
           {canDismiss && (

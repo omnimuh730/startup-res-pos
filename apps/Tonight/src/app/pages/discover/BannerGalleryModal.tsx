@@ -18,7 +18,7 @@ export function BannerGalleryModal({ open, onClose, onSelect }: BannerGalleryMod
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-[60] bg-black/90 backdrop-blur-sm overflow-y-auto"
+          className="fixed inset-0 z-[500] bg-black/90 backdrop-blur-sm overflow-y-auto"
           onClick={onClose}
         >
           <div className="sticky top-0 z-10 flex items-center justify-between px-4 py-3 bg-black/60 backdrop-blur-md">

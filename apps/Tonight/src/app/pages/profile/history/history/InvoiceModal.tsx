@@ -3,10 +3,11 @@ import { Button } from "../../../../components/ds/Button";
 import { Text } from "../../../../components/ds/Text";
 import type { TxRecord } from "./types";
 import { motion } from "framer-motion";
+import { createPortal } from "react-dom";
 
 export function InvoiceModal({ transaction, onClose }: { transaction: TxRecord; onClose: () => void }) {
-  return (
-    <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-0 sm:p-4 font-sans">
+  return createPortal(
+    <div className="fixed inset-0 z-[500] flex items-end justify-center p-0 font-sans sm:items-center sm:p-4">
       
       {/* Backdrop */}
       <motion.div 
@@ -23,7 +24,7 @@ export function InvoiceModal({ transaction, onClose }: { transaction: TxRecord; 
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{ opacity: 0, y: 100, scale: 0.95 }}
         transition={{ type: "spring", damping: 30, stiffness: 400 }}
-        className="relative w-full max-w-md bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl max-h-[90vh] overflow-y-auto"
+        className="relative max-h-[90%] w-full max-w-md overflow-y-auto rounded-t-3xl bg-white shadow-2xl sm:rounded-3xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="sticky top-0 bg-white/80 backdrop-blur-md z-10 px-6 py-4 flex items-center justify-between border-b border-gray-100">
@@ -117,6 +118,7 @@ export function InvoiceModal({ transaction, onClose }: { transaction: TxRecord; 
           </div>
         </div>
       </motion.div>
-    </div>
+    </div>,
+    document.body
   );
 }

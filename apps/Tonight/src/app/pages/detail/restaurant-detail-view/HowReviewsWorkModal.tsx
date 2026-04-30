@@ -1,6 +1,6 @@
 export function HowReviewsWorkModal({ onClose }: { onClose: () => void }) {
   return (
-    <div className="fixed inset-0 z-[340] bg-black/35 flex items-end justify-center p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-[500] bg-black/35 flex items-end justify-center p-4" onClick={onClose}>
       <div className="w-full max-w-xl rounded-[2rem] bg-background p-6" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-start justify-between gap-3">
           <h3 className="text-[1.75rem] leading-tight" style={{ fontWeight: 700 }}>How reviews work</h3>

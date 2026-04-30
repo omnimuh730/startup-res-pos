@@ -19,7 +19,7 @@ export function WishlistSavedToast({
   return (
     <div
       className="pointer-events-none fixed inset-x-0 z-[470] flex justify-center px-4 sm:bottom-8"
-      style={{ bottom: "calc(5.75rem + var(--safe-area-inset-bottom))" }}
+      style={{ bottom: "calc(var(--app-bottom-chrome-height, 0px) + 1rem)" }}
     >
       <AnimatePresence mode="wait">
         {toast && (

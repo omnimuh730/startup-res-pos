@@ -44,7 +44,7 @@ export function HistoryPage({ onBack }: { onBack: () => void }) {
   });
 
   return (
-    <div className="fixed inset-0 z-50 bg-white flex flex-col font-sans">
+    <div className="fixed left-0 right-0 top-0 z-50 flex flex-col bg-white font-sans" style={{ bottom: "var(--app-bottom-chrome-height, 0px)" }}>
       
       {/* Header */}
       <div className="flex items-center justify-between px-4 pt-12 pb-2 bg-white shrink-0">

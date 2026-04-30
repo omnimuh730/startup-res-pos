@@ -115,7 +115,7 @@ export function ProfilePage() {
   const cardShadow = "shadow-[0_4px_8px_rgba(0,0,0,0.18)] border border-black/[0.04]";
 
   return (
-    <div className="min-h-screen bg-white text-foreground font-sans">
+    <div className="min-h-full bg-white text-foreground font-sans">
       <Stagger stagger={0.04} className="space-y-6">
         
         {/* Header */}
@@ -322,7 +322,7 @@ export function ProfilePage() {
 
         {/* Modals remain mostly structurally identical, adjusted styles for white theme */}
         {pickerOpen && (
-          <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => setPickerOpen(false)}>
+          <div className="fixed inset-0 z-[500] flex items-end justify-center bg-black/40 backdrop-blur-sm md:items-center" onClick={() => setPickerOpen(false)}>
             <div className="w-full md:max-w-md bg-white rounded-t-[2rem] md:rounded-[2rem] shadow-2xl" onClick={(e) => e.stopPropagation()}>
               <div className="flex items-center justify-between px-6 pt-6 pb-4">
                 <div>

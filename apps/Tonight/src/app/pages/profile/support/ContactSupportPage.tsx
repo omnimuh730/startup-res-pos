@@ -87,7 +87,7 @@ export function ContactSupportPage({ onBack }: { onBack: () => void }) {
   const activeSession = activeSessionId ? sessions.find(s => s.id === activeSessionId) || null : null;
 
   return (
-    <div className="fixed inset-0 z-[250] bg-white flex flex-col font-sans">
+    <div className="fixed left-0 right-0 top-0 z-[250] flex flex-col bg-white font-sans" style={{ bottom: "var(--app-bottom-chrome-height, 0px)" }}>
       
       {/* Header */}
       <div className="flex items-center justify-between px-4 pt-12 pb-4 bg-white border-b border-black/[0.04] shrink-0">
@@ -145,7 +145,7 @@ export function ContactSupportPage({ onBack }: { onBack: () => void }) {
 
       {/* Deletion Confirmation Modal */}
       {sessionToDelete && (
-        <div className="fixed inset-0 z-[400] flex items-center justify-center px-6">
+        <div className="fixed inset-0 z-[500] flex items-center justify-center px-6">
           <motion.div 
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             className="absolute inset-0 bg-black/40 backdrop-blur-sm cursor-pointer"

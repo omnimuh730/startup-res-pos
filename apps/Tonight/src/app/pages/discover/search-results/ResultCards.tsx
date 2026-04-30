@@ -72,12 +72,12 @@ export function RestaurantResultCard({
 export function MapPreviewCard({
   restaurant,
   index,
-  bottomNavHeight,
+  bottomOffset,
   onSelect,
 }: {
   restaurant: MappedSearchRestaurant;
   index: number;
-  bottomNavHeight: number;
+  bottomOffset: number;
   onSelect: () => void;
 }) {
   const detail = CARD_DETAILS[index % CARD_DETAILS.length];
@@ -90,7 +90,7 @@ export function MapPreviewCard({
       exit={{ opacity: 0, y: 20, scale: 0.96 }}
       transition={{ type: "spring", damping: 24, stiffness: 280 }}
       className="absolute left-4 right-4 z-40 overflow-hidden rounded-2xl bg-white shadow-[0_12px_30px_rgba(0,0,0,0.28)]"
-      style={{ bottom: `${Math.round(bottomNavHeight + 100)}px` }}
+      style={{ bottom: `${Math.round(bottomOffset)}px` }}
       onClick={onSelect}
     >
       <div className="relative h-40 bg-[#F7F7F7]">

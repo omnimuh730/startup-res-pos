@@ -159,7 +159,7 @@ export function LocationPickerModal({ open, onClose, onSelect, currentLocation }
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center">
+    <div className="fixed inset-0 z-[500] flex items-end justify-center sm:items-center">
       {/* Backdrop */}
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
 
