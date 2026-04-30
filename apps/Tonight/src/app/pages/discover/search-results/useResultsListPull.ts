@@ -48,19 +48,15 @@ export function useResultsListPull({ sheetState, resultsListRef, setPreviewIndex
       pull.dragging = true;
       if (event.cancelable) event.preventDefault();
     }
-    if (deltaY > 42 && sheetState === "full") {
-      setPreviewIndex(null);
-      setSheetState("half");
-    }
   };
 
   const handleListPointerEnd = (event: ReactPointerEvent<HTMLDivElement>) => {
     const pull = listPullRef.current;
     if (!pull.active) return;
     const deltaY = pull.lastY - pull.startY;
-    if (pull.dragging && deltaY > 104) {
+    if (pull.dragging && deltaY > 36) {
       setPreviewIndex(null);
-      setSheetState("peek");
+      setSheetState(deltaY > 138 ? "peek" : "half");
     }
     if (event.currentTarget.hasPointerCapture(event.pointerId)) {
       event.currentTarget.releasePointerCapture(event.pointerId);

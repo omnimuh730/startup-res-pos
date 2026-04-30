@@ -56,19 +56,20 @@ export function SearchResultsSheet({
     <motion.section
       ref={sheetRef}
       drag="y"
-      dragElastic={0.04}
+      dragElastic={0.08}
+      dragMomentum={false}
       dragConstraints={{ top: 0, bottom: getSheetY("peek", sheetHeight, peekHeight) }}
       onDragStart={() => setPreviewIndex(null)}
       onDragEnd={(_, info) => {
-        const projectedY = sheetY + info.offset.y + info.velocity.y * 0.16;
-        if (info.velocity.y < -650) return setSheetState("full");
-        if (info.velocity.y > 650) return setSheetState(sheetState === "full" ? "half" : "peek");
+        const projectedY = sheetY + info.offset.y + info.velocity.y * 0.22;
+        if (info.velocity.y < -980) return setSheetState("full");
+        if (info.velocity.y > 980) return setSheetState(sheetState === "full" ? "half" : "peek");
         setSheetState(getNearestSheetState(projectedY, sheetHeight, peekHeight));
       }}
       animate={{ y: sheetY }}
-      transition={{ type: "spring", damping: 34, stiffness: 320 }}
+      transition={{ type: "spring", damping: 31, stiffness: 255, mass: 0.86, restDelta: 0.5, restSpeed: 8 }}
       className="absolute bottom-0 left-0 right-0 z-20 rounded-t-[1.75rem] bg-white shadow-[0_-10px_30px_rgba(0,0,0,0.12)]"
-      style={{ top: searchHeaderHeight, touchAction: sheetState === "full" ? "pan-y" : "none" }}
+      style={{ top: searchHeaderHeight, touchAction: sheetState === "full" ? "pan-y" : "none", willChange: "transform" }}
     >
       <button
         ref={peekHeaderRef}

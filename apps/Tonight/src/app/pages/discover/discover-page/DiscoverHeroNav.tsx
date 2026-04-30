@@ -45,7 +45,7 @@ export function DiscoverHeroNav({
 }) {
   return (
     <>
-      <section ref={discoverHeroSectionRef} className="relative w-full min-w-0 -mx-4 -mt-6 sm:-mx-6 sm:-mt-6 lg:-mx-8 lg:-mt-6">
+      <section ref={discoverHeroSectionRef} className="relative min-w-0 -mx-4 -mt-6 sm:-mx-6 sm:-mt-6 lg:-mx-8 lg:-mt-6">
         <BannerCarousel onBannerClick={onBannerClick} onViewAll={() => setShowBannerGallery(true)} />
         <motion.div
           className="pointer-events-none absolute inset-x-0 top-0 z-30 px-4 pt-[calc(1.35rem+env(safe-area-inset-top,0px))] sm:px-6 sm:pt-[calc(1.5rem+env(safe-area-inset-top,0px))] lg:px-8"
@@ -92,8 +92,7 @@ export function DiscoverHeroNav({
         <motion.div
           aria-hidden={!discoverNavCompact}
           className={cn(
-            "sticky top-0 z-50 -mx-4 overflow-hidden bg-background/96 px-4 backdrop-blur-md sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8",
-            discoverNavCompact && "border-b border-border/55 py-2 shadow-[0_10px_36px_-14px_rgba(0,0,0,0.18)]",
+            "fixed inset-x-0 top-0 z-[70] overflow-hidden",
           )}
           initial={false}
           animate={{
@@ -106,7 +105,12 @@ export function DiscoverHeroNav({
           }}
           style={{ pointerEvents: discoverNavCompact ? "auto" : "none" }}
         >
-          <div className="mx-auto flex max-w-3xl items-center gap-2 px-0.5">
+          <div
+            className={cn(
+              "mx-auto flex w-full max-w-3xl items-center gap-2 bg-background/96 px-4 pb-2 pt-[calc(0.5rem+env(safe-area-inset-top,0px))] backdrop-blur-md sm:px-6 lg:px-8",
+              discoverNavCompact && "border-b border-border/55 shadow-[0_10px_36px_-14px_rgba(0,0,0,0.18)]",
+            )}
+          >
             <motion.button
               type="button"
               onClick={() => setShowSearchModal(true)}
