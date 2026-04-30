@@ -1,18 +1,35 @@
 /* Full-page booking detail view */
-import { useState } from "react";
+import { useEffect, useState, type ComponentType } from "react";
+import { AnimatePresence, motion } from "motion/react";
 import { Text, Heading } from "../../components/ds/Text";
 import { Button } from "../../components/ds/Button";
-import { Card } from "../../components/ds/Card";
 import { Animate } from "../../components/ds/Animate";
 import { ImageWithFallback } from "../../components/figma/ImageWithFallback";
 import { MapView } from "../shared/MapView";
 import {
-  Calendar, Clock, Users, Star, RotateCcw, MapPin, Phone,
-  ChevronRight, Navigation, UtensilsCrossed, Heart,
-  Share2, Copy, Timer, ChevronLeft, QrCode, UserPlus, Receipt as ReceiptIcon,
+  Calendar,
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  Clock,
+  Copy,
+  Heart,
+  MapPin,
+  Navigation,
+  Phone,
+  QrCode,
+  Receipt as ReceiptIcon,
+  RotateCcw,
+  Share2,
+  Sparkles,
+  Star,
+  Timer,
+  UserPlus,
+  Users,
+  UtensilsCrossed,
 } from "lucide-react";
 import type { Booking } from "./diningData";
-import { statusConfig, fmtR } from "./diningData";
+import { fmtR, statusConfig } from "./diningData";
 
 interface Props {
   booking: Booking;
@@ -25,166 +42,318 @@ interface Props {
   onViewReceipt?: () => void;
 }
 
-export function BookingDetailPage({ booking, onBack, onManage, onScanQR, onShowQR, onInvite, onBookAgain, onViewReceipt }: Props) {
+function InfoTile({
+  icon: Icon,
+  label,
+  value,
+}: {
+  icon: ComponentType<{ className?: string; strokeWidth?: number }>;
+  label: string;
+  value: string;
+}) {
+  return (
+    <motion.div
+      whileTap={{ scale: 0.98 }}
+      className="min-w-0 rounded-[1.25rem] border border-border bg-card p-3 shadow-[0_5px_18px_rgba(0,0,0,0.045)]"
+    >
+      <div className="mb-2 flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary">
+        <Icon className="h-4 w-4" />
+      </div>
+      <Text className="truncate text-[0.75rem] text-muted-foreground">{label}</Text>
+      <Text className="mt-0.5 truncate text-[0.9375rem] text-foreground" style={{ fontWeight: 800 }}>
+        {value}
+      </Text>
+    </motion.div>
+  );
+}
+
+function ActionRow({
+  icon: Icon,
+  title,
+  subtitle,
+  onClick,
+  tone = "default",
+}: {
+  icon: ComponentType<{ className?: string; strokeWidth?: number }>;
+  title: string;
+  subtitle: string;
+  onClick?: () => void;
+  tone?: "default" | "primary" | "danger";
+}) {
+  const toneClass = tone === "primary" ? "bg-primary/10 text-primary" : tone === "danger" ? "bg-destructive/10 text-destructive" : "bg-secondary text-foreground";
+
+  return (
+    <motion.button
+      type="button"
+      whileTap={{ scale: 0.985 }}
+      onClick={onClick}
+      className="flex w-full cursor-pointer items-center gap-3 rounded-[1.25rem] border border-border bg-card p-3.5 text-left shadow-[0_5px_18px_rgba(0,0,0,0.04)] transition hover:border-primary/35 hover:shadow-[0_10px_26px_rgba(0,0,0,0.07)]"
+    >
+      <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${toneClass}`}>
+        <Icon className="h-4 w-4" />
+      </span>
+      <span className="min-w-0 flex-1">
+        <Text className="truncate text-[0.9375rem]" style={{ fontWeight: 800 }}>
+          {title}
+        </Text>
+        <Text className="mt-0.5 line-clamp-1 text-[0.75rem] text-muted-foreground">{subtitle}</Text>
+      </span>
+      <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+    </motion.button>
+  );
+}
+
+export function BookingDetailPage({
+  booking,
+  onBack,
+  onManage,
+  onScanQR,
+  onShowQR,
+  onInvite,
+  onBookAgain,
+  onViewReceipt,
+}: Props) {
   const [saved, setSaved] = useState(false);
+  const [copied, setCopied] = useState(false);
   const sc = statusConfig[booking.status];
   const StatusIcon = sc.icon;
   const isScheduled = booking.status === "confirmed";
   const isCancelled = booking.status === "cancelled" || booking.status === "no-show";
+  const day = booking.date.split(",")[0] ?? booking.date;
+  const date = booking.date.split(",").slice(1).join(",").trim() || booking.date;
+
+  useEffect(() => {
+    if (!copied) return undefined;
+    const timer = window.setTimeout(() => setCopied(false), 1400);
+    return () => window.clearTimeout(timer);
+  }, [copied]);
+
+  const copyCode = async () => {
+    try {
+      await navigator.clipboard?.writeText(booking.confirmationNo);
+    } catch {
+      // Clipboard may be blocked in some webviews; the UI still confirms the tap.
+    }
+    setCopied(true);
+  };
 
   return (
     <Animate preset="fadeIn" duration={0.25}>
       <div className="pb-8">
-        <button onClick={onBack} className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition mb-4 cursor-pointer">
-          <ChevronLeft className="w-5 h-5" /><span className="text-[0.9375rem]">Back to Dining</span>
-        </button>
-
-        {/* Hero Image */}
-        <div className="relative rounded-2xl overflow-hidden mb-5">
-          <ImageWithFallback src={booking.image} alt={booking.restaurant} className="w-full h-52 sm:h-64 md:h-72 object-cover" />
-          <button onClick={() => setSaved(!saved)} className="absolute top-3 right-3 w-10 h-10 rounded-full bg-white/80 backdrop-blur-sm flex items-center justify-center">
-            <Heart className={`w-5 h-5 ${saved ? "fill-red-500 text-red-500" : "text-foreground"}`} />
+        <div className="sticky top-0 z-20 -mx-4 mb-4 flex items-center justify-between bg-background/92 px-4 py-3 backdrop-blur-md sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
+          <button
+            type="button"
+            onClick={onBack}
+            className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full bg-secondary text-foreground transition hover:bg-secondary/80 active:scale-95"
+            aria-label="Back to Dining"
+          >
+            <ChevronLeft className="h-5 w-5" />
+          </button>
+          <Text className="text-[0.9375rem]" style={{ fontWeight: 800 }}>
+            Reservation
+          </Text>
+          <button
+            type="button"
+            className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full bg-secondary text-foreground transition hover:bg-secondary/80 active:scale-95"
+            aria-label="Share reservation"
+          >
+            <Share2 className="h-4 w-4" />
           </button>
         </div>
 
-        <Heading level={2} className="mb-1">{booking.restaurant}</Heading>
-        <Text className="text-muted-foreground text-[0.9375rem] mb-3">{booking.cuisine}</Text>
+        <motion.div
+          initial={{ opacity: 0, y: 14 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.32, ease: "easeOut" }}
+          className="relative overflow-hidden rounded-[1.75rem]"
+        >
+          <ImageWithFallback src={booking.image} alt={booking.restaurant} className="h-64 w-full object-cover object-center" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-black/10" />
+          <button
+            type="button"
+            onClick={() => setSaved((value) => !value)}
+            className="absolute right-3 top-3 flex h-10 w-10 cursor-pointer items-center justify-center rounded-full bg-white/90 text-foreground shadow-lg backdrop-blur transition active:scale-90"
+            aria-label={saved ? "Unsave restaurant" : "Save restaurant"}
+          >
+            <motion.span animate={saved ? { scale: [1, 1.2, 1] } : { scale: 1 }} transition={{ duration: 0.28 }}>
+              <Heart className={`h-5 w-5 ${saved ? "fill-primary text-primary" : ""}`} />
+            </motion.span>
+          </button>
+          <div className="absolute inset-x-0 bottom-0 p-5">
+            <div className={`mb-3 inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 ${sc.bg}`}>
+              <StatusIcon className={`h-3.5 w-3.5 ${sc.color}`} />
+              <Text className={`text-[0.75rem] ${sc.color}`} style={{ fontWeight: 800 }}>
+                {sc.label}
+              </Text>
+            </div>
+            <Heading level={2} className="text-white">
+              {booking.restaurant}
+            </Heading>
+            <Text className="mt-1 text-[0.875rem] text-white/82">{booking.cuisine}</Text>
+          </div>
+        </motion.div>
 
-        <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full ${sc.bg} mb-5`}>
-          <StatusIcon className={`w-4 h-4 ${sc.color}`} />
-          <Text className={`${sc.color} text-[0.9375rem]`} style={{ fontWeight: 600 }}>{sc.label}</Text>
+        <div className="mt-4 grid grid-cols-3 gap-2">
+          <InfoTile icon={Users} label="Party" value={`${booking.guests} ${booking.guests > 1 ? "guests" : "guest"}`} />
+          <InfoTile icon={Calendar} label={day} value={date} />
+          <InfoTile icon={Clock} label={booking.seating} value={booking.time} />
         </div>
 
-        {/* Booking Info Cards */}
-        <div className="grid grid-cols-3 gap-3 mb-5">
-          <Card variant="filled" padding="sm" radius="lg" className="text-center">
-            <Users className="w-5 h-5 text-primary mx-auto mb-1" />
-            <Text className="text-[1rem]" style={{ fontWeight: 600 }}>{booking.guests}</Text>
-            <Text className="text-muted-foreground text-[0.8125rem]">{booking.guests > 1 ? "Guests" : "Guest"}</Text>
-          </Card>
-          <Card variant="filled" padding="sm" radius="lg" className="text-center">
-            <Calendar className="w-5 h-5 text-primary mx-auto mb-1" />
-            <Text className="text-[0.875rem]" style={{ fontWeight: 600 }}>{booking.date.split(", ")[0]}</Text>
-            <Text className="text-muted-foreground text-[0.8125rem]">{booking.date.split(", ").slice(1).join(", ")}</Text>
-          </Card>
-          <Card variant="filled" padding="sm" radius="lg" className="text-center">
-            <Clock className="w-5 h-5 text-primary mx-auto mb-1" />
-            <Text className="text-[1rem]" style={{ fontWeight: 600 }}>{booking.time}</Text>
-            <Text className="text-muted-foreground text-[0.8125rem]">{booking.seating}</Text>
-          </Card>
-        </div>
-
-        {/* Reservation Code + Actions — scheduled only */}
         {isScheduled && (
-          <div className="mb-5 space-y-3">
-            <div className="flex items-center justify-between p-3.5 rounded-xl border border-border bg-secondary/40">
-              <div className="flex items-center gap-3">
-                <Text className="text-muted-foreground text-[0.8125rem]">Code:</Text>
-                <Text className="text-[1rem]" style={{ fontWeight: 700, letterSpacing: "0.04em" }}>{booking.confirmationNo}</Text>
-                <button className="p-1 rounded-md hover:bg-secondary transition"><Copy className="w-4 h-4 text-muted-foreground" /></button>
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.28, delay: 0.05 }}
+            className="mt-4 rounded-[1.5rem] border border-primary/18 bg-primary/6 p-3.5"
+          >
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <Text className="text-[0.6875rem] uppercase tracking-[0.08em] text-primary" style={{ fontWeight: 800 }}>
+                  Confirmation
+                </Text>
+                <Text className="mt-0.5 truncate text-[1rem] text-foreground" style={{ fontWeight: 800 }}>
+                  {booking.confirmationNo}
+                </Text>
               </div>
-              <div className="flex items-center gap-1.5 text-muted-foreground text-[0.875rem]"><Timer className="w-4 h-4" /><span>23h 02m</span></div>
+              <div className="flex items-center gap-2">
+                <span className="hidden items-center gap-1.5 rounded-full bg-card px-3 py-2 text-[0.75rem] text-muted-foreground sm:inline-flex">
+                  <Timer className="h-3.5 w-3.5" />
+                  Ready for arrival
+                </span>
+                <button
+                  type="button"
+                  onClick={copyCode}
+                  className="relative flex h-10 w-10 cursor-pointer items-center justify-center rounded-full bg-card text-muted-foreground shadow-sm transition hover:text-foreground active:scale-95"
+                  aria-label="Copy confirmation code"
+                >
+                  <AnimatePresence mode="wait" initial={false}>
+                    {copied ? (
+                      <motion.span key="check" initial={{ scale: 0.4, opacity: 0 }} animate={{ scale: [1.15, 1], opacity: 1 }} exit={{ scale: 0.5, opacity: 0 }}>
+                        <Check className="h-4 w-4 text-primary" />
+                      </motion.span>
+                    ) : (
+                      <motion.span key="copy" initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.7, opacity: 0 }}>
+                        <Copy className="h-4 w-4" />
+                      </motion.span>
+                    )}
+                  </AnimatePresence>
+                  {copied && <span className="absolute -top-8 rounded-full bg-foreground px-2 py-1 text-[0.6875rem] text-background">Copied</span>}
+                </button>
+              </div>
             </div>
-            <div className="grid grid-cols-4 gap-2">
-              <Button variant="outline" radius="full" onClick={onManage} className="text-[0.875rem]">Manage</Button>
-              <Button variant="outline" radius="full" leftIcon={<QrCode className="w-4 h-4" />} className="text-[0.875rem]" onClick={onScanQR}>Scan QR</Button>
-              <Button variant="primary" radius="full" leftIcon={<QrCode className="w-4 h-4" />} className="text-[0.875rem]" onClick={onShowQR}>Show QR</Button>
-              <Button variant="outline" radius="full" leftIcon={<UserPlus className="w-4 h-4" />} className="text-[0.875rem]" onClick={onInvite}>Invite</Button>
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              <Button variant="primary" radius="full" className="font-bold" leftIcon={<QrCode className="h-4 w-4" />} onClick={onShowQR}>
+                Show QR
+              </Button>
+              <Button variant="outline" radius="full" className="font-bold" onClick={onManage}>
+                Manage
+              </Button>
+              <Button variant="outline" radius="full" className="font-bold" leftIcon={<QrCode className="h-4 w-4" />} onClick={onScanQR}>
+                Scan
+              </Button>
+              <Button variant="outline" radius="full" className="font-bold" leftIcon={<UserPlus className="h-4 w-4" />} onClick={onInvite}>
+                Invite
+              </Button>
             </div>
-          </div>
+          </motion.div>
         )}
 
-        {/* Quick Actions */}
-        <div className="grid grid-cols-2 gap-3 mb-6">
-          <button className="flex flex-col items-center gap-2 p-5 rounded-xl bg-secondary hover:bg-secondary/80 transition">
-            <div className="w-11 h-11 rounded-full bg-primary/10 flex items-center justify-center"><UtensilsCrossed className="w-5 h-5 text-primary" /></div>
-            <div className="text-center"><Text className="text-[0.875rem]" style={{ fontWeight: 500 }}>Browse menu</Text><Text className="text-muted-foreground text-[0.8125rem]">Restaurant's website</Text></div>
-          </button>
-          <button className="flex flex-col items-center gap-2 p-5 rounded-xl bg-secondary hover:bg-secondary/80 transition">
-            <div className="w-11 h-11 rounded-full bg-primary/10 flex items-center justify-center"><Navigation className="w-5 h-5 text-primary" /></div>
-            <div className="text-center"><Text className="text-[0.875rem]" style={{ fontWeight: 500 }}>Get directions</Text><Text className="text-muted-foreground text-[0.8125rem]">1.3 km away</Text></div>
-          </button>
+        <div className="mt-5 space-y-3">
+          <Text className="px-1 text-[1rem] text-foreground" style={{ fontWeight: 800 }}>
+            Restaurant
+          </Text>
+          <ActionRow icon={UtensilsCrossed} title="Browse menu" subtitle="Preview dishes before you arrive" tone="primary" />
+          <ActionRow icon={Navigation} title="Get directions" subtitle={booking.address} />
+          <ActionRow icon={Phone} title="Call restaurant" subtitle={booking.phone} onClick={() => { window.location.href = `tel:${booking.phone}`; }} />
         </div>
 
-        {/* Occasion */}
-        {booking.occasion && (
-          <div className="mb-6">
-            <Text className="text-[0.9375rem] mb-2" style={{ fontWeight: 600 }}>What's the occasion?</Text>
-            <div className="flex gap-2">
-              {["Birthday", "Anniversary", "Date", "Special"].map(o => (
-                <span key={o} className={`px-4 py-1.5 rounded-full text-[0.875rem] border transition ${booking.occasion === o ? "border-primary bg-primary/5 text-primary" : "border-border text-muted-foreground"}`}>{o}</span>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Special Request */}
-        {booking.specialRequest && (
-          <div className="mb-6">
-            <Text className="text-[0.9375rem] mb-1" style={{ fontWeight: 600 }}>Special Request</Text>
-            <Text className="text-muted-foreground text-[0.9375rem]">{booking.specialRequest}</Text>
-          </div>
-        )}
-
-        {/* Address */}
-        <div className="mb-4">
-          <Text className="text-[0.9375rem] mb-2" style={{ fontWeight: 600 }}>Address</Text>
-          <div className="flex items-start gap-2"><MapPin className="w-4 h-4 text-muted-foreground mt-1 shrink-0" /><Text className="text-[0.9375rem] text-muted-foreground">{booking.address}</Text></div>
-        </div>
-
-        <MapView address={booking.address} restaurantName={booking.restaurant} height="h-48" className="mb-6" />
-
-        {/* Restaurant Profile */}
-        <div className="mb-5">
-          <Text className="text-[0.9375rem] mb-2" style={{ fontWeight: 600 }}>Restaurant's full profile</Text>
-          <button className="w-full flex items-center justify-between p-4 rounded-xl bg-secondary hover:bg-secondary/80 transition">
-            <div className="flex items-center gap-3"><UtensilsCrossed className="w-5 h-5 text-muted-foreground" /><Text className="text-[0.9375rem]">{booking.restaurant}</Text></div>
-            <ChevronRight className="w-5 h-5 text-muted-foreground" />
-          </button>
-        </div>
-
-        {/* Phone */}
-        <div className="mb-5">
-          <Text className="text-[0.9375rem] mb-2" style={{ fontWeight: 600 }}>Phone number</Text>
-          <a href={`tel:${booking.phone}`} className="flex items-center gap-2 text-primary text-[0.9375rem]"><Phone className="w-4 h-4" /> {booking.phone}</a>
-        </div>
-
-        {/* Dining Points */}
-        <div className="mb-5">
-          <Text className="text-[0.9375rem] mb-1" style={{ fontWeight: 600 }}>Dining points</Text>
-          <div className="flex items-center gap-2"><Star className="w-4 h-4 text-warning" /><Text className="text-muted-foreground text-[0.9375rem]">{booking.diningPoints > 0 ? `${booking.diningPoints} points ${booking.status === "completed" ? "earned" : "to be earned"} on this booking` : "No points for this booking"}</Text></div>
-        </div>
-
-        {/* Rating for completed */}
-        {booking.status === "completed" && booking.rating && (
-          <div className="flex items-center gap-1 mt-2"><Star className="w-4 h-4 text-warning fill-warning" /><Text className="text-[0.9375rem] text-warning" style={{ fontWeight: 600 }}>{fmtR(booking.rating)}</Text><Text className="text-muted-foreground text-[0.875rem] ml-1">Your rating</Text></div>
-        )}
-
-        {/* Reservation code for scheduled */}
-        {isScheduled && (
-          <div className="flex items-center gap-2 mt-2.5 text-[0.875rem]">
-            <Text className="text-muted-foreground">Code:</Text>
-            <Text style={{ fontWeight: 600, letterSpacing: "0.03em" }}>{booking.confirmationNo}</Text>
-            <button className="p-0.5 rounded hover:bg-secondary transition" onClick={(e: React.MouseEvent) => e.stopPropagation()}><Copy className="w-3.5 h-3.5 text-muted-foreground" /></button>
-          </div>
-        )}
-
-        {/* Confirmation Number */}
-        <div className="pt-4 border-t border-border mb-5">
-          <div className="flex items-center justify-between">
-            <div><Text className="text-muted-foreground text-[0.8125rem]">Confirmation #</Text><Text className="text-[0.9375rem]" style={{ fontWeight: 500 }}>{booking.confirmationNo}</Text></div>
-            <Button variant="ghost" size="icon"><Share2 className="w-5 h-5" /></Button>
-          </div>
-        </div>
-
-        {/* Bottom Action */}
-        {isCancelled && <Button variant="primary" fullWidth radius="full" leftIcon={<RotateCcw className="w-4 h-4" />} onClick={onBookAgain}>Book Again</Button>}
-        {booking.status === "completed" && (
-          <div className="flex flex-col gap-2">
-            {booking.receipt && (
-              <Button variant="outline" fullWidth radius="full" leftIcon={<ReceiptIcon className="w-4 h-4" />} onClick={onViewReceipt}>View Order Receipt</Button>
+        {(booking.occasion || booking.specialRequest) && (
+          <div className="mt-5 rounded-[1.5rem] border border-border bg-card p-4 shadow-[0_5px_18px_rgba(0,0,0,0.04)]">
+            <Text className="text-[1rem]" style={{ fontWeight: 800 }}>
+              Details
+            </Text>
+            {booking.occasion && (
+              <div className="mt-3 flex flex-wrap gap-2">
+                {["Birthday", "Anniversary", "Date", "Special"].map((occasion) => (
+                  <span
+                    key={occasion}
+                    className={`rounded-full border px-3 py-1.5 text-[0.8125rem] ${
+                      booking.occasion === occasion ? "border-primary bg-primary/8 text-primary" : "border-border text-muted-foreground"
+                    }`}
+                    style={{ fontWeight: 700 }}
+                  >
+                    {occasion}
+                  </span>
+                ))}
+              </div>
             )}
-            <Button variant="primary" fullWidth radius="full" leftIcon={<RotateCcw className="w-4 h-4" />} onClick={onBookAgain}>Book Again</Button>
+            {booking.specialRequest && (
+              <Text className="mt-3 rounded-[1rem] bg-secondary/70 px-3 py-2 text-[0.875rem] leading-snug text-muted-foreground">
+                {booking.specialRequest}
+              </Text>
+            )}
+          </div>
+        )}
+
+        <div className="mt-5">
+          <Text className="mb-2 px-1 text-[1rem]" style={{ fontWeight: 800 }}>
+            Location
+          </Text>
+          <div className="mb-3 flex items-start gap-2 px-1">
+            <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+            <Text className="text-[0.875rem] leading-snug text-muted-foreground">{booking.address}</Text>
+          </div>
+          <MapView address={booking.address} restaurantName={booking.restaurant} height="h-48" className="rounded-[1.5rem]" />
+        </div>
+
+        <div className="mt-5 rounded-[1.5rem] border border-border bg-card p-4 shadow-[0_5px_18px_rgba(0,0,0,0.04)]">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <Text className="text-[0.75rem] text-muted-foreground">Dining points</Text>
+              <Text className="mt-0.5 text-[0.9375rem]" style={{ fontWeight: 800 }}>
+                {booking.diningPoints > 0 ? `${booking.diningPoints} points ${booking.status === "completed" ? "earned" : "pending"}` : "No points for this booking"}
+              </Text>
+            </div>
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-warning/10 text-warning">
+              <Star className="h-4 w-4" />
+            </div>
+          </div>
+          {booking.status === "completed" && booking.rating && (
+            <div className="mt-3 flex items-center gap-1.5 rounded-full bg-secondary/70 px-3 py-2">
+              <Star className="h-4 w-4 fill-warning text-warning" />
+              <Text className="text-[0.875rem]" style={{ fontWeight: 800 }}>
+                {fmtR(booking.rating)}
+              </Text>
+              <Text className="text-[0.8125rem] text-muted-foreground">Your rating</Text>
+            </div>
+          )}
+        </div>
+
+        {isCancelled && (
+          <Button variant="primary" fullWidth radius="full" className="mt-5 font-bold" leftIcon={<RotateCcw className="h-4 w-4" />} onClick={onBookAgain}>
+            Book again
+          </Button>
+        )}
+
+        {booking.status === "completed" && (
+          <div className="mt-5 grid gap-2">
+            {booking.receipt && (
+              <Button variant="outline" fullWidth radius="full" className="font-bold" leftIcon={<ReceiptIcon className="h-4 w-4" />} onClick={onViewReceipt}>
+                View receipt
+              </Button>
+            )}
+            <Button variant="primary" fullWidth radius="full" className="font-bold" leftIcon={<RotateCcw className="h-4 w-4" />} onClick={onBookAgain}>
+              Book again
+            </Button>
+          </div>
+        )}
+
+        {booking.status !== "completed" && !isCancelled && (
+          <div className="mt-5 flex items-center gap-2 rounded-[1.25rem] bg-secondary/70 px-3 py-3">
+            <Sparkles className="h-4 w-4 shrink-0 text-primary" />
+            <Text className="text-[0.8125rem] text-muted-foreground">
+              Keep this code handy. You can share it with friends so they can join the reservation.
+            </Text>
           </div>
         )}
       </div>

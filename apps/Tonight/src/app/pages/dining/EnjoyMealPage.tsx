@@ -1,25 +1,26 @@
-/* EnjoyMealPage — celebration page for currently-dining or upcoming bookings */
-import { useEffect, useState } from "react";
+/* EnjoyMealPage - live or upcoming reservation surface */
+import { useEffect, useState, type ComponentType } from "react";
 import { motion } from "motion/react";
 import {
   ArrowLeft,
-  Clock,
-  MapPin,
-  Users,
   Bell,
   BookOpen,
+  ChevronRight,
+  Clock,
+  Hourglass,
+  MapPin,
+  Navigation,
   QrCode,
   Receipt as ReceiptIcon,
-  PartyPopper,
-  ChevronRight,
-  UtensilsCrossed,
   ScanLine,
-  Navigation,
+  ShieldCheck,
   UserPlus,
-  Hourglass,
+  Users,
+  UtensilsCrossed,
 } from "lucide-react";
 import { ImageWithFallback } from "../../components/figma/ImageWithFallback";
 import { Text } from "../../components/ds/Text";
+import { Button } from "../../components/ds/Button";
 import { useToast } from "../../components/ds/Toast";
 import type { Booking } from "./diningData";
 import { parseBookingDateTime } from "./diningData";
@@ -30,10 +31,7 @@ type Mode = "live" | "upcoming";
 function useTick(intervalMs = 1000) {
   const [now, setNow] = useState(() => new Date());
   useEffect(() => {
-    const id = window.setInterval(
-      () => setNow(new Date()),
-      intervalMs,
-    );
+    const id = window.setInterval(() => setNow(new Date()), intervalMs);
     return () => window.clearInterval(id);
   }, [intervalMs]);
   return now;
@@ -45,9 +43,7 @@ function formatElapsed(start: Date, now: Date) {
   const h = Math.floor(totalMin / 60);
   const m = totalMin % 60;
   const s = Math.floor((diff % 60000) / 1000);
-  return h > 0
-    ? `${h}h ${m}m`
-    : `${m}:${String(s).padStart(2, "0")}`;
+  return h > 0 ? `${h}h ${m}m` : `${m}:${String(s).padStart(2, "0")}`;
 }
 
 function formatRemaining(target: Date, now: Date) {
@@ -60,6 +56,59 @@ function formatRemaining(target: Date, now: Date) {
   if (h > 0) return `${h}h ${String(m).padStart(2, "0")}m`;
   const s = Math.floor((diff % 60000) / 1000);
   return `${m}:${String(s).padStart(2, "0")}`;
+}
+
+function DetailChip({
+  icon: Icon,
+  label,
+}: {
+  icon: ComponentType<{ className?: string; strokeWidth?: number }>;
+  label: string;
+}) {
+  return (
+    <div className="flex min-w-0 items-center gap-2 rounded-full bg-secondary px-3 py-2">
+      <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
+      <Text className="truncate text-[0.8125rem]" style={{ fontWeight: 800 }}>
+        {label}
+      </Text>
+    </div>
+  );
+}
+
+function ActionCard({
+  icon: Icon,
+  label,
+  desc,
+  onClick,
+  primary = false,
+}: {
+  icon: ComponentType<{ className?: string; strokeWidth?: number }>;
+  label: string;
+  desc: string;
+  onClick: () => void;
+  primary?: boolean;
+}) {
+  return (
+    <motion.button
+      type="button"
+      whileTap={{ scale: 0.975 }}
+      onClick={onClick}
+      className={`flex w-full cursor-pointer items-center gap-3 rounded-[1.35rem] border p-3.5 text-left shadow-[0_6px_20px_rgba(0,0,0,0.045)] transition ${
+        primary ? "border-primary/24 bg-primary/8" : "border-border bg-card hover:border-primary/28"
+      }`}
+    >
+      <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full ${primary ? "bg-primary text-primary-foreground" : "bg-secondary text-foreground"}`}>
+        <Icon className="h-5 w-5" />
+      </span>
+      <span className="min-w-0 flex-1">
+        <Text className="truncate text-[0.9375rem]" style={{ fontWeight: 800 }}>
+          {label}
+        </Text>
+        <Text className="mt-0.5 line-clamp-1 text-[0.75rem] text-muted-foreground">{desc}</Text>
+      </span>
+      <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+    </motion.button>
+  );
 }
 
 export function EnjoyMealPage({
@@ -89,299 +138,151 @@ export function EnjoyMealPage({
   const { success } = useToast();
 
   const isLive = mode === "live";
-  const timeLabel = isLive
-    ? `Seated ${start ? formatElapsed(start, now) : "0:00"}`
-    : `Left ${start ? formatRemaining(start, now) : "—"}`;
+  const timeLabel = isLive ? `Seated ${start ? formatElapsed(start, now) : "0:00"}` : `Starts in ${start ? formatRemaining(start, now) : "--"}`;
+  const statusLabel = isLive ? "Live now" : "Upcoming";
 
-  const handleCallServer = () =>
-    success("Server notified", "A staff member is on their way to your table.");
+  const handleCallServer = () => success("Server notified", "A staff member is on their way.");
 
-  const liveActions = [
-    {
-      id: "menu",
-      icon: BookOpen,
-      label: "View menu",
-      desc: "Browse what's on offer",
-      color: "var(--info)",
-      onClick: () => setShowMenu(true),
-    },
-    {
-      id: "server",
-      icon: Bell,
-      label: "Call server",
-      desc: "Get help at your table",
-      color: "var(--warning)",
-      onClick: handleCallServer,
-    },
-    {
-      id: "pay",
-      icon: ReceiptIcon,
-      label: "Scan & pay",
-      desc: "Settle the bill instantly",
-      color: "var(--success)",
-      onClick: onScanPay,
-    },
-  ];
-
-  const upcomingActions = [
-    {
-      id: "menu",
-      icon: BookOpen,
-      label: "Preview menu",
-      desc: "Plan what to order",
-      color: "var(--info)",
-      onClick: () => setShowMenu(true),
-    },
-    {
-      id: "showqr",
-      icon: QrCode,
-      label: "Show QR on arrival",
-      desc: "Skip the host stand check-in",
-      color: "var(--primary)",
-      onClick: onShowQR,
-    },
-    {
-      id: "scanqr",
-      icon: ScanLine,
-      label: "Scan QR to verify arrival",
-      desc: "Quick check-in at the host stand",
-      color: "#8B5CF6",
-      onClick: onScanQR,
-    },
-    {
-      id: "directions",
-      icon: Navigation,
-      label: "Get directions",
-      desc: booking.address,
-      color: "var(--warning)",
-      onClick: onOpenDirections,
-    },
-    {
-      id: "invite",
-      icon: UserPlus,
-      label: "Invite friends",
-      desc: "Share the reservation",
-      color: "var(--success)",
-      onClick: onInvite,
-    },
-  ];
-
-  const actions = isLive ? liveActions : upcomingActions;
-  const heroTitle = isLive
-    ? "Enjoy Your Meal!"
-    : "Get Ready to Dine!";
-  const heroSubtitle = isLive
-    ? "You're now dining at"
-    : "Your reservation is booked at";
-  const liveBadge = isLive
-    ? { label: "LIVE NOW", color: "var(--success)" }
-    : { label: "UPCOMING", color: "var(--primary)" };
-  const HeroIcon = isLive ? PartyPopper : Hourglass;
+  const actions = isLive
+    ? [
+        { id: "pay", icon: ReceiptIcon, label: "Scan and pay", desc: "Settle the bill from your table", primary: true, onClick: onScanPay },
+        { id: "menu", icon: BookOpen, label: "View menu", desc: "Browse tonight's dishes", onClick: () => setShowMenu(true) },
+        { id: "server", icon: Bell, label: "Call server", desc: "Ask for help at the table", onClick: handleCallServer },
+      ]
+    : [
+        { id: "showqr", icon: QrCode, label: "Show QR", desc: "Fast arrival check-in", primary: true, onClick: onShowQR },
+        { id: "invite", icon: UserPlus, label: "Invite friends", desc: "Share this reservation", onClick: onInvite },
+        { id: "directions", icon: Navigation, label: "Directions", desc: booking.address, onClick: onOpenDirections },
+        { id: "scanqr", icon: ScanLine, label: "Scan arrival QR", desc: "Verify at the host stand", onClick: onScanQR },
+        { id: "menu", icon: BookOpen, label: "Preview menu", desc: "Plan what to order", onClick: () => setShowMenu(true) },
+      ];
 
   return (
-    <div className="pb-8 -mt-6">
-      {/* Sticky header */}
-      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-md -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-3 flex items-center gap-2 border-b border-border">
+    <div className="pb-8">
+      <div className="sticky top-0 z-20 -mx-4 mb-4 flex items-center gap-3 bg-background/92 px-4 py-3 backdrop-blur-md sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
         <button
+          type="button"
           onClick={onBack}
-          className="p-2 rounded-full hover:bg-secondary transition"
+          className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full bg-secondary text-foreground transition active:scale-95"
           aria-label="Back"
         >
-          <ArrowLeft className="w-5 h-5" />
+          <ArrowLeft className="h-5 w-5" />
         </button>
-        <Text
-          className="text-[1rem]"
-          style={{ fontWeight: 600 }}
-        >
-          {isLive ? "Now Dining" : "Upcoming Reservation"}
-        </Text>
+        <div className="min-w-0">
+          <Text className="text-[0.9375rem]" style={{ fontWeight: 900 }}>
+            {isLive ? "Now dining" : "Upcoming reservation"}
+          </Text>
+          <Text className="truncate text-[0.75rem] text-muted-foreground">{booking.restaurant}</Text>
+        </div>
       </div>
 
-      {/* Hero */}
       <motion.div
-        initial={{ opacity: 0, y: 16 }}
+        initial={{ opacity: 0, y: 14 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, ease: "easeOut" }}
-        className="relative mt-5 rounded-3xl overflow-hidden"
-        style={{
-          background: isLive
-            ? "linear-gradient(135deg, color-mix(in oklab, var(--primary) 18%, transparent), color-mix(in oklab, var(--warning) 14%, transparent))"
-            : "linear-gradient(135deg, color-mix(in oklab, var(--primary) 18%, transparent), color-mix(in oklab, var(--info) 14%, transparent))",
-        }}
+        transition={{ duration: 0.32, ease: "easeOut" }}
+        className="relative overflow-hidden rounded-[1.75rem]"
       >
-        <div className="absolute inset-0">
-          <ImageWithFallback
-            src={booking.image}
-            alt={booking.restaurant}
-            className="w-full h-full object-cover"
-          />
-        </div>
-        <div
-          className="absolute inset-0"
-          style={{
-            background:
-              "linear-gradient(180deg, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.72) 60%, rgba(0,0,0,0.85) 100%)",
-          }}
-        />
-
-        <div className="relative px-5 pt-6 pb-5 text-center">
-          <motion.div
-            animate={
-              isLive
-                ? { scale: [1, 1.06, 1] }
-                : { opacity: [0.7, 1, 0.7] }
-            }
-            transition={{
-              duration: 1.6,
-              repeat: Infinity,
-              ease: "easeInOut",
-            }}
-            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full mb-3"
-            style={{
-              background: `color-mix(in oklab, ${liveBadge.color} 28%, rgba(0,0,0,0.35))`,
-              color: "#fff",
-            }}
-          >
-            <span
-              className="w-1.5 h-1.5 rounded-full"
-              style={{ background: liveBadge.color }}
-            />
-            <span
-              className="text-[0.6875rem]"
-              style={{
-                fontWeight: 700,
-                letterSpacing: "0.08em",
-              }}
-            >
-              {liveBadge.label}
+        <ImageWithFallback src={booking.image} alt={booking.restaurant} className="h-64 w-full object-cover object-center" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/82 via-black/25 to-black/5" />
+        <div className="absolute inset-x-0 bottom-0 p-5">
+          <div className="mb-3 flex flex-wrap items-center gap-2">
+            <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-white ${isLive ? "bg-success" : "bg-primary"}`}>
+              {isLive ? <UtensilsCrossed className="h-3.5 w-3.5" /> : <Hourglass className="h-3.5 w-3.5" />}
+              <Text className="text-[0.75rem] text-white" style={{ fontWeight: 900 }}>
+                {statusLabel}
+              </Text>
             </span>
-          </motion.div>
-
-          <h2
-            className="text-[1.625rem] mt-1 text-white"
-            style={{
-              fontWeight: 700,
-              textShadow: "0 2px 8px rgba(0,0,0,0.35)",
-            }}
-          >
-            {heroTitle}
-          </h2>
-          <Text className="text-white/85 text-[0.875rem] mt-1">
-            {heroSubtitle}
-          </Text>
-
-          {/* Clickable restaurant name → opens restaurant profile */}
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-white/16 px-3 py-1.5 text-white backdrop-blur">
+              <Clock className="h-3.5 w-3.5" />
+              <Text className="text-[0.75rem] text-white" style={{ fontWeight: 900 }}>
+                {timeLabel}
+              </Text>
+            </span>
+          </div>
           <motion.button
-            whileTap={{ scale: 0.97 }}
+            type="button"
+            whileTap={{ scale: 0.98 }}
             onClick={onOpenRestaurantProfile}
-            className="mt-1 inline-flex items-center gap-1.5 px-3 py-1 rounded-xl hover:bg-white/10 transition group"
+            className="flex max-w-full cursor-pointer items-center gap-1 text-left"
           >
-            <Text
-              className="text-[1.0625rem] text-white"
-              style={{ fontWeight: 700 }}
-            >
+            <Text className="truncate text-[1.65rem] leading-tight text-white" style={{ fontWeight: 900 }}>
               {booking.restaurant}
             </Text>
-            <ChevronRight className="w-4 h-4 text-white/80 group-hover:translate-x-0.5 transition-transform" />
+            <ChevronRight className="h-5 w-5 shrink-0 text-white/75" />
           </motion.button>
-          <Text className="text-white/65 text-[0.6875rem]">
-            Tap to view restaurant profile
-          </Text>
-
-          <div
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full mt-4 backdrop-blur border"
-            style={{
-              background: "rgba(255,255,255,0.14)",
-              borderColor: "rgba(255,255,255,0.22)",
-            }}
-          >
-            <Clock
-              className="w-4 h-4"
-              style={{ color: "#fbbf24" }}
-            />
-            <Text
-              className="text-[0.875rem] text-white"
-              style={{ fontWeight: 600 }}
-            >
-              {timeLabel}
-            </Text>
-          </div>
+          <Text className="mt-1 truncate text-[0.875rem] text-white/78">{booking.cuisine}</Text>
         </div>
       </motion.div>
 
-      {/* Booking details strip */}
-      <div className="grid grid-cols-3 gap-2 mt-4">
-        {[
-          {
-            icon: Users,
-            label: `${booking.guests} ${booking.guests > 1 ? "guests" : "guest"}`,
-          },
-          { icon: Clock, label: booking.time },
-          { icon: MapPin, label: booking.seating },
-        ].map((item, i) => (
-          <div
-            key={i}
-            className="flex flex-col items-center gap-1 p-3 rounded-xl bg-secondary"
-          >
-            <item.icon className="w-4 h-4 text-muted-foreground" />
-            <Text
-              className="text-[0.8125rem]"
-              style={{ fontWeight: 600 }}
-            >
-              {item.label}
+      <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-3">
+        <DetailChip icon={Users} label={`${booking.guests} ${booking.guests > 1 ? "guests" : "guest"}`} />
+        <DetailChip icon={Clock} label={booking.time} />
+        <DetailChip icon={MapPin} label={booking.seating} />
+      </div>
+
+      <div className="mt-5 rounded-[1.5rem] border border-border bg-card p-4 shadow-[0_6px_20px_rgba(0,0,0,0.045)]">
+        <div className="flex items-start gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+            <ShieldCheck className="h-4 w-4" />
+          </div>
+          <div className="min-w-0">
+            <Text className="text-[0.9375rem]" style={{ fontWeight: 900 }}>
+              {isLive ? "Table session is active" : "Ready for arrival"}
+            </Text>
+            <Text className="mt-1 text-[0.8125rem] leading-snug text-muted-foreground">
+              {isLive ? "Your QR session, bill, and table actions are available here." : `Confirmation ${booking.confirmationNo} is linked to this reservation.`}
             </Text>
           </div>
-        ))}
+        </div>
       </div>
 
-      {/* Action cards */}
-      <Text
-        className="text-[0.6875rem] text-muted-foreground mt-6 mb-2 ml-1"
-        style={{ fontWeight: 700, letterSpacing: "0.08em" }}
-      >
-        {isLive ? "WHILE YOU DINE" : "BEFORE YOU ARRIVE"}
+      <Text className="mb-2 mt-5 px-1 text-[1rem]" style={{ fontWeight: 900 }}>
+        {isLive ? "At the table" : "Before you arrive"}
       </Text>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        {actions.map((a) => (
-          <motion.button
-            key={a.id}
-            whileTap={{ scale: 0.97 }}
-            onClick={a.onClick}
-            className="flex items-center gap-3 p-4 rounded-2xl bg-card border border-border hover:border-primary/40 hover:shadow-sm transition text-left"
+      <div className="grid gap-2">
+        {actions.map((action, index) => (
+          <motion.div
+            key={action.id}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.22, delay: index * 0.035 }}
           >
-            <div
-              className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
-              style={{
-                background: `color-mix(in oklab, ${a.color} 14%, transparent)`,
-              }}
-            >
-              <a.icon
-                className="w-5 h-5"
-                style={{ color: a.color }}
-              />
-            </div>
-            <div className="flex-1 min-w-0">
-              <Text
-                className="text-[0.9375rem]"
-                style={{ fontWeight: 600 }}
-              >
-                {a.label}
-              </Text>
-              <Text className="text-muted-foreground text-[0.75rem] truncate">
-                {a.desc}
-              </Text>
-            </div>
-            <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
-          </motion.button>
+            <ActionCard
+              icon={action.icon}
+              label={action.label}
+              desc={action.desc}
+              onClick={action.onClick}
+              primary={"primary" in action && action.primary}
+            />
+          </motion.div>
         ))}
       </div>
 
-      <MenuModal
-        open={showMenu}
-        onClose={() => setShowMenu(false)}
-        booking={booking}
-        variant={isLive ? "order" : "preview"}
-      />
+      {!isLive && (
+        <div className="mt-5 rounded-[1.5rem] bg-secondary/70 p-4">
+          <Text className="text-[0.9375rem]" style={{ fontWeight: 900 }}>
+            Arrival checklist
+          </Text>
+          <div className="mt-3 grid gap-2">
+            {["Bring your QR code", "Share booking code with guests", "Arrive a few minutes early"].map((item) => (
+              <div key={item} className="flex items-center gap-2">
+                <span className="h-2 w-2 rounded-full bg-primary" />
+                <Text className="text-[0.8125rem] text-muted-foreground">{item}</Text>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {isLive && (
+        <div className="mt-5">
+          <Button variant="primary" fullWidth radius="full" className="h-12 font-bold" leftIcon={<ReceiptIcon className="h-4 w-4" />} onClick={onScanPay}>
+            Scan and pay
+          </Button>
+        </div>
+      )}
+
+      <MenuModal open={showMenu} onClose={() => setShowMenu(false)} booking={booking} variant={isLive ? "order" : "preview"} />
     </div>
   );
 }

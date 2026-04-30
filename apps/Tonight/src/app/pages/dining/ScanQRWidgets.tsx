@@ -4,24 +4,40 @@ import { Check, ChevronRight, Sparkles } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { STEPS, type ScanStep } from "./scanQRData";
 
-export function StepProgressBar({ currentStep }: { currentStep: ScanStep }) {
+export function StepProgressBar({ currentStep, complete = false }: { currentStep: ScanStep; complete?: boolean }) {
   const currentIdx = STEPS.findIndex(s => s.id === currentStep);
   return (
-    <div className="flex items-center gap-1 w-full mb-1">
+    <div className="w-full">
+      <div className="mb-2 flex items-center justify-between">
+        <span className="text-[0.75rem] text-muted-foreground" style={{ fontWeight: 800 }}>Progress</span>
+        <span className="text-[0.75rem] text-primary" style={{ fontWeight: 900 }}>{complete ? "Complete" : STEPS[currentIdx]?.label}</span>
+      </div>
+      <div className="flex items-center gap-1.5">
       {STEPS.map((step, i) => {
-        const completed = i < currentIdx; const active = i === currentIdx;
+        const completed = complete || i < currentIdx; const active = !complete && i === currentIdx;
         return (
-          <div key={step.id} className="flex-1 flex flex-col items-center gap-1">
-            <div className={`h-1 w-full rounded-full transition-all duration-500 ${completed ? "bg-success" : active ? "bg-primary" : "bg-border"}`} />
-            <span className={`text-[0.6875rem] transition-colors ${completed ? "text-success" : active ? "text-primary" : "text-muted-foreground/50"}`} style={{ fontWeight: active || completed ? 600 : 400 }}>{step.label}</span>
+          <div key={step.id} className="flex-1">
+            <div className={`h-1.5 w-full overflow-hidden rounded-full transition-colors duration-300 ${completed ? "bg-success" : active ? "bg-primary/22" : "bg-border/70"}`}>
+              {active && (
+                <motion.div
+                  layoutId="active-step-progress"
+                  className="h-full rounded-full bg-primary"
+                  initial={{ width: "25%" }}
+                  animate={{ width: "68%" }}
+                  transition={{ duration: 0.6, repeat: Infinity, repeatType: "reverse", ease: "easeInOut" }}
+                />
+              )}
+            </div>
+            <span className={`mt-1 block truncate text-center text-[0.625rem] transition-colors ${completed ? "text-success" : active ? "text-primary" : "text-muted-foreground/45"}`} style={{ fontWeight: active || completed ? 800 : 500 }}>{step.label}</span>
           </div>
         );
       })}
+      </div>
     </div>
   );
 }
 
-export function QRCodeVisual() {
+export function QRCodeVisual({ active = true }: { active?: boolean }) {
   const pattern = useRef(
     Array.from({ length: 21 }, (_, r) =>
       Array.from({ length: 21 }, (_, c) => {
@@ -38,14 +54,22 @@ export function QRCodeVisual() {
     )
   ).current;
   return (
-    <div className="relative mx-auto w-52 h-52 bg-white rounded-xl p-3 shadow-sm">
-      <div className="absolute top-0 left-0 w-8 h-8 border-t-2 border-l-2 border-primary rounded-tl-xl" />
-      <div className="absolute top-0 right-0 w-8 h-8 border-t-2 border-r-2 border-primary rounded-tr-xl" />
-      <div className="absolute bottom-0 left-0 w-8 h-8 border-b-2 border-l-2 border-primary rounded-bl-xl" />
-      <div className="absolute bottom-0 right-0 w-8 h-8 border-b-2 border-r-2 border-primary rounded-br-xl" />
+    <div className="relative mx-auto h-52 w-52 overflow-hidden rounded-[1.5rem] bg-white p-4 shadow-[0_10px_30px_rgba(0,0,0,0.08)]">
+      <div className="absolute left-2 top-2 h-8 w-8 rounded-tl-[1rem] border-l-2 border-t-2 border-primary" />
+      <div className="absolute right-2 top-2 h-8 w-8 rounded-tr-[1rem] border-r-2 border-t-2 border-primary" />
+      <div className="absolute bottom-2 left-2 h-8 w-8 rounded-bl-[1rem] border-b-2 border-l-2 border-primary" />
+      <div className="absolute bottom-2 right-2 h-8 w-8 rounded-br-[1rem] border-b-2 border-r-2 border-primary" />
       <div className="grid grid-cols-[repeat(21,1fr)] gap-[1px] w-full h-full">
         {pattern.flat().map((filled, i) => <div key={i} className={`rounded-[1px] ${filled ? "bg-foreground/80" : "bg-transparent"}`} />)}
       </div>
+      {active && (
+        <motion.div
+          className="absolute inset-x-4 h-9 rounded-full bg-primary/12 blur-sm"
+          initial={{ top: 18 }}
+          animate={{ top: [18, 170, 18] }}
+          transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }}
+        />
+      )}
     </div>
   );
 }
@@ -81,7 +105,7 @@ export function SlideToPay({ amount, onComplete }: { amount: string; onComplete:
         <AnimatePresence mode="wait">
           {!completed ? (
             <motion.div key="label" className="absolute inset-0 flex items-center justify-center gap-2.5" initial={{ opacity: 1 }} exit={{ opacity: 0, scale: 0.9 }} transition={{ duration: 0.2 }}>
-              <span className="text-[1rem] text-muted-foreground" style={{ opacity: 1 - progress * 1.5, fontWeight: 500 }}>Slide to Pay · {amount}</span>
+              <span className="text-[1rem] text-muted-foreground" style={{ opacity: 1 - progress * 1.5, fontWeight: 500 }}>Slide to Pay - {amount}</span>
             </motion.div>
           ) : (
             <motion.div key="done" className="absolute inset-0 flex items-center justify-center gap-2.5 text-white" initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.4, ease: [0.34, 1.56, 0.64, 1] }}>
@@ -114,7 +138,7 @@ export function ConfettiEffect() {
   const sparkles = useRef(Array.from({ length: 20 }, (_, i) => ({ id: i + 100, x: 10 + Math.random() * 80, y: 10 + Math.random() * 60, delay: Math.random() * 1.5, size: Math.random() * 3 + 2 }))).current;
 
   return (
-    <div className="fixed inset-0 pointer-events-none overflow-hidden z-[201]">
+    <div className="fixed inset-0 pointer-events-none overflow-hidden z-[501]">
       {particles.map(p => (
         <motion.div key={p.id} initial={{ x: `${p.x}vw`, y: "-5vh", rotate: 0, scale: 0, opacity: 0 }} animate={{ y: "110vh", x: `${p.x + p.drift / 3}vw`, rotate: p.rotation, scale: [0, 1.2, 1, 0.8], opacity: [0, p.opacity, p.opacity, 0] }} transition={{ duration: p.duration, delay: p.delay, ease: [0.25, 0.46, 0.45, 0.94] }} style={{ position: "absolute" }}>
           {p.shape === "circle" && <div className="rounded-full" style={{ width: p.size, height: p.size, background: p.color }} />}

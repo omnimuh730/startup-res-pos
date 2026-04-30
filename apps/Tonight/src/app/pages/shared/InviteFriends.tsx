@@ -1,10 +1,10 @@
-import { useState, useEffect } from "react";
-import { Modal, ModalHeader, ModalBody, ModalFooter } from "../../components/ds/Modal";
+import { useEffect, useState } from "react";
+import { AnimatePresence, motion } from "motion/react";
+import { Modal, ModalBody, ModalFooter, ModalHeader } from "../../components/ds/Modal";
 import { Avatar } from "../../components/ds/Avatar";
 import { Text } from "../../components/ds/Text";
 import { Button } from "../../components/ds/Button";
-import { Animate } from "../../components/ds/Animate";
-import { Send, Check, Search, X } from "lucide-react";
+import { Check, Search, Send, UserCheck, UserPlus, X } from "lucide-react";
 
 interface Friend {
   id: string;
@@ -24,6 +24,8 @@ const FRIENDS: Friend[] = [
   { id: "8", name: "Ryan O'Brien", initials: "RO", color: "bg-green-500" },
 ];
 
+type InviteView = "notInvited" | "invited";
+
 interface InviteFriendsProps {
   open: boolean;
   onClose: () => void;
@@ -34,153 +36,215 @@ interface InviteFriendsProps {
   onInvited?: (friendIds: Set<string>) => void;
 }
 
-export function InviteFriends({ open, onClose, restaurantName, date, time, alreadyInvited, onInvited }: InviteFriendsProps) {
+export function InviteFriends({
+  open,
+  onClose,
+  restaurantName,
+  date,
+  time,
+  alreadyInvited,
+  onInvited,
+}: InviteFriendsProps) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState("");
   const [sent, setSent] = useState(false);
+  const [view, setView] = useState<InviteView>("notInvited");
 
-  // Sync already-invited friends when dialog opens
   useEffect(() => {
-    if (open && alreadyInvited) {
-      setSelected(new Set(alreadyInvited));
-    }
+    if (!open) return;
+    setSelected(new Set(alreadyInvited ?? []));
+    setView("notInvited");
   }, [open, alreadyInvited]);
 
   const toggle = (id: string) => {
-    setSelected(prev => {
-      const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
+    setSelected((current) => {
+      const next = new Set(current);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
       return next;
     });
   };
 
-  const filtered = FRIENDS.filter(f =>
-    f.name.toLowerCase().includes(search.toLowerCase())
-  );
-
-  const newSelections = alreadyInvited
-    ? new Set([...selected].filter(id => !alreadyInvited.has(id)))
-    : selected;
+  const filtered = FRIENDS.filter((friend) => friend.name.toLowerCase().includes(search.toLowerCase()));
+  const invitedFriends = filtered.filter((friend) => selected.has(friend.id));
+  const notInvitedFriends = filtered.filter((friend) => !selected.has(friend.id));
+  const visibleFriends = view === "invited" ? invitedFriends : notInvitedFriends;
+  const newSelections = alreadyInvited ? new Set([...selected].filter((id) => !alreadyInvited.has(id))) : selected;
+  const previousInvites = alreadyInvited ?? new Set<string>();
+  const hasChanges = selected.size !== previousInvites.size || [...selected].some((id) => !previousInvites.has(id));
 
   const handleSend = () => {
     setSent(true);
     onInvited?.(new Set(selected));
-    setTimeout(() => {
+    window.setTimeout(() => {
       setSent(false);
       onClose();
-    }, 1800);
+    }, 1500);
   };
 
   const handleClose = () => {
     setSent(false);
     setSelected(new Set());
     setSearch("");
+    setView("notInvited");
     onClose();
   };
 
+  const sendLabel = newSelections.size > 0
+    ? `Send ${newSelections.size} invite${newSelections.size > 1 ? "s" : ""}`
+    : hasChanges
+      ? "Update invites"
+      : "Select friends";
+
   return (
-    <Modal open={open} onClose={handleClose} size="md">
-      <ModalHeader>
-        <div>
-          <h3 className="text-[1.0625rem]" style={{ fontWeight: 600 }}>Invite Friends</h3>
-          <Text className="text-muted-foreground text-[0.875rem] mt-0.5">
-            {restaurantName} · {date} · {time}
-          </Text>
+    <Modal open={open} onClose={handleClose} size="md" className="rounded-[2rem]">
+      <ModalHeader className="px-5 pt-5">
+        <div className="flex items-start gap-3">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+            <UserPlus className="h-5 w-5" />
+          </div>
+          <div className="min-w-0">
+            <h3 className="text-[1.125rem]" style={{ fontWeight: 900 }}>Invite friends</h3>
+            <Text className="mt-0.5 line-clamp-2 text-[0.8125rem] leading-snug text-muted-foreground">
+              {restaurantName} - {date} - {time}
+            </Text>
+          </div>
         </div>
       </ModalHeader>
-      <ModalBody>
+
+      <ModalBody className="px-5 py-4">
         {sent ? (
-          <Animate preset="scaleIn" duration={0.4}>
-            <div className="flex flex-col items-center text-center py-8">
-              <div className="w-16 h-16 rounded-full bg-success/10 flex items-center justify-center mb-4">
-                <Check className="w-8 h-8 text-success" />
-              </div>
-              <Text style={{ fontWeight: 600 }} className="text-[1.0625rem] mb-1">
-                {newSelections.size > 0 ? `${newSelections.size} Invite${newSelections.size > 1 ? "s" : ""} Sent!` : "Updated!"}
-              </Text>
-              <Text className="text-muted-foreground text-[0.9375rem]">
-                Your friends will receive a notification
-              </Text>
-            </div>
-          </Animate>
+          <motion.div
+            initial={{ opacity: 0, scale: 0.92 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.25, ease: "easeOut" }}
+            className="flex flex-col items-center py-8 text-center"
+          >
+            <motion.div
+              initial={{ scale: 0.7 }}
+              animate={{ scale: [1.1, 0.96, 1] }}
+              transition={{ duration: 0.4, ease: "easeOut" }}
+              className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-success/10 text-success"
+            >
+              <Check className="h-8 w-8" />
+            </motion.div>
+            <Text className="text-[1.0625rem]" style={{ fontWeight: 900 }}>
+              {newSelections.size > 0 ? `${newSelections.size} invite${newSelections.size > 1 ? "s" : ""} sent` : "Invites updated"}
+            </Text>
+            <Text className="mt-1 text-[0.875rem] text-muted-foreground">Your reservation list is up to date.</Text>
+          </motion.div>
         ) : (
           <>
-            {/* Search */}
-            <div className="relative mb-4">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <div className="relative mb-3">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <input
                 type="text"
-                placeholder="Search friends..."
+                placeholder="Search friends"
                 value={search}
-                onChange={e => setSearch(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-border bg-card text-[0.9375rem] focus:outline-none focus:ring-2 focus:ring-primary/30"
+                onChange={(event) => setSearch(event.target.value)}
+                className="h-11 w-full rounded-full border border-border bg-secondary/55 pl-10 pr-10 text-[0.9375rem] outline-none transition focus:border-primary focus:bg-card focus:ring-2 focus:ring-primary/15"
               />
               {search && (
-                <button onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2">
-                  <X className="w-4 h-4 text-muted-foreground" />
+                <button type="button" onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1">
+                  <X className="h-4 w-4 text-muted-foreground" />
                 </button>
               )}
             </div>
 
-            {/* Header */}
-            <div className="flex items-center justify-between mb-3">
-              <Text className="text-[0.9375rem]" style={{ fontWeight: 600 }}>Select Friends</Text>
-              <Text className="text-muted-foreground text-[0.875rem]">
-                {selected.size > 0 ? `${selected.size} selected` : "None selected"}
-              </Text>
-            </div>
-
-            {/* Friend Grid */}
-            <div className="grid grid-cols-2 gap-2">
-              {filtered.map(friend => {
-                const isSelected = selected.has(friend.id);
-                const wasAlreadyInvited = alreadyInvited?.has(friend.id);
+            <div className="mb-4 grid grid-cols-2 gap-2 rounded-full bg-secondary/65 p-1">
+              {[
+                { id: "notInvited" as const, label: "Not invited", count: notInvitedFriends.length, icon: UserPlus },
+                { id: "invited" as const, label: "Invited", count: invitedFriends.length, icon: UserCheck },
+              ].map((option) => {
+                const Icon = option.icon;
+                const active = view === option.id;
                 return (
                   <button
-                    key={friend.id}
-                    onClick={() => toggle(friend.id)}
-                    className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl transition-all text-left ${
-                      isSelected
-                        ? "bg-primary/5 border-2 border-primary"
-                        : "bg-secondary border-2 border-transparent hover:bg-secondary/80"
+                    key={option.id}
+                    type="button"
+                    onClick={() => setView(option.id)}
+                    className={`flex h-9 min-w-0 cursor-pointer items-center justify-center gap-1.5 rounded-full px-2 text-[0.8125rem] transition ${
+                      active ? "bg-card text-foreground shadow-sm" : "text-muted-foreground"
                     }`}
+                    style={{ fontWeight: 900 }}
                   >
-                    <Avatar name={friend.name} size="sm" />
-                    <div className="flex-1 min-w-0">
-                      <Text className="text-[0.875rem] truncate" style={{ fontWeight: isSelected ? 500 : 400 }}>
-                        {friend.name}
-                      </Text>
-                      {wasAlreadyInvited && isSelected && (
-                        <Text className="text-[0.6875rem] text-success">Invited</Text>
-                      )}
-                    </div>
-                    {isSelected && (
-                      <Check className="w-4 h-4 text-primary shrink-0" />
-                    )}
+                    <Icon className="h-3.5 w-3.5 shrink-0" />
+                    <span className="truncate">{option.label}</span>
+                    <span className={`flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[0.625rem] ${active ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground"}`}>
+                      {option.count}
+                    </span>
                   </button>
                 );
               })}
             </div>
 
-            {filtered.length === 0 && (
-              <div className="py-8 text-center">
-                <Text className="text-muted-foreground text-[0.9375rem]">No friends found</Text>
+            <div className="mb-3 flex items-center justify-between px-1">
+              <Text className="text-[0.9375rem]" style={{ fontWeight: 900 }}>
+                {view === "invited" ? "Already invited" : "Available friends"}
+              </Text>
+              <Text className="text-[0.8125rem] text-muted-foreground">{selected.size} selected</Text>
+            </div>
+
+            <div className="max-h-[42vh] space-y-2 overflow-y-auto pr-1">
+              <AnimatePresence mode="popLayout">
+                {visibleFriends.map((friend) => {
+                  const isSelected = selected.has(friend.id);
+                  const wasAlreadyInvited = alreadyInvited?.has(friend.id);
+                  return (
+                    <motion.button
+                      layout
+                      key={friend.id}
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -8 }}
+                      whileTap={{ scale: 0.985 }}
+                      type="button"
+                      onClick={() => toggle(friend.id)}
+                      className={`flex w-full cursor-pointer items-center gap-3 rounded-[1.25rem] border p-3 text-left transition ${
+                        isSelected ? "border-primary/35 bg-primary/8" : "border-border bg-card hover:border-primary/25"
+                      }`}
+                    >
+                      <Avatar name={friend.name} size="sm" />
+                      <div className="min-w-0 flex-1">
+                        <Text className="truncate text-[0.9375rem]" style={{ fontWeight: 800 }}>
+                          {friend.name}
+                        </Text>
+                        <Text className={`text-[0.75rem] ${isSelected ? "text-primary" : "text-muted-foreground"}`}>
+                          {wasAlreadyInvited ? "Previously invited" : isSelected ? "Ready to send" : "Not invited"}
+                        </Text>
+                      </div>
+                      <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${isSelected ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground"}`}>
+                        {isSelected ? <Check className="h-4 w-4" /> : <UserPlus className="h-3.5 w-3.5" />}
+                      </span>
+                    </motion.button>
+                  );
+                })}
+              </AnimatePresence>
+            </div>
+
+            {visibleFriends.length === 0 && (
+              <div className="rounded-[1.5rem] bg-secondary/60 px-5 py-8 text-center">
+                <Text className="text-[0.9375rem] text-muted-foreground">
+                  {view === "invited" ? "No invited friends match this search." : "No available friends match this search."}
+                </Text>
               </div>
             )}
           </>
         )}
       </ModalBody>
+
       {!sent && (
-        <ModalFooter>
+        <ModalFooter className="px-5">
           <Button
             variant="primary"
             fullWidth
             radius="full"
+            className="h-12 font-bold"
             onClick={handleSend}
-            disabled={selected.size === 0}
-            leftIcon={<Send className="w-4 h-4" />}
+            disabled={!hasChanges && selected.size === 0}
+            leftIcon={<Send className="h-4 w-4" />}
           >
-            {selected.size > 0 ? `Send ${selected.size} Invite${selected.size > 1 ? "s" : ""}` : "Select friends to invite"}
+            {sendLabel}
           </Button>
         </ModalFooter>
       )}

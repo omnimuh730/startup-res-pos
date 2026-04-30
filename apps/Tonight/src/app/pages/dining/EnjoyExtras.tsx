@@ -1,21 +1,16 @@
-/* MenuModal + OrderReceiptModal — supporting modals for EnjoyMealPage and visited bookings */
+/* MenuModal + OrderReceiptModal - supporting modals for EnjoyMealPage and visited bookings */
 import { motion } from "motion/react";
-import {
-  Modal,
-  ModalBody,
-  ModalFooter,
-} from "../../components/ds/Modal";
+import { Modal, ModalBody, ModalFooter } from "../../components/ds/Modal";
 import { Text, Heading } from "../../components/ds/Text";
 import { Button } from "../../components/ds/Button";
 import { ImageWithFallback } from "../../components/figma/ImageWithFallback";
 import {
   BookOpen,
-  Receipt as ReceiptIcon,
-  Sparkles,
-  Download,
-  Share2,
-  X,
   CreditCard,
+  Download,
+  Receipt as ReceiptIcon,
+  Share2,
+  Sparkles,
   Star,
 } from "lucide-react";
 import type { Booking } from "./diningData";
@@ -26,6 +21,16 @@ const fmt = (n: number) =>
     style: "currency",
     currency: "USD",
   });
+
+function itemMark(name: string) {
+  return name
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join("")
+    .toUpperCase();
+}
 
 export function MenuModal({
   open,
@@ -43,98 +48,66 @@ export function MenuModal({
   const isPreview = variant === "preview";
 
   return (
-    <Modal open={open} onClose={onClose} size="md">
-      <ModalBody>
-        <div className="relative -mx-6 -mt-6 mb-4 h-28 overflow-hidden rounded-t-2xl">
-          <ImageWithFallback
-            src={booking.image}
-            alt={booking.restaurant}
-            className="w-full h-full object-cover"
-          />
-          <div
-            className="absolute inset-0"
-            style={{
-              background:
-                "linear-gradient(180deg, transparent, rgba(0,0,0,0.8))",
-            }}
-          />
-          <div className="absolute inset-x-0 bottom-0 p-4 text-white">
-            <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-white/20 backdrop-blur mb-1">
-              <BookOpen className="w-3 h-3" />
-              <span
-                className="text-[0.625rem]"
-                style={{
-                  fontWeight: 700,
-                  letterSpacing: "0.06em",
-                }}
-              >
-                {isPreview ? "MENU PREVIEW" : "MENU"}
-              </span>
-            </div>
-            <Text
-              className="text-white text-[1.0625rem]"
-              style={{ fontWeight: 700 }}
-            >
+    <Modal open={open} onClose={onClose} size="md" className="rounded-[2rem]">
+      <ModalBody className="px-5 pt-5">
+        <div className="relative -mx-5 -mt-5 mb-5 h-36 overflow-hidden rounded-t-[2rem]">
+          <ImageWithFallback src={booking.image} alt={booking.restaurant} className="h-full w-full object-cover object-center" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/78 via-black/25 to-transparent" />
+          <div className="absolute bottom-4 left-5 right-5 text-white">
+            <span className="mb-2 inline-flex items-center gap-1.5 rounded-full bg-white/18 px-2.5 py-1 text-[0.6875rem] backdrop-blur" style={{ fontWeight: 800 }}>
+              <BookOpen className="h-3.5 w-3.5" />
+              {isPreview ? "Preview menu" : "Menu"}
+            </span>
+            <Text className="truncate text-[1.125rem] text-white" style={{ fontWeight: 800 }}>
               {booking.restaurant}
+            </Text>
+            <Text className="truncate text-[0.8125rem] text-white/78">View only. Your server will take the order.</Text>
+          </div>
+        </div>
+
+        <div className="mb-3 flex items-center justify-between">
+          <div>
+            <Heading level={4}>{isPreview ? "Plan ahead" : "Tonight picks"}</Heading>
+            <Text className="mt-0.5 text-[0.8125rem] text-muted-foreground">{menu.length} dishes available</Text>
+          </div>
+          <div className="rounded-full bg-primary/10 px-3 py-1.5 text-primary">
+            <Text className="text-[0.75rem] text-primary" style={{ fontWeight: 800 }}>
+              {booking.cuisine.split(" ")[0].trim()}
             </Text>
           </div>
         </div>
 
-        <Text className="text-muted-foreground text-[0.75rem] text-center mb-2">
-          View only · your server will take your order
-        </Text>
-        <div className="space-y-3 max-h-[55vh] overflow-y-auto pr-1">
-          {menu.map((item) => (
-            <div
+        <div className="max-h-[55vh] space-y-2 overflow-y-auto pr-1">
+          {menu.map((item, index) => (
+            <motion.div
               key={item.name}
-              className="flex items-center gap-3 p-3 rounded-2xl bg-secondary/60"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.22, delay: index * 0.035 }}
+              className="flex items-center gap-3 rounded-[1.25rem] border border-border bg-card p-3 shadow-[0_5px_18px_rgba(0,0,0,0.035)]"
             >
-              <div
-                className="w-12 h-12 rounded-xl bg-card flex items-center justify-center shrink-0"
-                style={{ fontSize: "1.5rem" }}
-              >
-                {item.emoji}
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[1rem] bg-secondary text-[0.8125rem] text-foreground" style={{ fontWeight: 900 }}>
+                {itemMark(item.name)}
               </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-1.5">
-                  <Text
-                    className="text-[0.9375rem]"
-                    style={{ fontWeight: 600 }}
-                  >
+              <div className="min-w-0 flex-1">
+                <div className="flex min-w-0 items-center gap-1.5">
+                  <Text className="truncate text-[0.9375rem]" style={{ fontWeight: 800 }}>
                     {item.name}
                   </Text>
-                  {item.popular && (
-                    <Sparkles
-                      className="w-3 h-3"
-                      style={{ color: "var(--warning)" }}
-                    />
-                  )}
+                  {item.popular && <Sparkles className="h-3.5 w-3.5 shrink-0 text-warning" />}
                 </div>
-                <Text className="text-muted-foreground text-[0.75rem]">
-                  {item.description}
-                </Text>
+                <Text className="mt-0.5 line-clamp-2 text-[0.75rem] leading-snug text-muted-foreground">{item.description}</Text>
               </div>
-              <Text
-                className="text-[0.9375rem] shrink-0"
-                style={{
-                  fontWeight: 700,
-                  color: "var(--primary)",
-                }}
-              >
+              <Text className="shrink-0 text-[0.9375rem] text-primary" style={{ fontWeight: 900 }}>
                 {fmt(item.price)}
               </Text>
-            </div>
+            </motion.div>
           ))}
         </div>
       </ModalBody>
-      <ModalFooter>
-        <Button
-          variant="primary"
-          radius="full"
-          fullWidth
-          onClick={onClose}
-        >
-          Close
+      <ModalFooter className="px-5">
+        <Button variant="primary" radius="full" fullWidth className="font-bold" onClick={onClose}>
+          Done
         </Button>
       </ModalFooter>
     </Modal>
@@ -151,178 +124,114 @@ export function OrderReceiptModal({
   booking: Booking | null;
 }) {
   if (!booking) return null;
-  const r = booking.receipt;
+  const receipt = booking.receipt;
 
   return (
-    <Modal open={open} onClose={onClose} size="md">
-      <ModalBody>
-        <div className="text-center pt-1 pb-3">
+    <Modal open={open} onClose={onClose} size="md" className="rounded-[2rem]">
+      <ModalBody className="px-5 py-5">
+        <div className="mb-5 flex items-center gap-3">
           <motion.div
-            initial={{ scale: 0.7, rotate: -8 }}
-            animate={{ scale: 1, rotate: 0 }}
-            transition={{ duration: 0.4, ease: "easeOut" }}
-            className="w-14 h-14 rounded-full mx-auto flex items-center justify-center mb-2"
-            style={{
-              background:
-                "color-mix(in oklab, var(--success) 14%, transparent)",
-            }}
+            initial={{ scale: 0.75, rotate: -10, opacity: 0 }}
+            animate={{ scale: [1.08, 0.98, 1], rotate: 0, opacity: 1 }}
+            transition={{ duration: 0.38, ease: "easeOut" }}
+            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-success/10 text-success"
           >
-            <ReceiptIcon
-              className="w-7 h-7"
-              style={{ color: "var(--success)" }}
-            />
+            <ReceiptIcon className="h-5 w-5" />
           </motion.div>
-          <Heading level={4}>Order Receipt</Heading>
-          <Text className="text-muted-foreground text-[0.8125rem] mt-1">
-            {booking.restaurant}
-          </Text>
+          <div className="min-w-0">
+            <Heading level={4}>Order receipt</Heading>
+            <Text className="mt-0.5 truncate text-[0.8125rem] text-muted-foreground">{booking.restaurant}</Text>
+          </div>
         </div>
 
-        {!r ? (
-          <div className="text-center py-8">
-            <Text className="text-muted-foreground text-[0.875rem]">
-              No receipt available for this visit.
-            </Text>
+        {!receipt ? (
+          <div className="rounded-[1.5rem] border border-border bg-secondary/50 px-5 py-9 text-center">
+            <Text className="text-[0.9375rem] text-muted-foreground">No receipt available for this visit.</Text>
           </div>
         ) : (
-          <>
-            {/* Punched paper aesthetic */}
-            <div className="relative rounded-2xl bg-card border border-border p-5">
-              <div className="absolute -top-1.5 left-0 right-0 h-3 flex justify-around overflow-hidden">
-                {Array.from({ length: 18 }).map((_, i) => (
-                  <div
-                    key={i}
-                    className="w-2 h-3 rounded-full bg-background"
-                  />
-                ))}
-              </div>
-              <div className="absolute -bottom-1.5 left-0 right-0 h-3 flex justify-around overflow-hidden">
-                {Array.from({ length: 18 }).map((_, i) => (
-                  <div
-                    key={i}
-                    className="w-2 h-3 rounded-full bg-background"
-                  />
-                ))}
-              </div>
+          <div className="overflow-hidden rounded-[1.5rem] border border-border bg-card shadow-[0_8px_24px_rgba(0,0,0,0.055)]">
+            <div className="border-b border-dashed border-border bg-secondary/55 px-4 py-4 text-center">
+              <Text className="text-[0.9375rem]" style={{ fontWeight: 900 }}>
+                {booking.restaurant}
+              </Text>
+              <Text className="mx-auto mt-1 max-w-xs text-[0.6875rem] leading-snug text-muted-foreground">{booking.address}</Text>
+              <Text className="mt-2 text-[0.75rem] text-muted-foreground">{receipt.paidAt}</Text>
+            </div>
 
-              <div className="text-center mb-3 pb-3 border-b border-dashed border-border">
-                <Text
-                  className="text-[0.9375rem]"
-                  style={{ fontWeight: 700 }}
+            <div className="max-h-[38vh] overflow-y-auto px-4 py-3">
+              {receipt.items.map((item, index) => (
+                <motion.div
+                  key={`${item.name}-${index}`}
+                  initial={{ opacity: 0, x: -8 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.2, delay: index * 0.025 }}
+                  className="flex items-center gap-3 py-2.5"
                 >
-                  {booking.restaurant}
-                </Text>
-                <Text className="text-muted-foreground text-[0.6875rem]">
-                  {booking.address}
-                </Text>
-                <Text className="text-muted-foreground text-[0.6875rem] mt-1">
-                  {r.paidAt}
-                </Text>
-                <Text className="text-muted-foreground text-[0.6875rem]">
-                  Confirmation: {booking.confirmationNo}
-                </Text>
-              </div>
-
-              <div className="space-y-2 mb-3">
-                {r.items.map((item, i) => (
-                  <div
-                    key={i}
-                    className="flex items-center gap-2 text-[0.875rem]"
-                  >
-                    <span className="text-[1rem]">
-                      {item.emoji}
-                    </span>
-                    <Text className="flex-1 min-w-0">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-secondary text-[0.6875rem]" style={{ fontWeight: 900 }}>
+                    {itemMark(item.name)}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <Text className="truncate text-[0.875rem]" style={{ fontWeight: 700 }}>
                       {item.name}
                     </Text>
-                    <Text className="text-muted-foreground text-[0.75rem]">
-                      ×{item.qty}
-                    </Text>
-                    <Text style={{ fontWeight: 600 }}>
-                      {fmt(item.price * item.qty)}
-                    </Text>
+                    <Text className="text-[0.75rem] text-muted-foreground">Qty {item.qty}</Text>
                   </div>
-                ))}
-              </div>
+                  <Text className="text-[0.875rem]" style={{ fontWeight: 800 }}>
+                    {fmt(item.price * item.qty)}
+                  </Text>
+                </motion.div>
+              ))}
+            </div>
 
-              <div className="space-y-1 pt-3 border-t border-dashed border-border text-[0.875rem]">
+            <div className="border-t border-dashed border-border px-4 py-4">
+              <div className="space-y-2 text-[0.875rem]">
                 <div className="flex justify-between">
-                  <Text className="text-muted-foreground">
-                    Subtotal
-                  </Text>
-                  <Text>{fmt(r.subtotal)}</Text>
+                  <Text className="text-muted-foreground">Subtotal</Text>
+                  <Text>{fmt(receipt.subtotal)}</Text>
                 </div>
                 <div className="flex justify-between">
-                  <Text className="text-muted-foreground">
-                    Tax
-                  </Text>
-                  <Text>{fmt(r.tax)}</Text>
+                  <Text className="text-muted-foreground">Tax</Text>
+                  <Text>{fmt(receipt.tax)}</Text>
                 </div>
                 <div className="flex justify-between">
-                  <Text className="text-muted-foreground">
-                    Tip
-                  </Text>
-                  <Text>{fmt(r.tip)}</Text>
+                  <Text className="text-muted-foreground">Tip</Text>
+                  <Text>{fmt(receipt.tip)}</Text>
                 </div>
-                <div className="flex justify-between pt-2 mt-2 border-t border-border">
-                  <Text
-                    className="text-[1rem]"
-                    style={{ fontWeight: 700 }}
-                  >
+                <div className="mt-3 flex items-center justify-between rounded-[1rem] bg-primary/8 px-3 py-2.5">
+                  <Text className="text-[1rem]" style={{ fontWeight: 900 }}>
                     Total
                   </Text>
-                  <Text
-                    className="text-[1rem]"
-                    style={{
-                      fontWeight: 700,
-                      color: "var(--primary)",
-                    }}
-                  >
-                    {fmt(r.total)}
+                  <Text className="text-[1.125rem] text-primary" style={{ fontWeight: 900 }}>
+                    {fmt(receipt.total)}
                   </Text>
                 </div>
               </div>
 
-              <div className="flex items-center gap-2 mt-4 p-2.5 rounded-xl bg-secondary/60 text-[0.8125rem]">
-                <CreditCard className="w-4 h-4 text-muted-foreground" />
-                <Text className="text-muted-foreground">
-                  Paid with
-                </Text>
-                <Text style={{ fontWeight: 600 }}>
-                  {r.paymentMethod}
+              <div className="mt-3 flex items-center gap-2 rounded-[1rem] bg-secondary/70 px-3 py-2">
+                <CreditCard className="h-4 w-4 shrink-0 text-muted-foreground" />
+                <Text className="text-[0.8125rem] text-muted-foreground">Paid with</Text>
+                <Text className="truncate text-[0.8125rem]" style={{ fontWeight: 800 }}>
+                  {receipt.paymentMethod}
                 </Text>
               </div>
 
               {booking.rating != null && (
-                <div className="flex items-center justify-center gap-1.5 mt-3">
-                  <Star className="w-4 h-4 text-warning fill-warning" />
-                  <Text
-                    className="text-[0.8125rem]"
-                    style={{ fontWeight: 600 }}
-                  >
-                    {booking.rating} · Your rating
+                <div className="mt-3 flex items-center justify-center gap-1.5">
+                  <Star className="h-4 w-4 fill-warning text-warning" />
+                  <Text className="text-[0.8125rem]" style={{ fontWeight: 800 }}>
+                    {booking.rating} - Your rating
                   </Text>
                 </div>
               )}
             </div>
-          </>
+          </div>
         )}
       </ModalBody>
-      <ModalFooter>
-        <Button
-          variant="outline"
-          radius="full"
-          leftIcon={<Download className="w-4 h-4" />}
-          className="flex-1"
-        >
+      <ModalFooter className="px-5">
+        <Button variant="outline" radius="full" leftIcon={<Download className="h-4 w-4" />} className="flex-1 font-bold">
           Save
         </Button>
-        <Button
-          variant="primary"
-          radius="full"
-          leftIcon={<Share2 className="w-4 h-4" />}
-          className="flex-1"
-        >
+        <Button variant="primary" radius="full" leftIcon={<Share2 className="h-4 w-4" />} className="flex-1 font-bold">
           Share
         </Button>
       </ModalFooter>

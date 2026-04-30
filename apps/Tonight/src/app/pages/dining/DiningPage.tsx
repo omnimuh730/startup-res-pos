@@ -2,7 +2,7 @@
 import { useState } from "react";
 import type { ComponentType } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, type Variants } from "framer-motion";
 import { Text } from "../../components/ds/Text";
 import { Button } from "../../components/ds/Button";
 import { CalendarPlus, CheckCircle, XCircle, MapPin, ChevronRight, Plus, ShieldCheck, TicketCheck } from "lucide-react";
@@ -18,14 +18,14 @@ import { OrderReceiptModal } from "./EnjoyExtras";
 import { type Booking, type BookingStatus, BOOKINGS, bookingToRestaurant, isCurrentlyDining } from "./diningData";
 
 // Premium Apple/Airbnb style spring animations
-const springTransition = { type: "spring", stiffness: 300, damping: 28 };
+const springTransition = { type: "spring", stiffness: 300, damping: 28 } as const;
 
-const staggerContainer = {
+const staggerContainer: Variants = {
   hidden: { opacity: 0 },
   show: { opacity: 1, transition: { staggerChildren: 0.08 } }
 };
 
-const itemVariant = {
+const itemVariant: Variants = {
   hidden: { opacity: 0, y: 15, scale: 0.96 },
   show: { opacity: 1, y: 0, scale: 1, transition: springTransition }
 };
