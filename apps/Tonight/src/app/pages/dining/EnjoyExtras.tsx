@@ -6,12 +6,12 @@ import { Button } from "../../components/ds/Button";
 import { ImageWithFallback } from "../../components/figma/ImageWithFallback";
 import {
   BookOpen,
-  CreditCard,
   Download,
   Receipt as ReceiptIcon,
   Share2,
   Sparkles,
   Star,
+  WalletCards,
 } from "lucide-react";
 import type { Booking } from "./diningData";
 import { getMenuFor } from "./diningData";
@@ -208,7 +208,7 @@ export function OrderReceiptModal({
               </div>
 
               <div className="mt-3 flex items-center gap-2 rounded-[1rem] bg-secondary/70 px-3 py-2">
-                <CreditCard className="h-4 w-4 shrink-0 text-muted-foreground" />
+                <WalletCards className="h-4 w-4 shrink-0 text-muted-foreground" />
                 <Text className="text-[0.8125rem] text-muted-foreground">Paid with</Text>
                 <Text className="truncate text-[0.8125rem]" style={{ fontWeight: 800 }}>
                   {receipt.paymentMethod}

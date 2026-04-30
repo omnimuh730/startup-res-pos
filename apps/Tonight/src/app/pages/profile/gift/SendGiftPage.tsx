@@ -1,21 +1,7 @@
 import { useState } from "react";
 import { ArrowLeft, Delete, ArrowLeftRight, User, Sparkles } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-
-// Custom Brand Logo
-const BrandLogo = ({ className = "w-8 h-8" }) => (
-  <svg viewBox="0 0 120 100" fill="none" xmlns="http://www.w3.org/2000/svg" className={className}>
-    <g transform="translate(0, 0)">
-      <circle cx="20" cy="50" r="12" fill="currentColor" />
-      <path
-        fillRule="evenodd"
-        clipRule="evenodd"
-        d="M75 85C94.33 85 110 69.33 110 50C110 30.67 94.33 15 75 15C55.67 15 40 30.67 40 50C40 69.33 55.67 85 75 85ZM75 62C81.627 62 87 56.627 87 50C87 43.373 81.627 38 75 38C68.373 38 63 43.373 63 50C63 56.627 68.373 62 75 62Z"
-        fill="currentColor"
-      />
-    </g>
-  </svg>
-);
+import { TonightLogoMark } from "../../../utils/brand/TonightLogo";
 
 export function SendGiftPage({ onBack }: { onBack: () => void }) {
   const [currency, setCurrency] = useState<"KRW" | "USD">("USD");
@@ -136,7 +122,7 @@ export function SendGiftPage({ onBack }: { onBack: () => void }) {
           
           <div className="flex justify-between items-start relative z-10">
             <div className="bg-white/20 p-2 rounded-[0.625rem] backdrop-blur-md text-white">
-              <BrandLogo className="w-6 h-6" />
+              <TonightLogoMark className="w-6 h-6" color="currentColor" />
             </div>
             <Sparkles className="w-5 h-5 text-white/50" />
           </div>

@@ -13,6 +13,7 @@ import { NotificationsView } from "./profile/notification/NotificationsView";
 import type { RestaurantData } from "./detail/RestaurantDetailView";
 import type { SearchResultFood } from "./discover/discoverTypes";
 import { _savedRIds, _savedFNames, _notifySaved, incrementSavedSnapshot } from "./discover/savedStore";
+import { TonightLogoMark } from "../utils/brand/TonightLogo";
 
 const TABS = [
   { id: "discover", label: "Discover", icon: Home, isLogo: true },
@@ -85,12 +86,7 @@ function SparkleEffect({ active }: { active: boolean }) {
 /* ── CatchTable Logo Icon ───────────────────────── */
 function CatchTableIcon({ className, isActive }: { className?: string; isActive?: boolean }) {
   const color = isActive ? "var(--primary)" : "var(--muted-foreground)";
-  return (
-    <svg viewBox="0 0 28 28" fill="none" className={className}>
-      <path d="M14 4.5a9.5 9.5 0 1 0 0 19 9.5 9.5 0 0 0 0-19zm0 6.7a2.8 2.8 0 1 1 0 5.6 2.8 2.8 0 0 1 0-5.6z" fill={color} fillRule="evenodd" />
-      <circle cx="1.8" cy="14" r="1.8" fill={color} />
-    </svg>
-  );
+  return <TonightLogoMark className={className} color={color} title="Tonight" />;
 }
 
 /* ── Tab Button ─────────────────────────────────── */
@@ -207,7 +203,7 @@ function SidebarNav({
     <aside className="hidden lg:flex flex-col w-60 xl:w-64 border-r border-border bg-card shrink-0 sticky top-0 h-screen">
       <div className="p-6 pb-4">
         <h1 className="text-[1.25rem] text-primary" style={{ fontWeight: 700 }}>
-          CatchTable
+          Tonight
         </h1>
         <p className="text-muted-foreground text-[0.75rem] mt-0.5">Restaurant Reservations</p>
       </div>

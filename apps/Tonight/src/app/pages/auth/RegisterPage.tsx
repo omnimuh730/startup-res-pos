@@ -253,7 +253,7 @@ export function RegisterPage(props: RegisterPageProps = {}) {
                       setSecurityQA(updated);
                       setFeedback(null);
                     }}
-                    className="mb-2 h-11 w-full cursor-pointer appearance-none rounded-full bg-secondary px-4 text-[0.8125rem] text-foreground outline-none focus:ring-2 focus:ring-primary/15"
+                    className="mb-2 h-11 w-full cursor-pointer appearance-none rounded-full bg-secondary px-4 text-[0.8125rem] outline-none focus:ring-2 focus:ring-primary/15"
                   >
                     {availableQuestions.map((question) => <option key={question} value={question}>{question}</option>)}
                   </select>

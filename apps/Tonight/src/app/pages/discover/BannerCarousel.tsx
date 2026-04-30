@@ -79,7 +79,7 @@ export function BannerCarousel({ onBannerClick, onViewAll }: BannerCarouselProps
     slideWidth > 0 ? -(current * slideWidth) + (dragging ? dragDelta : 0) : 0;
 
   return (
-    <div ref={viewportRef} className="relative w-full overflow-hidden rounded-b-[1.75rem]">
+    <div ref={viewportRef} className="relative z-0 w-full overflow-hidden">
       <div
         className="flex w-full touch-pan-x select-none"
         style={{
@@ -115,7 +115,7 @@ export function BannerCarousel({ onBannerClick, onViewAll }: BannerCarouselProps
           >
             <ImageWithFallback src={b.image} alt={b.title} className="pointer-events-none h-full w-full object-cover" />
             <div className={`pointer-events-none absolute inset-0 bg-gradient-to-t ${b.gradient}`} />
-            <div className="pointer-events-none absolute inset-0 flex flex-col justify-end p-5 pb-16 sm:pb-20">
+            <div className="pointer-events-none absolute inset-0 flex flex-col justify-end p-5 pb-[5.5rem] sm:pb-[6.25rem]">
               <h2 className="whitespace-pre-line text-[1.5rem] leading-tight text-white sm:text-[1.75rem]" style={{ fontWeight: 800 }}>
                 {b.title}
               </h2>
@@ -128,8 +128,9 @@ export function BannerCarousel({ onBannerClick, onViewAll }: BannerCarouselProps
         ))}
       </div>
 
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 flex flex-col justify-end bg-gradient-to-t from-black/55 via-black/20 to-transparent pb-3 pt-12">
-        <div className="pointer-events-auto flex justify-center gap-1.5 px-24">
+      {/* Sits high enough that the feed’s rounded overlap does not cover dots / View All */}
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-black/60 via-black/25 to-transparent pt-20 pb-[3.75rem] sm:pb-16">
+        <div className="pointer-events-auto absolute bottom-[3.25rem] left-1/2 flex max-w-[min(100%,18rem)] -translate-x-1/2 justify-center gap-1.5 px-2 sm:bottom-[3.5rem]">
           {BANNERS.map((_, i) => (
             <button
               key={i}
@@ -139,7 +140,7 @@ export function BannerCarousel({ onBannerClick, onViewAll }: BannerCarouselProps
                 stopAutoPlay();
                 startAutoPlay();
               }}
-              className={`h-1.5 rounded-full transition-all ${
+              className={`h-1.5 shrink-0 rounded-full transition-all ${
                 i === current ? "w-6 bg-white shadow-sm" : "w-1.5 bg-white/45 hover:bg-white/70"
               }`}
               aria-label={`Banner ${i + 1}`}
@@ -148,7 +149,7 @@ export function BannerCarousel({ onBannerClick, onViewAll }: BannerCarouselProps
         </div>
         <button
           type="button"
-          className="pointer-events-auto absolute bottom-3 right-3 rounded-full bg-white/90 px-2.5 py-1 text-[0.6875rem] text-gray-800 shadow-sm backdrop-blur-sm transition hover:bg-white"
+          className="pointer-events-auto absolute bottom-[3.25rem] right-3 rounded-full bg-white/90 px-2.5 py-1 text-[0.6875rem] text-gray-800 shadow-sm backdrop-blur-sm transition hover:bg-white sm:bottom-[3.5rem]"
           style={{ fontWeight: 500 }}
           onClick={(e) => {
             e.stopPropagation();

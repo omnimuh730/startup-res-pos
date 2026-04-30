@@ -29,6 +29,11 @@ import { RestaurantsByPrice } from "./RestaurantsByPrice";
 import { NewsSection, NewsListPage, NewsDetailPage, MOCK_NEWS } from "./NewsSection";
 import { DiscoverSearchModal, type SearchPlan } from "./DiscoverSearchModal";
 import { AirbnbRestaurantCard } from "./AirbnbRestaurantCard";
+import { cn } from "../../components/ui/utils";
+import { motion, useReducedMotion } from "motion/react";
+
+/** Long ease-out for “gliding” compact bar + hero handoff (no spring overshoot). */
+const DISCOVER_GLIDE_EASE = [0.16, 1, 0.32, 1] as const;
 
 function formatReservationTime(value: string) {
   const match = value.match(/^(\d{1,2}):(\d{2})$/);
@@ -45,6 +50,11 @@ function formatSearchPlanSummary(plan: SearchPlan) {
 }
 
 export function DiscoverPage() {
+  const reduceMotion = useReducedMotion();
+  const glide = (duration: number, delay = 0) =>
+    reduceMotion
+      ? { type: "tween" as const, duration: Math.min(0.18, duration), ease: DISCOVER_GLIDE_EASE, delay: 0 }
+      : { type: "tween" as const, duration, ease: DISCOVER_GLIDE_EASE, delay };
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -139,6 +149,8 @@ export function DiscoverPage() {
   const [showBannerGallery, setShowBannerGallery] = useState(false);
   const [showSearchModal, setShowSearchModal] = useState(false);
   const [searchPlan, setSearchPlan] = useState<SearchPlan | null>(null);
+  const [discoverNavCompact, setDiscoverNavCompact] = useState(false);
+  const discoverHeroSentinelRef = useRef<HTMLDivElement>(null);
 
   const toggleSaveRestaurant = toggleSaveRestaurantProp;
   const toggleSaveFood = toggleSaveFoodProp;
@@ -194,6 +206,21 @@ export function DiscoverPage() {
 
   const hasSubView = !!(detailRestaurant || selectedLocation || selectedFood || selectedCategory || viewingSection || showSearchResults || viewingNewsList || viewingNewsItem);
   const isInlineSubView = !detailRestaurant && !!(selectedLocation || selectedFood || selectedCategory || viewingSection || showSearchResults || viewingNewsList || viewingNewsItem);
+
+  useEffect(() => {
+    const main = document.querySelector("main");
+    const el = discoverHeroSentinelRef.current;
+    if (!main || !el || hasSubView) {
+      setDiscoverNavCompact(false);
+      return undefined;
+    }
+    const io = new IntersectionObserver(
+      ([entry]) => setDiscoverNavCompact(!entry.isIntersecting),
+      { root: main, threshold: 0, rootMargin: "0px" },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, [hasSubView]);
   const prevInlineRef = useRef(false);
   useLayoutEffect(() => {
     const main = document.querySelector("main");
@@ -246,8 +273,9 @@ export function DiscoverPage() {
       />
     )}
 
-    <div style={{ display: hasSubView ? "none" : undefined }}>
-    <section className="relative -mx-4 -mt-6 sm:-mx-6 sm:-mt-6 lg:-mx-8 lg:-mt-6">
+    <div className="overflow-x-clip" style={{ display: hasSubView ? "none" : undefined }}>
+    <div className="relative left-1/2 w-screen max-w-[100vw] -translate-x-1/2 overflow-x-clip -mt-6 sm:-mt-6 lg:-mt-6">
+    <section className="relative">
       <BannerCarousel
         onBannerClick={(bannerId) => {
           saveScrollPos();
@@ -263,8 +291,19 @@ export function DiscoverPage() {
         }}
         onViewAll={() => setShowBannerGallery(true)}
       />
-      <div className="pointer-events-none absolute inset-x-0 top-0 z-30 px-4 sm:px-6 lg:px-8 pt-[calc(1.35rem+env(safe-area-inset-top,0px))] sm:pt-[calc(1.5rem+env(safe-area-inset-top,0px))]">
-        <div className="pointer-events-auto flex items-center gap-2">
+      <motion.div
+        className="pointer-events-none absolute inset-x-0 top-0 z-30 px-4 pt-[calc(1.35rem+env(safe-area-inset-top,0px))] sm:px-6 sm:pt-[calc(1.5rem+env(safe-area-inset-top,0px))] lg:px-8"
+        initial={false}
+        animate={{
+          opacity: discoverNavCompact ? 0 : 1,
+          y: discoverNavCompact ? (reduceMotion ? 0 : -8) : 0,
+        }}
+        transition={{
+          opacity: glide(discoverNavCompact ? 0.36 : 0.48),
+          y: glide(discoverNavCompact ? 0.36 : 0.48),
+        }}
+      >
+        <div className={cn("pointer-events-auto mx-auto flex max-w-3xl items-center gap-2", discoverNavCompact && "pointer-events-none")}>
           <button
             type="button"
             onClick={() => setShowSearchModal(true)}
@@ -291,8 +330,91 @@ export function DiscoverPage() {
             <MapIcon className="h-5 w-5 text-foreground" />
           </button>
         </div>
-      </div>
+      </motion.div>
+      <div
+        ref={discoverHeroSentinelRef}
+        className="pointer-events-none absolute left-0 right-0 top-[min(7.5rem,calc(4.5rem+env(safe-area-inset-top,0px)))] h-px"
+        aria-hidden={true}
+      />
     </section>
+    {!hasSubView && (
+      <motion.div
+        aria-hidden={!discoverNavCompact}
+        className="fixed inset-x-0 top-0 z-50 flex justify-center px-4 pt-[max(0.35rem,env(safe-area-inset-top,0px))] sm:px-6 lg:px-8"
+        initial={false}
+        animate={{
+          opacity: discoverNavCompact ? 1 : 0,
+          y: reduceMotion ? 0 : discoverNavCompact ? 0 : -22,
+        }}
+        transition={{
+          opacity: glide(discoverNavCompact ? 0.52 : 0.34, reduceMotion ? 0 : discoverNavCompact ? 0.04 : 0),
+          y: glide(discoverNavCompact ? 0.56 : 0.4),
+        }}
+        style={{ pointerEvents: discoverNavCompact ? "auto" : "none" }}
+      >
+        <motion.div
+          className="mx-auto w-full max-w-3xl overflow-hidden rounded-b-[1.35rem] border border-border/55 bg-background/88 pb-2.5 pt-2 shadow-[0_14px_48px_-12px_rgba(0,0,0,0.22)] backdrop-blur-xl supports-[backdrop-filter]:bg-background/78"
+          initial={false}
+          animate={{
+            scale: discoverNavCompact ? 1 : 0.96,
+            opacity: discoverNavCompact ? 1 : 0,
+          }}
+          transition={{
+            scale: glide(discoverNavCompact ? 0.55 : 0.38, reduceMotion ? 0 : discoverNavCompact ? 0.05 : 0),
+            opacity: glide(discoverNavCompact ? 0.5 : 0.34, reduceMotion ? 0 : discoverNavCompact ? 0.03 : 0),
+          }}
+        >
+          <div className="flex items-center gap-2 px-1">
+            <motion.button
+              type="button"
+              onClick={() => setShowSearchModal(true)}
+              className="flex h-11 min-h-11 flex-1 cursor-pointer items-center gap-2.5 rounded-full border border-border/80 bg-card/95 px-3 text-left shadow-[0_2px_12px_rgba(0,0,0,0.06)]"
+              initial={false}
+              animate={
+                discoverNavCompact
+                  ? { opacity: 1, x: 0 }
+                  : { opacity: 0, x: reduceMotion ? 0 : -10 }
+              }
+              transition={{
+                opacity: glide(0.46, reduceMotion ? 0 : discoverNavCompact ? 0.06 : 0),
+                x: glide(0.52, reduceMotion ? 0 : discoverNavCompact ? 0.06 : 0),
+              }}
+            >
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-secondary">
+                <Search className="h-3.5 w-3.5 text-foreground" />
+              </span>
+              <span className="min-w-0">
+                <span className="block truncate text-[0.8125rem] leading-tight" style={{ fontWeight: 700 }}>
+                  {searchPlan?.query || searchInput || "Find a restaurant"}
+                </span>
+                <span className="block truncate text-[0.625rem] leading-tight text-muted-foreground">
+                  {searchPlan ? formatSearchPlanSummary(searchPlan) : "Tonight, 7:00 PM, 2 people"}
+                </span>
+              </span>
+            </motion.button>
+            <motion.button
+              type="button"
+              onClick={handleOpenMapSearch}
+              className="flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-full border border-border/80 bg-card/95 shadow-[0_2px_12px_rgba(0,0,0,0.06)] transition hover:scale-[1.04] active:scale-95"
+              aria-label="Open map search"
+              initial={false}
+              animate={
+                discoverNavCompact
+                  ? { opacity: 1, x: 0, scale: 1 }
+                  : { opacity: 0, x: reduceMotion ? 0 : 10, scale: reduceMotion ? 1 : 0.94 }
+              }
+              transition={{
+                opacity: glide(0.46, reduceMotion ? 0 : discoverNavCompact ? 0.1 : 0),
+                x: glide(0.52, reduceMotion ? 0 : discoverNavCompact ? 0.1 : 0),
+                scale: glide(0.52, reduceMotion ? 0 : discoverNavCompact ? 0.1 : 0),
+              }}
+            >
+              <MapIcon className="h-4 w-4 text-foreground" />
+            </motion.button>
+          </div>
+        </motion.div>
+      </motion.div>
+    )}
     <BannerGalleryModal
       open={showBannerGallery}
       onClose={() => setShowBannerGallery(false)}
@@ -310,8 +432,9 @@ export function DiscoverPage() {
         bannerMap[bannerId]?.();
       }}
     />
-    <Stagger stagger={0.06} className="pb-6">
-      <StaggerItem preset="fadeInUp" className="mt-6"><div className="grid grid-cols-4 gap-y-3 gap-x-1">{QUICK_CATEGORIES.map((cat) => (<button key={cat.id} onClick={() => { if (cat.id === "nearby-me") { if (!requireAuth("/discover/search?q=Gangnam", "Sign in to find restaurants near your current location.")) return; navigate("/discover/search?q=Gangnam"); return; } if (cat.id === "local-fav") { saveScrollPos(); openSection("loved-by-locals"); return; } saveScrollPos(); setSelectedCategory(cat); }} className="flex flex-col items-center gap-1 cursor-pointer group"><div className="group-hover:scale-110 transition-transform"><CategoryIcon id={cat.id} className="w-11 h-11" /></div><span className="text-[0.75rem] text-center whitespace-pre-line leading-tight" style={{ fontWeight: 500 }}>{cat.label}</span></button>))}</div></StaggerItem>
+    <div className="relative z-10 -mt-10 rounded-t-[2rem] bg-background px-4 pb-6 pt-4 shadow-[0_-18px_50px_-24px_rgba(0,0,0,0.18)] sm:px-6 lg:px-8 lg:pb-8">
+    <Stagger stagger={0.06} className="pb-0">
+      <StaggerItem preset="fadeInUp" className="mt-0"><div className="grid grid-cols-4 gap-y-3 gap-x-1">{QUICK_CATEGORIES.map((cat) => (<button key={cat.id} onClick={() => { if (cat.id === "nearby-me") { if (!requireAuth("/discover/search?q=Gangnam", "Sign in to find restaurants near your current location.")) return; navigate("/discover/search?q=Gangnam"); return; } if (cat.id === "local-fav") { saveScrollPos(); openSection("loved-by-locals"); return; } saveScrollPos(); setSelectedCategory(cat); }} className="flex flex-col items-center gap-1 cursor-pointer group"><div className="group-hover:scale-110 transition-transform"><CategoryIcon id={cat.id} className="w-11 h-11" /></div><span className="text-[0.75rem] text-center whitespace-pre-line leading-tight" style={{ fontWeight: 500 }}>{cat.label}</span></button>))}</div></StaggerItem>
       <StaggerItem preset="fadeInUp" className="mt-8"><SectionHeader title="Where to Eat?" onAction={() => openSection("where-to-eat")} /><DragScrollContainer className="flex gap-3 pb-1">{CITIES.map((city) => (<button key={city.id} onClick={() => openCity(city)} className="relative shrink-0 w-32 h-20 rounded-xl overflow-hidden cursor-pointer group"><ImageWithFallback src={city.image} alt={city.label} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" /><div className="absolute inset-0 bg-black/35 group-hover:bg-black/45 transition-colors" /><span className="absolute inset-0 flex items-center justify-center text-white text-[0.8125rem] tracking-wider" style={{ fontWeight: 700 }}>{city.label}</span></button>))}<button onClick={() => openSection("where-to-eat")} className="shrink-0 w-16 h-20 rounded-xl flex items-center justify-center text-primary cursor-pointer hover:bg-secondary transition"><div className="flex flex-col items-center gap-1"><ChevronRight className="w-6 h-6" /><span className="text-[0.6875rem]" style={{ fontWeight: 500 }}>More</span></div></button></DragScrollContainer></StaggerItem>
       <StaggerItem preset="fadeInUp" className="mt-8"><SectionHeader title="Top Picks by Food Type" action="More" onAction={() => openSection("top-picks-food")} /><DragScrollContainer className="flex gap-3 pb-1">{FOOD_TYPES.map((f) => (<button key={f.id} onClick={() => openFoodType(f)} className="relative shrink-0 w-28 h-20 rounded-xl overflow-hidden cursor-pointer group"><ImageWithFallback src={f.image} alt={f.label} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" /><div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" /><span className="absolute bottom-2 left-2 right-2 text-white text-[0.75rem]" style={{ fontWeight: 600 }}>{f.label}</span></button>))}</DragScrollContainer></StaggerItem>
       <StaggerItem preset="fadeInUp" className="mt-8">
@@ -349,6 +472,8 @@ export function DiscoverPage() {
       </StaggerItem>
     </Stagger>
     <RestaurantsByPrice onSelectRestaurant={openRestaurant} onSaveRestaurant={toggleSaveRestaurant} isRestaurantSaved={isRestaurantSaved} />
+    </div>
+    </div>
     </div>
     <DiscoverSearchModal open={showSearchModal} initialQuery={searchInput} onClose={() => setShowSearchModal(false)} onSearch={handleSearchPlanSubmit} />
     </>

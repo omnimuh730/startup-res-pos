@@ -7,7 +7,6 @@ import {
   Camera,
   Check,
   ChevronLeft,
-  CreditCard,
   Receipt,
   Send,
   ShieldCheck,
@@ -16,6 +15,7 @@ import {
   ThumbsUp,
   UtensilsCrossed,
   Users,
+  WalletCards,
   X,
 } from "lucide-react";
 import {
@@ -483,7 +483,7 @@ export function ScanQRFlow({ booking, onClose, initialStep = "scan", onCheckedIn
 
               {step === "pay" && paymentDone && (
                 <div className="flex flex-1 flex-col items-center justify-center text-center">
-                  <StepIntro icon={CreditCard} title="Payment complete" desc="Your receipt is ready. Redirecting to review." tone="success" />
+                  <StepIntro icon={WalletCards} title="Payment complete" desc="Paid with Tonight Wallet. Redirecting to review." tone="success" />
                 </div>
               )}
 

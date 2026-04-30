@@ -2,23 +2,18 @@
 import { useState, type ElementType, type ReactNode } from "react";
 import { motion } from "motion/react";
 import { AlertTriangle, CheckCircle2, Eye, EyeOff, XCircle } from "lucide-react";
+import { TonightLogoBadge } from "../../utils/brand/TonightLogo";
 
 export function Logo({ compact = false }: { compact?: boolean }) {
   const size = compact ? 42 : 52;
   return (
-    <div className="relative flex items-center justify-center" style={{ width: size, height: size }}>
-      <motion.div
-        initial={{ rotate: -12, scale: 0.88, opacity: 0 }}
-        animate={{ rotate: 0, scale: 1, opacity: 1 }}
-        transition={{ type: "spring", stiffness: 420, damping: 28 }}
-        className="absolute inset-0 rounded-[1.25rem] bg-primary shadow-[0_12px_28px_rgba(255,56,92,0.24)]"
-      />
-      <div className="relative h-[46%] w-[46%] rounded-full border-[5px] border-white">
-        <span className="absolute -left-[48%] top-1/2 h-2.5 w-2.5 -translate-y-1/2 rounded-full bg-white" />
-        <span className="absolute -right-[48%] top-1/2 h-2.5 w-2.5 -translate-y-1/2 rounded-full bg-white" />
-        <span className="absolute left-1/2 -top-[48%] h-2.5 w-2.5 -translate-x-1/2 rounded-full bg-white" />
-      </div>
-    </div>
+    <motion.div
+      initial={{ rotate: -10, scale: 0.88, opacity: 0 }}
+      animate={{ rotate: 0, scale: 1, opacity: 1 }}
+      transition={{ type: "spring", stiffness: 420, damping: 28 }}
+    >
+      <TonightLogoBadge size={size} variant="solid" title="Tonight" />
+    </motion.div>
   );
 }
 
@@ -110,7 +105,7 @@ export function InputField({
           value={value}
           onChange={(event) => onChange(event.target.value)}
           disabled={disabled}
-          className={`h-12 w-full rounded-full border bg-secondary/55 pl-11 pr-12 text-[0.9375rem] text-foreground outline-none transition placeholder:text-muted-foreground/70 focus:bg-card focus:ring-2 disabled:cursor-not-allowed disabled:opacity-50 ${
+          className={`h-12 w-full rounded-full border bg-secondary/55 pl-11 pr-12 text-[0.9375rem] outline-none transition placeholder:text-muted-foreground/70 focus:bg-card focus:ring-2 disabled:cursor-not-allowed disabled:opacity-50 ${
             error ? "border-destructive focus:ring-destructive/15" : "border-transparent focus:border-primary focus:ring-primary/15"
           }`}
         />
@@ -118,7 +113,7 @@ export function InputField({
           <button
             type="button"
             onClick={() => setShowPw((value) => !value)}
-            className="absolute right-4 top-1/2 -translate-y-1/2 cursor-pointer text-muted-foreground transition hover:text-foreground"
+            className="absolute right-4 top-1/2 -translate-y-1/2 cursor-pointer text-muted-foreground transition hover:text-primary"
             aria-label={showPw ? "Hide password" : "Show password"}
           >
             {showPw ? <EyeOff className="h-[18px] w-[18px]" /> : <Eye className="h-[18px] w-[18px]" />}

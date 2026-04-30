@@ -8,7 +8,6 @@ import {
   CheckCircle,
   ChevronRight,
   Copy,
-  CreditCard,
   Gift,
   Lock,
   ReceiptText,
@@ -19,7 +18,7 @@ import { Toggle } from "../../components/ds/Toggle";
 
 const INTERNAL_BALANCE_KRW = 13_000_000;
 const BONUS_BALANCE_KRW = 330_000;
-const EXTERNAL_BALANCE_USD = 5000.0;
+const WALLET_BALANCE_USD = 5000.0;
 const USD_TO_KRW = 1350;
 const POINTS_EARN_RATE = 2;
 
@@ -300,9 +299,9 @@ export function UnifiedPayment({
   const finalKRW = Math.max(0, payKRW - bonusKRWUsed);
   const finalUSD = payUSD;
   const remainingKRW = INTERNAL_BALANCE_KRW - finalKRW;
-  const remainingUSD = EXTERNAL_BALANCE_USD - finalUSD;
+  const remainingUSD = WALLET_BALANCE_USD - finalUSD;
   const insufficientKRW = finalKRW > INTERNAL_BALANCE_KRW;
-  const insufficientUSD = finalUSD > EXTERNAL_BALANCE_USD;
+  const insufficientUSD = finalUSD > WALLET_BALANCE_USD;
   const insufficient = insufficientKRW || insufficientUSD;
   const invalid = payKRW <= 0 && payUSD <= 0;
   const pointsEarned = Math.floor((finalKRW / USD_TO_KRW + finalUSD) * POINTS_EARN_RATE);
@@ -387,7 +386,7 @@ export function UnifiedPayment({
             <p className="text-[0.75rem] text-muted-foreground">Total payment</p>
             <p className="mt-1 truncate text-[1.85rem] font-semibold leading-tight">{finalLabel}</p>
             <p className="mt-2 max-w-[18rem] text-[0.75rem] leading-snug text-muted-foreground">
-              Domestic and foreign balances stay separate, so each source shows its own remaining amount.
+              Tonight Wallet keeps KRW and USD pockets separate, so each balance stays easy to review.
             </p>
           </div>
           <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
@@ -401,12 +400,12 @@ export function UnifiedPayment({
           <div className="mb-3 flex items-end justify-between gap-3">
             <div>
               <p className="text-[0.9375rem] font-medium">Amount builder</p>
-              <p className="mt-0.5 text-[0.75rem] text-muted-foreground">Choose one balance or split the payment.</p>
+              <p className="mt-0.5 text-[0.75rem] text-muted-foreground">Choose one Tonight Wallet pocket or split the payment.</p>
             </div>
           </div>
           <div className="grid grid-cols-2 gap-2">
             <label className="rounded-[1.2rem] bg-secondary/65 px-3 py-2.5">
-              <span className="text-[0.6875rem] text-muted-foreground">Domestic</span>
+              <span className="text-[0.6875rem] text-muted-foreground">Wallet KRW</span>
               <div className="mt-1 flex items-center gap-1.5">
                 <span className="text-[0.8125rem] text-muted-foreground">KRW</span>
                 <input
@@ -421,7 +420,7 @@ export function UnifiedPayment({
               </div>
             </label>
             <label className="rounded-[1.2rem] bg-secondary/65 px-3 py-2.5">
-              <span className="text-[0.6875rem] text-muted-foreground">Foreign</span>
+              <span className="text-[0.6875rem] text-muted-foreground">Wallet USD</span>
               <div className="mt-1 flex items-center gap-1.5">
                 <span className="text-[0.8125rem] text-muted-foreground">USD</span>
                 <input
@@ -456,15 +455,15 @@ export function UnifiedPayment({
 
       <section className="mb-4">
         <div className="mb-2 flex items-center justify-between">
-          <p className="text-[0.9375rem] font-medium">Payment sources</p>
-          <span className="text-[0.75rem] text-muted-foreground">{[payKRW > 0, payUSD > 0].filter(Boolean).length || 0} active</span>
+          <p className="text-[0.9375rem] font-medium">Tonight Wallet</p>
+          <span className="text-[0.75rem] text-muted-foreground">{[payKRW > 0, payUSD > 0].filter(Boolean).length || 0} pocket{[payKRW > 0, payUSD > 0].filter(Boolean).length === 1 ? "" : "s"} active</span>
         </div>
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
           <SourceCard
             active={payKRW > 0}
             icon={<Wallet className="h-4 w-4" />}
-            title="Tonight Wallet"
-            subtitle="Domestic balance"
+            title="KRW pocket"
+            subtitle="Tonight Wallet balance"
             balance={fmtKRW(INTERNAL_BALANCE_KRW)}
             paying={payKRW > 0 ? fmtKRW(finalKRW) : fmtKRW(0)}
             remaining={fmtKRW(remainingKRW)}
@@ -473,13 +472,13 @@ export function UnifiedPayment({
           />
           <SourceCard
             active={payUSD > 0}
-            icon={<CreditCard className="h-4 w-4" />}
-            title="Visa ending 4242"
-            subtitle="Foreign balance"
-            balance={fmtUSD(EXTERNAL_BALANCE_USD)}
+            icon={<Wallet className="h-4 w-4" />}
+            title="USD pocket"
+            subtitle="Tonight Wallet balance"
+            balance={fmtUSD(WALLET_BALANCE_USD)}
             paying={payUSD > 0 ? fmtUSD(finalUSD) : fmtUSD(0)}
             remaining={fmtUSD(remainingUSD)}
-            progress={pct(finalUSD, EXTERNAL_BALANCE_USD)}
+            progress={pct(finalUSD, WALLET_BALANCE_USD)}
             insufficient={insufficientUSD}
           />
         </div>
@@ -503,7 +502,7 @@ export function UnifiedPayment({
               )}
               {payUSD > 0 && (
                 <div className="flex justify-between text-[0.875rem]">
-                  <span className="text-muted-foreground">Foreign total</span>
+                  <span className="text-muted-foreground">USD wallet total</span>
                   <span>{fmtUSD(finalUSD)}</span>
                 </div>
               )}
@@ -555,7 +554,7 @@ export function UnifiedPayment({
                 <p className="text-[0.8125rem] font-medium text-destructive">Insufficient balance</p>
                 <p className="mt-0.5 text-[0.75rem] text-destructive/75">
                   {insufficientKRW && <>Need {fmtKRW(finalKRW - INTERNAL_BALANCE_KRW)} more in Domestic. </>}
-                  {insufficientUSD && <>Need {fmtUSD(finalUSD - EXTERNAL_BALANCE_USD)} more in Foreign. </>}
+                  {insufficientUSD && <>Need {fmtUSD(finalUSD - WALLET_BALANCE_USD)} more in USD wallet. </>}
                   Top up in Profile.
                 </p>
               </div>

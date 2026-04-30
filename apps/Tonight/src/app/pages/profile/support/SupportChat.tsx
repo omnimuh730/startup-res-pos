@@ -2,21 +2,7 @@
 import { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
 import { ArrowLeft, Send, Plus, CheckCheck, Phone } from "lucide-react";
-
-// Custom Brand Logo
-const BrandLogo = ({ className = "w-8 h-8" }) => (
-  <svg viewBox="0 0 120 100" fill="none" xmlns="http://www.w3.org/2000/svg" className={className}>
-    <g transform="translate(0, 0)">
-      <circle cx="20" cy="50" r="12" fill="#D93844" />
-      <path
-        fillRule="evenodd"
-        clipRule="evenodd"
-        d="M75 85C94.33 85 110 69.33 110 50C110 30.67 94.33 15 75 15C55.67 15 40 30.67 40 50C40 69.33 55.67 85 75 85ZM75 62C81.627 62 87 56.627 87 50C87 43.373 81.627 38 75 38C68.373 38 63 43.373 63 50C63 56.627 68.373 62 75 62Z"
-        fill="#D93844"
-      />
-    </g>
-  </svg>
-);
+import { TonightLogoMark } from "../../../utils/brand/TonightLogo";
 
 export type Sender = "agent" | "user";
 
@@ -203,7 +189,7 @@ export function SupportChatView({ session, onClose, onUpdateSession }: HelpChatS
           <div className="flex flex-col items-start mt-2">
             <div className="flex items-end gap-3 max-w-[85%]">
               <div className="w-12 h-12 rounded-full flex items-center justify-center shrink-0 shadow-sm mb-1">
-                <BrandLogo className="w-12 h-12" />
+                <TonightLogoMark className="w-12 h-12" />
               </div>
               <div className="bg-[#f3f4f6] px-4 py-3.5 rounded-2xl rounded-bl-sm flex gap-1 items-center h-[2.875rem]">
                 {[0, 1, 2].map((i) => (
@@ -264,7 +250,7 @@ function ChatBubble({ msg, showAvatar, onOptionClick }: {
           <div className="w-12 h-12 shrink-0 flex items-end justify-center mb-1">
             {showAvatar && (
                <div className="w-12 h-12 rounded-full flex items-center justify-center shadow-sm">
-                 <BrandLogo className="w-12 h-12" />
+                 <TonightLogoMark className="w-12 h-12" />
                </div>
             )}
           </div>

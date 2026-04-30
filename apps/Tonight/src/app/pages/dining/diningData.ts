@@ -117,7 +117,7 @@ export const BOOKINGS: Booking[] = [
         { emoji: "🍰", name: "Tiramisu", qty: 1, price: 12 },
       ],
       subtotal: 114, tax: 10.26, tip: 22.80, total: 147.06,
-      paymentMethod: "Visa •• 4821", paidAt: "Fri, 28 Mar 2026 · 21:48",
+      paymentMethod: "Tonight Wallet", paidAt: "Fri, 28 Mar 2026 · 21:48",
     },
   },
   {
@@ -134,7 +134,7 @@ export const BOOKINGS: Booking[] = [
         { emoji: "🥂", name: "Champagne (glass)", qty: 3, price: 16 },
       ],
       subtotal: 186, tax: 16.74, tip: 37.20, total: 239.94,
-      paymentMethod: "Apple Pay", paidAt: "Wed, 19 Mar 2026 · 20:35",
+      paymentMethod: "Tonight Wallet", paidAt: "Wed, 19 Mar 2026 · 20:35",
     },
   },
   {
@@ -151,7 +151,7 @@ export const BOOKINGS: Booking[] = [
         { emoji: "☕", name: "Cappuccino", qty: 2, price: 6 },
       ],
       subtotal: 60, tax: 5.40, tip: 12, total: 77.40,
-      paymentMethod: "Mastercard •• 7733", paidAt: "Sat, 8 Mar 2026 · 11:42",
+      paymentMethod: "Tonight Wallet", paidAt: "Sat, 8 Mar 2026 · 11:42",
     },
   },
   {

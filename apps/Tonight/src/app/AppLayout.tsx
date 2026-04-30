@@ -17,6 +17,7 @@ import { FirstLoginDbModal } from "./components/FirstLoginDbModal";
 import { dailyBonusStore } from "./pages/profile/dailyreward/DailyBonusModal";
 import { WishlistSelectionSheet, type WishlistSheetCollection } from "./pages/discover/WishlistSelectionSheet";
 import { WishlistSavedToast, type WishlistSavedToastState } from "./pages/discover/WishlistSavedToast";
+import { TonightLogoMark } from "./utils/brand/TonightLogo";
 
 export type AppWishlistCollection = {
   id: string;
@@ -84,12 +85,7 @@ function SparkleEffect({ active }: { active: boolean }) {
 
 function CatchTableIcon({ className, isActive }: { className?: string; isActive?: boolean }) {
   const color = isActive ? "var(--primary)" : "var(--muted-foreground)";
-  return (
-    <svg viewBox="0 0 28 28" fill="none" className={className}>
-      <path d="M14 4.5a9.5 9.5 0 1 0 0 19 9.5 9.5 0 0 0 0-19zm0 6.7a2.8 2.8 0 1 1 0 5.6 2.8 2.8 0 0 1 0-5.6z" fill={color} fillRule="evenodd" />
-      <circle cx="1.8" cy="14" r="1.8" fill={color} />
-    </svg>
-  );
+  return <TonightLogoMark className={className} color={color} title="Tonight" />;
 }
 
 function TabButton({ tab, isActive, onSelect, badgeCount, showDot }: {
@@ -147,7 +143,7 @@ function SidebarNav({ activeTab, onSelect }: { activeTab: TabId; onSelect: (id: 
   return (
     <aside className="hidden lg:flex flex-col w-60 xl:w-64 border-r border-border bg-card shrink-0 sticky top-0 h-dvh">
       <div className="p-6 pb-4">
-        <h1 className="text-[1.25rem] text-primary" style={{ fontWeight: 700 }}>CatchTable</h1>
+        <h1 className="text-[1.25rem] text-primary" style={{ fontWeight: 700 }}>Tonight</h1>
         <p className="text-muted-foreground text-[0.75rem] mt-0.5">Restaurant Reservations</p>
       </div>
       <nav className="flex-1 px-3 space-y-1">
