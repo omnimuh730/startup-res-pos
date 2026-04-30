@@ -66,7 +66,7 @@ export function LoginPage(props: LoginPageProps = {}) {
   return (
     <AuthSurface>
       <div className="mb-4 flex items-center justify-between">
-        <Logo compact />
+        <div/>
         <button
           type="button"
           onClick={() => navigate("/discover")}
