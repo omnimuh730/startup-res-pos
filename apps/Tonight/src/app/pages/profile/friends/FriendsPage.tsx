@@ -4,7 +4,7 @@ import { Button } from "../../../components/ds/Button";
 import { Text } from "../../../components/ds/Text";
 import { Modal, ModalHeader, ModalBody, ModalFooter } from "../../../components/ds/Modal";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Trash2, UserPlus, AtSign, Phone } from "lucide-react";
+import { Check, X, Trash2, UserPlus, AtSign, Phone } from "lucide-react";
 import { PageHeader } from "../profileHelpers";
 
 interface Contact {
@@ -16,10 +16,35 @@ interface Contact {
   color: string;
 }
 
+interface FriendRequest extends Contact {
+  requestedAt: string;
+  note: string;
+}
+
 export function FriendsPage({ onBack }: { onBack: () => void }) {
   const [showAddForm, setShowAddForm] = useState(false);
   const [confirmModal, setConfirmModal] = useState<string | null>(null);
   const [newContact, setNewContact] = useState({ name: "", identifier: "" });
+  const [friendRequests, setFriendRequests] = useState<FriendRequest[]>([
+    {
+      id: "req-1",
+      name: "Mina Park",
+      username: "minapark",
+      initials: "MP",
+      color: "#DB2777",
+      requestedAt: "2h ago",
+      note: "Wants to plan dinners and split reservations with you.",
+    },
+    {
+      id: "req-2",
+      name: "Noah Williams",
+      username: "noahw",
+      initials: "NW",
+      color: "#0891B2",
+      requestedAt: "Yesterday",
+      note: "Sent a friend request from your recent dining circle.",
+    },
+  ]);
   
   const [contacts, setContacts] = useState<Contact[]>([
     { id: "1", name: "Sarah Kim", username: "sarahkim", initials: "SK", color: "#E11D48" },
@@ -42,7 +67,7 @@ export function FriendsPage({ onBack }: { onBack: () => void }) {
     const colors = ["#E11D48", "#2563EB", "#059669", "#D97706", "#7C3AED", "#0891B2", "#DC2626", "#0D9488"];
     const isPhone = newContact.identifier.includes("+") || newContact.identifier.match(/^\d/);
 
-    setContacts([
+    setContacts((current) => [
       {
         id: String(Date.now()),
         name: newContact.name,
@@ -51,11 +76,28 @@ export function FriendsPage({ onBack }: { onBack: () => void }) {
         initials,
         color: colors[Math.floor(Math.random() * colors.length)],
       },
-      ...contacts, // Add new friend to the top
+      ...current,
     ]);
 
     setNewContact({ name: "", identifier: "" });
     setShowAddForm(false);
+  };
+
+  const handleApproveRequest = (request: FriendRequest) => {
+    const contact: Contact = {
+      id: request.id,
+      name: request.name,
+      username: request.username,
+      phone: request.phone,
+      initials: request.initials,
+      color: request.color,
+    };
+    setContacts((current) => [contact, ...current.filter((c) => c.id !== contact.id)]);
+    setFriendRequests((current) => current.filter((r) => r.id !== request.id));
+  };
+
+  const handleRejectRequest = (requestId: string) => {
+    setFriendRequests((current) => current.filter((r) => r.id !== requestId));
   };
 
   return (
@@ -64,6 +106,82 @@ export function FriendsPage({ onBack }: { onBack: () => void }) {
         <PageHeader title="Friends & Contacts" onBack={onBack} />
         
         <div className="px-5 pt-2">
+          {/* Pending Friend Requests */}
+          <AnimatePresence initial={false}>
+            {friendRequests.length > 0 && (
+              <motion.section
+                key="friend-requests"
+                initial={{ opacity: 0, y: -8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, height: 0, y: -8 }}
+                transition={{ type: "spring", bounce: 0, duration: 0.35 }}
+                className="mb-6 overflow-hidden"
+              >
+                <div className="mb-3 flex items-center justify-between px-1">
+                  <Text className="text-[14px] font-bold text-foreground">Friend requests</Text>
+                  <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-bold text-primary">
+                    {friendRequests.length} pending
+                  </span>
+                </div>
+
+                <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
+                  <AnimatePresence initial={false}>
+                    {friendRequests.map((request, idx) => (
+                      <motion.div
+                        layout
+                        key={request.id}
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: 16, height: 0 }}
+                        transition={{ type: "spring", bounce: 0, duration: 0.32 }}
+                        className={`p-4 ${idx !== friendRequests.length - 1 ? "border-b border-border/60" : ""}`}
+                      >
+                        <div className="flex items-start gap-3.5">
+                          <div
+                            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-white shadow-sm"
+                            style={{ backgroundColor: request.color }}
+                          >
+                            <Text className="text-[13px] font-bold tracking-wider text-white">{request.initials}</Text>
+                          </div>
+
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="min-w-0">
+                                <Text className="truncate text-[15px] font-bold leading-tight text-foreground">{request.name}</Text>
+                                <Text className="mt-0.5 truncate text-[13px] text-muted-foreground">
+                                  {request.username ? `@${request.username}` : request.phone} - {request.requestedAt}
+                                </Text>
+                              </div>
+                            </div>
+                            <Text className="mt-2 line-clamp-2 text-[12px] leading-relaxed text-muted-foreground">
+                              {request.note}
+                            </Text>
+                          </div>
+                        </div>
+
+                        <div className="mt-3 grid grid-cols-2 gap-2">
+                          <button
+                            onClick={() => handleRejectRequest(request.id)}
+                            className="h-10 rounded-full border border-border bg-card text-[13px] font-bold text-foreground transition hover:bg-secondary active:scale-[0.98]"
+                          >
+                            Reject
+                          </button>
+                          <button
+                            onClick={() => handleApproveRequest(request)}
+                            className="flex h-10 items-center justify-center gap-1.5 rounded-full bg-foreground text-[13px] font-bold text-background shadow-sm transition hover:bg-foreground/90 active:scale-[0.98]"
+                          >
+                            <Check className="h-4 w-4" strokeWidth={2.5} />
+                            Approve
+                          </button>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </AnimatePresence>
+                </div>
+              </motion.section>
+            )}
+          </AnimatePresence>
+
           {/* Top Add Action / Form */}
           <AnimatePresence mode="wait" initial={false}>
             {showAddForm ? (

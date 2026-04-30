@@ -1,16 +1,11 @@
 import { RouterProvider } from "react-router";
-import { Toaster } from "sonner";
 import { router } from "./routes";
-import { useResolvedAppTheme } from "../theme/appTheme";
+import { ToastProvider } from "./components/ds/Toast";
 
 export default function App() {
-  const theme = useResolvedAppTheme();
-
   return (
-    <>
+    <ToastProvider position="top-center">
       <RouterProvider router={router} />
-      <Toaster position="top-center" richColors closeButton theme={theme} />
-      <Toaster position="bottom-right" richColors closeButton theme={theme} />
-    </>
+    </ToastProvider>
   );
 }

@@ -1,7 +1,6 @@
 /* EnjoyMealPage — celebration page for currently-dining or upcoming bookings */
 import { useEffect, useState } from "react";
 import { motion } from "motion/react";
-import { toast } from "sonner";
 import {
   ArrowLeft,
   Clock,
@@ -21,6 +20,7 @@ import {
 } from "lucide-react";
 import { ImageWithFallback } from "../../components/figma/ImageWithFallback";
 import { Text } from "../../components/ds/Text";
+import { useToast } from "../../components/ds/Toast";
 import type { Booking } from "./diningData";
 import { parseBookingDateTime } from "./diningData";
 import { MenuModal } from "./EnjoyExtras";
@@ -86,6 +86,7 @@ export function EnjoyMealPage({
   const start = parseBookingDateTime(booking);
   const now = useTick(1000);
   const [showMenu, setShowMenu] = useState(false);
+  const { success } = useToast();
 
   const isLive = mode === "live";
   const timeLabel = isLive
@@ -93,10 +94,7 @@ export function EnjoyMealPage({
     : `Left ${start ? formatRemaining(start, now) : "—"}`;
 
   const handleCallServer = () =>
-    toast.success("Server notified", {
-      description:
-        "A staff member is on their way to your table.",
-    });
+    success("Server notified", "A staff member is on their way to your table.");
 
   const liveActions = [
     {

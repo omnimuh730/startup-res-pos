@@ -1,8 +1,4 @@
-import { useState } from "react";
-import { Info } from "lucide-react";
-
 export function WalletCardStack({ showBalance, onToggleBalance }: { showBalance: boolean; onToggleBalance: () => void }) {
-  const [showInfo, setShowInfo] = useState(false);
   const masked = "••••••";
 
   return (
@@ -67,22 +63,9 @@ export function WalletCardStack({ showBalance, onToggleBalance }: { showBalance:
             <span className="text-[0.8125rem] tracking-[0.15em] tabular-nums text-primary-foreground/95" style={{ fontWeight: 500 }}>
               {showBalance ? "5282 •••• •••• 1289" : "•••• •••• •••• ••••"}
             </span>
-            <button
-              onClick={(e) => { e.stopPropagation(); setShowInfo((v) => !v); }}
-              className="w-7 h-7 rounded-full flex items-center justify-center text-primary-foreground/80 hover:text-primary-foreground hover:bg-white/15 transition cursor-pointer"
-              aria-label="About these balances"
-            >
-              <Info className="w-4 h-4" />
-            </button>
           </div>
         </div>
       </div>
-
-      {showInfo && (
-        <p className="text-muted-foreground text-[0.6875rem] mt-2 leading-snug">
-          Balances aren't interchangeable. Bonus stacks on Domestic only.
-        </p>
-      )}
     </div>
   );
 }

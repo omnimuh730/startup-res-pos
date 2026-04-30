@@ -1,8 +1,10 @@
 import { useState, useEffect, useCallback, createContext, useContext, type ReactNode } from "react";
-import { X, CheckCircle, AlertTriangle, AlertCircle, Info } from "lucide-react";
+import { createPortal } from "react-dom";
+import { AnimatePresence, motion } from "framer-motion";
+import { X, CheckCircle, AlertTriangle, AlertCircle, Info, Sparkles } from "lucide-react";
 
 type ToastType = "success" | "error" | "warning" | "info" | "default";
-type ToastPosition = "top-right" | "top-left" | "bottom-right" | "bottom-left" | "top-center" | "bottom-center";
+type ToastPosition = "top-center" | "bottom-center";
 
 interface ToastItem {
   id: string;
@@ -23,15 +25,14 @@ const ToastContext = createContext<ToastContextType | null>(null);
 export function useToast() {
   const ctx = useContext(ToastContext);
   if (!ctx) {
-    // Fallback for standalone usage
     return {
       toast: (_t: Omit<ToastItem, "id">) => {
         console.warn("useToast: wrap your app with <ToastProvider>");
       },
-      success: (title: string, description?: string) => {},
-      error: (title: string, description?: string) => {},
-      warning: (title: string, description?: string) => {},
-      info: (title: string, description?: string) => {},
+      success: (_title: string, _description?: string) => {},
+      error: (_title: string, _description?: string) => {},
+      warning: (_title: string, _description?: string) => {},
+      info: (_title: string, _description?: string) => {},
     };
   }
   return {
@@ -43,65 +44,107 @@ export function useToast() {
   };
 }
 
-const typeConfig: Record<ToastType, { icon: ReactNode; borderClass: string }> = {
-  success: { icon: <CheckCircle className="w-5 h-5 text-success" />, borderClass: "border-l-success" },
-  error: { icon: <AlertCircle className="w-5 h-5 text-destructive" />, borderClass: "border-l-destructive" },
-  warning: { icon: <AlertTriangle className="w-5 h-5 text-warning" />, borderClass: "border-l-warning" },
-  info: { icon: <Info className="w-5 h-5 text-info" />, borderClass: "border-l-info" },
-  default: { icon: null, borderClass: "border-l-border" },
+const typeConfig: Record<ToastType, { icon: ReactNode; tone: string; glow: string; bar: string }> = {
+  success: {
+    icon: <CheckCircle className="h-5 w-5" strokeWidth={2.5} />,
+    tone: "bg-primary text-primary-foreground",
+    glow: "bg-primary/20",
+    bar: "from-primary via-primary to-rose-400",
+  },
+  error: {
+    icon: <AlertCircle className="h-5 w-5" strokeWidth={2.5} />,
+    tone: "bg-destructive text-destructive-foreground",
+    glow: "bg-destructive/20",
+    bar: "from-destructive via-destructive to-red-400",
+  },
+  warning: {
+    icon: <AlertTriangle className="h-5 w-5" strokeWidth={2.5} />,
+    tone: "bg-warning text-warning-foreground",
+    glow: "bg-warning/20",
+    bar: "from-warning via-warning to-amber-300",
+  },
+  info: {
+    icon: <Info className="h-5 w-5" strokeWidth={2.5} />,
+    tone: "bg-foreground text-background",
+    glow: "bg-foreground/10",
+    bar: "from-foreground via-foreground to-muted-foreground",
+  },
+  default: {
+    icon: <Sparkles className="h-5 w-5" strokeWidth={2.5} />,
+    tone: "bg-foreground text-background",
+    glow: "bg-foreground/10",
+    bar: "from-foreground via-foreground to-muted-foreground",
+  },
 };
 
-const positionClasses: Record<ToastPosition, string> = {
-  "top-right": "top-4 right-4",
-  "top-left": "top-4 left-4",
-  "bottom-right": "bottom-4 right-4",
-  "bottom-left": "bottom-4 left-4",
-  "top-center": "top-4 left-1/2 -translate-x-1/2",
-  "bottom-center": "bottom-4 left-1/2 -translate-x-1/2",
-};
-
-function ToastComponent({ toast, onRemove }: { toast: ToastItem; onRemove: () => void }) {
+function ToastComponent({ toast, index, onRemove }: { toast: ToastItem; index: number; onRemove: () => void }) {
   const config = typeConfig[toast.type];
 
   useEffect(() => {
-    const timer = setTimeout(onRemove, toast.duration || 4000);
+    const timer = setTimeout(onRemove, toast.duration || 4200);
     return () => clearTimeout(timer);
   }, [onRemove, toast.duration]);
 
   return (
-    <div
-      className={`
-        flex items-start gap-3 px-4 py-3 bg-background border border-border rounded-xl shadow-lg
-        border-l-4 ${config.borderClass}
-        animate-[slideIn_0.3s_ease-out] min-w-[280px] max-w-[380px]
-      `}
+    <motion.div
+      layout
+      initial={{ opacity: 0, y: -22, scale: 0.94, filter: "blur(10px)" }}
+      animate={{ opacity: 1, y: 0, scale: 1, filter: "blur(0px)" }}
+      exit={{ opacity: 0, y: -18, scale: 0.96, filter: "blur(8px)" }}
+      transition={{ type: "spring", stiffness: 520, damping: 36, mass: 0.8 }}
+      className="pointer-events-auto relative w-full max-w-[25rem] overflow-hidden rounded-[1.35rem] border border-black/10 bg-white/95 shadow-[0_18px_50px_rgba(0,0,0,0.18)] backdrop-blur-xl"
+      style={{ zIndex: 760 - index }}
+      role="status"
+      aria-live="polite"
     >
-      {config.icon && <span className="shrink-0 mt-0.5">{config.icon}</span>}
-      <div className="flex-1 min-w-0">
-        <p className="text-[0.8125rem]">{toast.title}</p>
-        {toast.description && (
-          <p className="text-[0.75rem] text-muted-foreground mt-0.5">{toast.description}</p>
-        )}
-        {toast.action && (
-          <button
-            onClick={toast.action.onClick}
-            className="text-[0.75rem] text-primary hover:underline mt-1 cursor-pointer"
-          >
-            {toast.action.label}
-          </button>
-        )}
+      <motion.div
+        className={`absolute -left-10 -top-12 h-28 w-28 rounded-full blur-2xl ${config.glow}`}
+        initial={{ scale: 0.5, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ delay: 0.05, duration: 0.35 }}
+      />
+      <div className={`absolute inset-x-0 top-0 h-1 bg-gradient-to-r ${config.bar}`} />
+      <div className="relative flex items-start gap-3 p-3.5 pr-3">
+        <motion.div
+          initial={{ rotate: -18, scale: 0.6 }}
+          animate={{ rotate: 0, scale: 1 }}
+          transition={{ type: "spring", stiffness: 650, damping: 24 }}
+          className={`mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full shadow-sm ${config.tone}`}
+        >
+          {config.icon}
+        </motion.div>
+
+        <div className="min-w-0 flex-1 pt-0.5">
+          <p className="truncate text-[0.92rem] font-bold leading-tight text-foreground">{toast.title}</p>
+          {toast.description && (
+            <p className="mt-1 line-clamp-2 text-[0.78rem] leading-relaxed text-muted-foreground">{toast.description}</p>
+          )}
+          {toast.action && (
+            <button
+              onClick={toast.action.onClick}
+              className="mt-2 text-[0.78rem] font-bold text-primary underline underline-offset-2 transition hover:text-primary/80"
+            >
+              {toast.action.label}
+            </button>
+          )}
+        </div>
+
+        <button
+          onClick={onRemove}
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-secondary text-muted-foreground transition hover:bg-border hover:text-foreground active:scale-95"
+          aria-label="Dismiss notification"
+        >
+          <X className="h-4 w-4" />
+        </button>
       </div>
-      <button onClick={onRemove} className="shrink-0 p-0.5 hover:bg-secondary rounded cursor-pointer">
-        <X className="w-3.5 h-3.5 text-muted-foreground" />
-      </button>
-    </div>
+    </motion.div>
   );
 }
 
 export function ToastProvider({
   children,
-  position = "top-right",
-  maxToasts = 5,
+  position = "top-center",
+  maxToasts = 3,
 }: {
   children: ReactNode;
   position?: ToastPosition;
@@ -112,7 +155,7 @@ export function ToastProvider({
   const addToast = useCallback(
     (toast: Omit<ToastItem, "id">) => {
       const id = `toast-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
-      setToasts((prev) => [...prev.slice(-(maxToasts - 1)), { ...toast, id }]);
+      setToasts((prev) => [{ ...toast, id }, ...prev].slice(0, maxToasts));
     },
     [maxToasts]
   );
@@ -121,20 +164,28 @@ export function ToastProvider({
     setToasts((prev) => prev.filter((t) => t.id !== id));
   }, []);
 
+  const viewport = (
+    <div
+      className={`pointer-events-none fixed inset-x-0 z-[750] flex justify-center px-4 ${
+        position === "top-center"
+          ? "top-[calc(var(--safe-area-inset-top,0px)+0.85rem)]"
+          : "bottom-[calc(var(--safe-area-inset-bottom,0px)+0.85rem)]"
+      }`}
+    >
+      <div className="flex w-full max-w-[25rem] flex-col gap-2.5">
+        <AnimatePresence initial={false}>
+          {toasts.map((t, index) => (
+            <ToastComponent key={t.id} toast={t} index={index} onRemove={() => removeToast(t.id)} />
+          ))}
+        </AnimatePresence>
+      </div>
+    </div>
+  );
+
   return (
     <ToastContext.Provider value={{ addToast, removeToast }}>
       {children}
-      <div className={`fixed z-[100] ${positionClasses[position]} flex flex-col gap-2`}>
-        {toasts.map((t) => (
-          <ToastComponent key={t.id} toast={t} onRemove={() => removeToast(t.id)} />
-        ))}
-      </div>
-      <style>{`
-        @keyframes slideIn {
-          from { opacity: 0; transform: translateX(20px); }
-          to { opacity: 1; transform: translateX(0); }
-        }
-      `}</style>
+      {typeof document !== "undefined" ? createPortal(viewport, document.body) : null}
     </ToastContext.Provider>
   );
 }

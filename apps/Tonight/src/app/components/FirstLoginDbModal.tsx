@@ -1,7 +1,7 @@
 import { useEffect, useState, useSyncExternalStore } from "react";
-import { toast } from "sonner";
 import { Database, ShieldCheck, Sparkles, X } from "lucide-react";
 import { Button } from "./ds/Button";
+import { useToast } from "./ds/Toast";
 import { authStore } from "../stores/authStore";
 
 const CURRENT_VERSION = "2026.04.27";
@@ -22,6 +22,7 @@ export function FirstLoginDbModal() {
   const [progress, setProgress] = useState(0);
   const [stepIdx, setStepIdx] = useState(0);
   const authed = useSyncExternalStore(authStore.subscribe, authStore.getSnapshot, () => false);
+  const { success } = useToast();
 
   useEffect(() => {
     if (!authed) return;
@@ -45,11 +46,7 @@ export function FirstLoginDbModal() {
         setStage("done");
         setTimeout(() => {
           setOpen(false);
-          toast.success("You're up to date", {
-            description: `Database synced to ${CURRENT_VERSION}`,
-            position: "bottom-right",
-            duration: 4000,
-          });
+          success("You're up to date", `Database synced to ${CURRENT_VERSION}`);
         }, 600);
       }
     }, 120);
