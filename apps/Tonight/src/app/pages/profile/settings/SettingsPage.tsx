@@ -1,12 +1,13 @@
 /* Settings Page (merged: Notifications + Privacy & Security + Sound) */
 import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, type Variants } from "framer-motion";
 import { Text } from "../../../components/ds/Text";
 import { Button } from "../../../components/ds/Button";
 import { PasswordInput } from "../../../components/ds/PasswordInput";
+import { Modal, ModalHeader, ModalBody, ModalFooter } from "../../../components/ds/Modal";
 import {
   Bell, Gift, Calendar, Star, ShoppingBag, Volume2,
-  MapPin, Eye, Smartphone, Share, Shield, Lock, X, Sun, VolumeX
+  MapPin, Eye, Smartphone, Share, Lock, X, Sun, VolumeX
 } from "lucide-react";
 import { PageHeader, themePresets } from "../profileHelpers";
 
@@ -18,14 +19,14 @@ function PremiumSwitch({ checked, onToggle }: { checked: boolean; onToggle: (v: 
       role="switch"
       aria-checked={checked}
       onClick={() => onToggle(!checked)}
-      className={`relative inline-flex h-[28px] w-[50px] shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background ${
+      className={`relative inline-flex h-[26px] w-[46px] shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background ${
         checked ? "bg-primary" : "bg-muted-foreground/30" // Darker inactive track for better visibility
       }`}
     >
       <span className="sr-only">Use setting</span>
       <span
-        className={`pointer-events-none inline-block h-[24px] w-[24px] transform rounded-full bg-white shadow-[0_2px_5px_rgba(0,0,0,0.25)] ring-0 transition duration-200 ease-in-out ${
-          checked ? "translate-x-[22px]" : "translate-x-0"
+        className={`pointer-events-none inline-block h-[20px] w-[20px] transform rounded-full bg-white shadow-[0_2px_5px_rgba(0,0,0,0.25)] ring-0 transition duration-200 ease-in-out ${
+          checked ? "translate-x-[20px]" : "translate-x-0"
         }`}
       />
     </button>
@@ -34,7 +35,7 @@ function PremiumSwitch({ checked, onToggle }: { checked: boolean; onToggle: (v: 
 
 function SettingsGroup({ children, label }: { children: React.ReactNode; label: string }) {
   return (
-    <div className="mb-6">
+    <div className="mb-5">
       <Text className="text-[16px] font-bold text-foreground mb-3 px-1">{label}</Text>
       <div className="border border-border rounded-2xl bg-card overflow-hidden">
         {children}
@@ -51,14 +52,14 @@ function SettingsRow({
   return (
     <div 
       onClick={() => onToggle(!checked)} 
-      className={`flex items-center gap-3.5 p-4 bg-card active:bg-secondary/50 transition-colors cursor-pointer ${!isLast ? "border-b border-border/60" : ""}`}
+      className={`flex items-center gap-3 p-3.5 bg-card active:bg-secondary/50 transition-colors cursor-pointer ${!isLast ? "border-b border-border/60" : ""}`}
     >
-      <div className="w-9 h-9 rounded-full bg-secondary flex items-center justify-center shrink-0">
-        <Icon className="w-5 h-5 text-foreground" strokeWidth={1.5} />
+      <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center shrink-0">
+        <Icon className="w-4.5 h-4.5 text-foreground" strokeWidth={1.5} />
       </div>
       <div className="flex-1 min-w-0 pr-2">
-        <Text className="text-[15px] font-semibold text-foreground leading-tight truncate">{label}</Text>
-        {description && <Text className="text-muted-foreground text-[13px] mt-0.5 truncate">{description}</Text>}
+        <Text className="text-[14px] font-semibold text-foreground leading-tight truncate">{label}</Text>
+        {description && <Text className="text-muted-foreground text-[12.5px] mt-0.5 truncate">{description}</Text>}
       </div>
       <div onClick={(e) => e.stopPropagation()} className="shrink-0">
         <PremiumSwitch checked={checked} onToggle={onToggle} />
@@ -67,13 +68,13 @@ function SettingsRow({
   );
 }
 
-const staggerContainer = {
+const staggerContainer: Variants = {
   hidden: { opacity: 0 },
   show: { opacity: 1, transition: { staggerChildren: 0.08 } }
 };
 
-const itemVariant = {
-  hidden: { opacity: 0, y: 10 },
+const itemVariant: Variants = {
+  hidden: { opacity: 0, y: 8 },
   show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 300, damping: 24 } }
 };
 
@@ -93,6 +94,7 @@ export function SettingsPage({ onBack }: { onBack: () => void }) {
   const [dataSharing, setDataSharing] = useState(false);
   
   const [showPasswordForm, setShowPasswordForm] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -116,11 +118,11 @@ export function SettingsPage({ onBack }: { onBack: () => void }) {
   };
 
   return (
-    <div className="pb-8">
+    <div className="pb-6">
       <PageHeader title="Settings" onBack={onBack} />
       
       <motion.div 
-        className="px-5 pt-2"
+        className="px-5 pt-1.5"
         variants={staggerContainer}
         initial="hidden"
         animate="show"
@@ -128,14 +130,14 @@ export function SettingsPage({ onBack }: { onBack: () => void }) {
         {/* Appearance Section */}
         <motion.div variants={itemVariant}>
           <SettingsGroup label="Appearance">
-            <div className="p-4 bg-card">
-              <div className="flex items-center gap-3.5 mb-4">
-                <div className="w-9 h-9 rounded-full bg-secondary flex items-center justify-center shrink-0">
-                  <Sun className="w-5 h-5 text-foreground" strokeWidth={1.5} />
+            <div className="p-3.5 bg-card">
+              <div className="flex items-center gap-3 mb-3.5">
+                <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center shrink-0">
+                  <Sun className="w-4.5 h-4.5 text-foreground" strokeWidth={1.5} />
                 </div>
                 <div className="flex-1">
-                  <Text className="text-[15px] font-semibold text-foreground">Color Theme</Text>
-                  <Text className="text-muted-foreground text-[13px] mt-0.5">Select your preferred app style</Text>
+                  <Text className="text-[14px] font-semibold text-foreground">Color Theme</Text>
+                  <Text className="text-muted-foreground text-[12.5px] mt-0.5">Select your preferred app style</Text>
                 </div>
               </div>
               
@@ -186,8 +188,8 @@ export function SettingsPage({ onBack }: { onBack: () => void }) {
                   transition={{ type: "spring", bounce: 0, duration: 0.3 }}
                   className="overflow-hidden"
                 >
-                  <div className="p-4 bg-card flex items-center gap-4 border-t border-border/60">
-                    <VolumeX className="w-5 h-5 text-foreground/70 shrink-0" strokeWidth={1.5} />
+                  <div className="p-3.5 bg-card flex items-center gap-3 border-t border-border/60">
+                    <VolumeX className="w-4.5 h-4.5 text-foreground/70 shrink-0" strokeWidth={1.5} />
                     
                     {/* 2. Improved Accessible Volume Slider */}
                     <input 
@@ -203,7 +205,7 @@ export function SettingsPage({ onBack }: { onBack: () => void }) {
                       aria-label="Volume adjustment"
                     />
                     
-                    <Volume2 className="w-5 h-5 text-foreground/70 shrink-0" strokeWidth={1.5} />
+                    <Volume2 className="w-4.5 h-4.5 text-foreground/70 shrink-0" strokeWidth={1.5} />
                   </div>
                 </motion.div>
               )}
@@ -282,14 +284,40 @@ export function SettingsPage({ onBack }: { onBack: () => void }) {
           </AnimatePresence>
 
           <Button 
-            variant="ghost" 
+            variant="primary" 
             fullWidth 
-            className="h-[52px] rounded-xl text-[15px] font-semibold text-destructive hover:bg-destructive/10"
+            onClick={() => setShowDeleteConfirm(true)}
+            className="h-[52px] rounded-xl text-[15px] font-semibold"
           >
             Delete Account
           </Button>
         </motion.div>
       </motion.div>
+
+      <Modal open={showDeleteConfirm} onClose={() => setShowDeleteConfirm(false)}>
+        <ModalHeader>Delete Account</ModalHeader>
+        <ModalBody>
+          <Text className="text-[14px] text-muted-foreground leading-relaxed">
+            This action permanently deletes your account and removes your profile data. This cannot be undone.
+          </Text>
+        </ModalBody>
+        <ModalFooter>
+          <Button
+            variant="ghost"
+            onClick={() => setShowDeleteConfirm(false)}
+            className="rounded-full font-semibold"
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="primary"
+            onClick={() => setShowDeleteConfirm(false)}
+            className="rounded-full font-semibold"
+          >
+            Delete
+          </Button>
+        </ModalFooter>
+      </Modal>
     </div>
   );
 }
