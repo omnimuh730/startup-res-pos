@@ -1,18 +1,27 @@
-/* BookTableFlow — main flow component with state + payment sheet */
-import { useState, useEffect } from "react";
-import { ArrowLeft, Check, Sparkles, SlidersHorizontal } from "lucide-react";
+/* BookTableFlow - main reservation flow */
+import { useEffect, useState } from "react";
+import { ArrowLeft, Check, ShieldCheck, SlidersHorizontal, Sparkles } from "lucide-react";
+import { motion } from "motion/react";
 import { Button } from "../../components/ds/Button";
-import { DSBadge } from "../../components/ds/Badge";
 import { BottomSheet } from "../../components/ds/BottomSheet";
 import type { RestaurantData } from "../detail/restaurantDetailData";
 import {
-  DAYS, OCCASIONS, SEATING_OPTIONS, CUISINE_PREFS, VIBE_OPTIONS, AMENITY_OPTIONS,
-  DEPOSIT_PER_GUEST, SERVICE_FEE, REWARD_BALANCE, POINTS_EARN, STEP_ORDER,
-  genBookingId, collectPrefTags, type Step,
+  AMENITY_OPTIONS,
+  CUISINE_PREFS,
+  DAYS,
+  DEPOSIT_PER_GUEST,
+  REWARD_BALANCE,
+  SEATING_OPTIONS,
+  SERVICE_FEE,
+  STEP_ORDER,
+  VIBE_OPTIONS,
+  collectPrefTags,
+  genBookingId,
+  type Step,
 } from "./bookingData";
 import { PreferenceSection } from "./BookingWidgets";
 import { DateStep, DetailsStep } from "./BookingStepDate";
-import { ConfirmStep, AwaitingStep, SuccessStep } from "./BookingConfirmStep";
+import { AwaitingStep, ConfirmStep, SuccessStep } from "./BookingConfirmStep";
 import { UnifiedPayment } from "../shared/UnifiedPayment";
 
 interface ReservationPrefill {
@@ -28,6 +37,8 @@ interface Props {
   initialReservation?: ReservationPrefill;
 }
 
+const TIME_SLOTS = ["17:00", "17:30", "18:00", "18:30", "19:00", "19:30", "20:00", "20:30", "21:00", "21:30"];
+
 function normalizeInitialTime(value?: string) {
   if (!value) return null;
   if (TIME_SLOTS.includes(value)) return value;
@@ -41,6 +52,50 @@ function normalizeInitialTime(value?: string) {
   if (suffix === "AM" && hour === 12) hour = 0;
   const normalized = `${hour.toString().padStart(2, "0")}:${minute}`;
   return TIME_SLOTS.includes(normalized) ? normalized : null;
+}
+
+function StepHeader({
+  restaurant,
+  step,
+  stepIndex,
+  title,
+  onBack,
+}: {
+  restaurant: RestaurantData;
+  step: Step;
+  stepIndex: number;
+  title: string;
+  onBack: () => void;
+}) {
+  return (
+    <div className="shrink-0 border-b border-border bg-background/94 px-5 py-4 backdrop-blur-md">
+      <div className="mb-4 flex items-center gap-3">
+        <button type="button" onClick={onBack} className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full bg-secondary transition active:scale-95" aria-label="Back">
+          <ArrowLeft className="h-5 w-5" />
+        </button>
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-[1rem] text-foreground" style={{ fontWeight: 900 }}>{title}</p>
+          <p className="truncate text-[0.75rem] text-muted-foreground">{restaurant.name}</p>
+        </div>
+        <span className="rounded-full bg-primary/10 px-3 py-1.5 text-[0.75rem] text-primary" style={{ fontWeight: 900 }}>
+          {stepIndex + 1}/{STEP_ORDER.length}
+        </span>
+      </div>
+      <div className="flex gap-1.5">
+        {STEP_ORDER.map((item, index) => (
+          <div key={item} className={`h-1.5 flex-1 rounded-full transition-colors ${index <= stepIndex ? "bg-primary" : "bg-border"}`} />
+        ))}
+      </div>
+      <div className="mt-3 flex items-center gap-2 rounded-[1.25rem] bg-secondary/65 p-2">
+        <img src={restaurant.image} alt="" className="h-10 w-10 rounded-full object-cover" />
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-[0.8125rem]" style={{ fontWeight: 900 }}>{restaurant.name}</p>
+          <p className="truncate text-[0.6875rem] text-muted-foreground">{restaurant.cuisine}</p>
+        </div>
+        <ShieldCheck className="h-4 w-4 shrink-0 text-primary" />
+      </div>
+    </div>
+  );
 }
 
 export function BookTableFlow({ restaurant, onBack, onComplete, initialReservation }: Props) {
@@ -58,14 +113,16 @@ export function BookTableFlow({ restaurant, onBack, onComplete, initialReservati
   const [showCustomDatePicker, setShowCustomDatePicker] = useState(false);
   const [selectedTime, setSelectedTime] = useState<string | null>(() => normalizeInitialTime(initialReservation?.timeLabel));
   const [guests, setGuests] = useState(() => Math.max(1, initialReservation?.partySize ?? 2));
-  const [name, setName] = useState("Alex Chen"); const [phone, setPhone] = useState("+1 (415) 555-0142"); const [notes, setNotes] = useState("");
+  const [name] = useState("Alex Chen");
+  const [phone] = useState("+1 (415) 555-0142");
+  const [notes, setNotes] = useState("");
   const [occasion, setOccasion] = useState<string | null>(null);
   const [seating, setSeating] = useState<string[]>([]);
   const [cuisinePrefs, setCuisinePrefs] = useState<string[]>([]);
   const [vibes, setVibes] = useState<string[]>([]);
   const [amenities, setAmenities] = useState<string[]>([]);
   const [showPaymentSheet, setShowPaymentSheet] = useState(false);
-  const [useRewards, setUseRewards] = useState(false);
+  const [useRewards] = useState(false);
   const [paymentConfirmed, setPaymentConfirmed] = useState(false);
 
   const canProceedDate = selectedTime !== null;
@@ -78,80 +135,167 @@ export function BookTableFlow({ restaurant, onBack, onComplete, initialReservati
   const dateStr = selectedDate === -1 && customDate
     ? `${customDate.toLocaleDateString("en", { weekday: "short" })}, ${customDate.toLocaleDateString("en", { month: "short" })} ${customDate.getDate()}`
     : DAYS[selectedDate]
-    ? `${DAYS[selectedDate].day}, ${DAYS[selectedDate].month} ${DAYS[selectedDate].date}`
-    : "";
+      ? `${DAYS[selectedDate].day}, ${DAYS[selectedDate].month} ${DAYS[selectedDate].date}`
+      : "";
   const allPrefTags = collectPrefTags(seating, cuisinePrefs, vibes, amenities);
 
-  const togglePref = (list: string[], setList: (v: string[]) => void, id: string) => {
-    setList(list.includes(id) ? list.filter(x => x !== id) : [...list, id]);
+  const togglePref = (list: string[], setList: (value: string[]) => void, id: string) => {
+    setList(list.includes(id) ? list.filter((item) => item !== id) : [...list, id]);
   };
 
-  useEffect(() => { if (step === "awaiting") { const t = setTimeout(() => setStep("success"), 4000); return () => clearTimeout(t); } }, [step]);
-  useEffect(() => { document.body.style.overflow = "hidden"; const m = document.querySelector("main"); if (m) m.style.overflow = "hidden"; return () => { document.body.style.overflow = ""; if (m) m.style.overflow = ""; }; }, []);
+  useEffect(() => {
+    if (step !== "awaiting") return undefined;
+    const timer = window.setTimeout(() => setStep("success"), 3200);
+    return () => window.clearTimeout(timer);
+  }, [step]);
 
-  const handlePaymentComplete = () => { setPaymentConfirmed(true); setTimeout(() => { setShowPaymentSheet(false); setStep("awaiting"); }, 1200); };
+  useEffect(() => {
+    document.body.style.overflow = "hidden";
+    const main = document.querySelector("main");
+    if (main) main.setAttribute("data-booking-scroll-lock", "true");
+    const previous = main instanceof HTMLElement ? main.style.overflow : "";
+    if (main instanceof HTMLElement) main.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = "";
+      if (main instanceof HTMLElement) main.style.overflow = previous;
+      main?.removeAttribute("data-booking-scroll-lock");
+    };
+  }, []);
+
+  const handlePaymentComplete = () => {
+    setPaymentConfirmed(true);
+    window.setTimeout(() => {
+      setShowPaymentSheet(false);
+      setStep("awaiting");
+    }, 1100);
+  };
 
   const stepIndex = STEP_ORDER.indexOf(step);
-  const goBack = () => { if (step === "date") onBack(); else if (step === "details") setStep("date"); else if (step === "preferences") setStep("details"); else if (step === "confirm") setStep("preferences"); };
-  const headerTitle = step === "success" ? "Reservation Approved!" : step === "awaiting" ? "Awaiting Approval" : step === "preferences" ? "Preferences" : step === "confirm" ? "Review & Pay" : "Book a Table";
+  const goBack = () => {
+    if (step === "date") onBack();
+    else if (step === "details") setStep("date");
+    else if (step === "preferences") setStep("details");
+    else if (step === "confirm") setStep("preferences");
+  };
+  const headerTitle = step === "preferences" ? "Preferences" : step === "confirm" ? "Review and pay" : "Book a table";
 
   return (
-    <div className="fixed inset-0 z-[300] bg-background flex flex-col">
+    <div className="fixed inset-0 z-[500] flex flex-col bg-background">
       {step !== "awaiting" && step !== "success" && (
-        <div className="flex items-center gap-3 px-4 py-3 border-b border-border shrink-0">
-          <button onClick={goBack} className="w-9 h-9 rounded-full hover:bg-secondary flex items-center justify-center cursor-pointer transition"><ArrowLeft className="w-5 h-5" /></button>
-          <div className="flex-1 min-w-0">
-            <p className="text-[0.9375rem] truncate" style={{ fontWeight: 600 }}>{headerTitle}</p>
-            <p className="text-[0.75rem] text-muted-foreground truncate">{restaurant.name}</p>
-          </div>
-          <div className="flex gap-1.5">{STEP_ORDER.map((_, i) => <div key={i} className={`w-2 h-2 rounded-full transition-colors ${i <= stepIndex ? "bg-primary" : "bg-secondary"}`} />)}</div>
-        </div>
-      )}
-      {step !== "awaiting" && step !== "success" && (
-        <div className="flex gap-1.5 px-4 py-2 shrink-0">{STEP_ORDER.map((_, i) => <div key={i} className={`h-1 flex-1 rounded-full transition-colors ${i <= stepIndex ? "bg-primary" : "bg-secondary"}`} />)}</div>
+        <StepHeader restaurant={restaurant} step={step} stepIndex={stepIndex} title={headerTitle} onBack={goBack} />
       )}
 
-      <div className="flex-1 overflow-y-auto">
-        {step === "date" && <DateStep guests={guests} setGuests={setGuests} selectedDate={selectedDate} setSelectedDate={setSelectedDate} customDate={customDate} setCustomDate={setCustomDate} selectedTime={selectedTime} setSelectedTime={setSelectedTime} showCustomDatePicker={showCustomDatePicker} setShowCustomDatePicker={setShowCustomDatePicker} />}
-        {step === "details" && <DetailsStep name={name} setName={setName} phone={phone} setPhone={setPhone} notes={notes} setNotes={setNotes} occasion={occasion} setOccasion={setOccasion} />}
+      <div className="min-h-0 flex-1 overflow-y-auto">
+        {step === "date" && (
+          <DateStep
+            guests={guests}
+            setGuests={setGuests}
+            selectedDate={selectedDate}
+            setSelectedDate={setSelectedDate}
+            customDate={customDate}
+            setCustomDate={setCustomDate}
+            selectedTime={selectedTime}
+            setSelectedTime={setSelectedTime}
+            showCustomDatePicker={showCustomDatePicker}
+            setShowCustomDatePicker={setShowCustomDatePicker}
+          />
+        )}
+        {step === "details" && (
+          <DetailsStep
+            name={name}
+            phone={phone}
+            notes={notes}
+            setNotes={setNotes}
+            occasion={occasion}
+            setOccasion={setOccasion}
+          />
+        )}
         {step === "preferences" && (
-          <div className="px-4 py-4 space-y-6">
-            <div className="p-4 rounded-xl border border-primary/20 bg-primary/5"><p className="text-[0.8125rem] text-muted-foreground"><SlidersHorizontal className="w-4 h-4 inline mr-1.5 text-primary" />Customize your dining experience. These help the restaurant prepare for your visit.</p></div>
-            <PreferenceSection title="Seating Preference" subtitle="Where would you like to sit?" options={SEATING_OPTIONS} selected={seating} onToggle={id => togglePref(seating, setSeating, id)} />
-            <PreferenceSection title="Cuisine Preferences" subtitle="What type of food do you enjoy?" options={CUISINE_PREFS} selected={cuisinePrefs} onToggle={id => togglePref(cuisinePrefs, setCuisinePrefs, id)} />
-            <PreferenceSection title="Vibe & Atmosphere" subtitle="What's the mood for tonight?" options={VIBE_OPTIONS} selected={vibes} onToggle={id => togglePref(vibes, setVibes, id)} />
-            <PreferenceSection title="Amenities" subtitle="Any special needs or requests?" options={AMENITY_OPTIONS} selected={amenities} onToggle={id => togglePref(amenities, setAmenities, id)} />
+          <div className="space-y-6 px-5 py-5">
+            <div className="rounded-[1.5rem] border border-primary/20 bg-primary/8 p-4">
+              <p className="text-[0.8125rem] leading-snug text-muted-foreground">
+                <SlidersHorizontal className="mr-1.5 inline h-4 w-4 text-primary" />
+                Customize the visit so the restaurant can prepare the right table, pace, and atmosphere.
+              </p>
+            </div>
+            <PreferenceSection title="Seating" subtitle="Where would you like to sit?" options={SEATING_OPTIONS} selected={seating} onToggle={(id) => togglePref(seating, setSeating, id)} />
+            <PreferenceSection title="Cuisine preferences" subtitle="What type of food do you enjoy?" options={CUISINE_PREFS} selected={cuisinePrefs} onToggle={(id) => togglePref(cuisinePrefs, setCuisinePrefs, id)} />
+            <PreferenceSection title="Vibe" subtitle="What is the mood for tonight?" options={VIBE_OPTIONS} selected={vibes} onToggle={(id) => togglePref(vibes, setVibes, id)} />
+            <PreferenceSection title="Amenities" subtitle="Any special needs or requests?" options={AMENITY_OPTIONS} selected={amenities} onToggle={(id) => togglePref(amenities, setAmenities, id)} />
           </div>
         )}
-        {step === "confirm" && <ConfirmStep restaurant={restaurant} dateStr={dateStr} selectedTime={selectedTime} guests={guests} occasion={occasion} name={name} phone={phone} notes={notes} allPrefTags={allPrefTags} depositAmount={depositAmount} useRewards={useRewards} rewardDiscount={rewardDiscount} totalAmount={totalAmount} />}
+        {step === "confirm" && (
+          <ConfirmStep
+            restaurant={restaurant}
+            dateStr={dateStr}
+            selectedTime={selectedTime}
+            guests={guests}
+            occasion={occasion}
+            name={name}
+            phone={phone}
+            notes={notes}
+            allPrefTags={allPrefTags}
+            depositAmount={depositAmount}
+            useRewards={useRewards}
+            rewardDiscount={rewardDiscount}
+            totalAmount={totalAmount}
+          />
+        )}
         {step === "awaiting" && <AwaitingStep restaurant={restaurant} dateStr={dateStr} selectedTime={selectedTime} guests={guests} totalAmount={totalAmount} />}
         {step === "success" && <SuccessStep restaurant={restaurant} bookingId={bookingId} dateStr={dateStr} selectedTime={selectedTime} guests={guests} occasion={occasion} totalAmount={totalAmount} allPrefTags={allPrefTags} />}
       </div>
 
       {step !== "awaiting" && (
-        <div className="px-4 py-3 border-t border-border shrink-0">
-          {step === "date" && <Button variant="primary" className="w-full" disabled={!canProceedDate} onClick={() => setStep("details")}>Continue</Button>}
-          {step === "details" && <Button variant="primary" className="w-full" disabled={!canProceedDetails} onClick={() => setStep("preferences")}>Set Preferences</Button>}
+        <div className="shrink-0 border-t border-border bg-card/96 px-5 py-3 backdrop-blur-md">
+          {step === "date" && (
+            <Button variant="primary" radius="full" className="h-12 w-full font-bold" disabled={!canProceedDate} onClick={() => setStep("details")}>
+              Continue
+            </Button>
+          )}
+          {step === "details" && (
+            <Button variant="primary" radius="full" className="h-12 w-full font-bold" disabled={!canProceedDetails} onClick={() => setStep("preferences")}>
+              Set preferences
+            </Button>
+          )}
           {step === "preferences" && (
-            <div className="flex gap-3">
-              <Button variant="outline" className="flex-1" onClick={() => setStep("confirm")}>Skip</Button>
-              <Button variant="primary" className="flex-1 gap-2" onClick={() => setStep("confirm")}>{totalPrefs > 0 && <DSBadge variant="solid" color="default" size="sm" className="!bg-primary-foreground !text-primary">{totalPrefs}</DSBadge>}Continue</Button>
+            <div className="grid grid-cols-2 gap-2">
+              <Button variant="outline" radius="full" className="h-12 font-bold" onClick={() => setStep("confirm")}>Skip</Button>
+              <Button variant="primary" radius="full" className="h-12 gap-2 font-bold" onClick={() => setStep("confirm")}>
+                Continue
+                {totalPrefs > 0 && <span className="rounded-full bg-primary-foreground px-1.5 py-0.5 text-[0.625rem] text-primary">{totalPrefs}</span>}
+              </Button>
             </div>
           )}
-          {step === "confirm" && <Button variant="primary" className="w-full gap-2" onClick={() => setShowPaymentSheet(true)}><Check className="w-4 h-4" /> Confirm & Pay ${totalAmount.toFixed(2)}</Button>}
+          {step === "confirm" && (
+            <Button variant="primary" radius="full" className="h-12 w-full gap-2 font-bold" onClick={() => setShowPaymentSheet(true)}>
+              <Check className="h-4 w-4" />
+              Confirm and pay ${totalAmount.toFixed(2)}
+            </Button>
+          )}
           {step === "success" && (
             <div className="space-y-2">
-              <Button variant="primary" className="w-full" onClick={onComplete}>View My Reservations</Button>
-              <Button variant="outline" className="w-full" onClick={onComplete}>Back to Discover</Button>
+              <Button variant="primary" radius="full" className="h-12 w-full font-bold" onClick={onComplete}>View reservations</Button>
+              <Button variant="outline" radius="full" className="h-12 w-full font-bold" onClick={onComplete}>Back to discover</Button>
             </div>
           )}
         </div>
       )}
 
-      <BottomSheet open={showPaymentSheet} onClose={() => { setShowPaymentSheet(false); setPaymentConfirmed(false); }} title="Reservation Payment" snap="full"
+      <BottomSheet
+        open={showPaymentSheet}
+        onClose={() => {
+          setShowPaymentSheet(false);
+          setPaymentConfirmed(false);
+        }}
+        title="Reservation payment"
+        snap="full"
         footer={paymentConfirmed ? (
-          <div className="w-full py-3.5 rounded-2xl bg-success flex items-center justify-center gap-2"><Check className="w-5 h-5 text-success-foreground" /><span className="text-success-foreground text-[0.9375rem]" style={{ fontWeight: 600 }}>Payment Confirmed!</span></div>
-        ) : undefined}>
+          <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="flex w-full items-center justify-center gap-2 rounded-full bg-success py-3.5">
+            <Check className="h-5 w-5 text-success-foreground" />
+            <span className="text-[0.9375rem] text-success-foreground" style={{ fontWeight: 900 }}>Payment confirmed</span>
+          </motion.div>
+        ) : undefined}
+      >
         {!paymentConfirmed && (
           <UnifiedPayment
             payTo={restaurant.name}
@@ -159,9 +303,9 @@ export function BookTableFlow({ restaurant, onBack, onComplete, initialReservati
             amount={totalAmount}
             editable={false}
             lineItems={[
-              { label: `Reservation Deposit (${guests} x $${DEPOSIT_PER_GUEST})`, value: depositAmount },
-              { label: "Service Fee", value: SERVICE_FEE, color: "muted" },
-              ...(useRewards ? [{ label: "Reward Points", value: -rewardDiscount, color: "success" as const, icon: <Sparkles className="w-3 h-3" /> }] : []),
+              { label: `Reservation deposit (${guests} x $${DEPOSIT_PER_GUEST})`, value: depositAmount },
+              { label: "Service fee", value: SERVICE_FEE, color: "muted" },
+              ...(useRewards ? [{ label: "Reward points", value: -rewardDiscount, color: "success" as const, icon: <Sparkles className="h-3 w-3" /> }] : []),
             ]}
             showRewards
             onComplete={handlePaymentComplete}

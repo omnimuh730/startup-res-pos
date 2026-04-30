@@ -15,7 +15,16 @@ import { BookingCard, EmptyState } from "./BookingCard";
 import { ManageSheet, CancelConfirmModal, ModifyModal, ShowQRModal } from "./DiningModals";
 import { EnjoyMealPage } from "./EnjoyMealPage";
 import { OrderReceiptModal } from "./EnjoyExtras";
-import { type Booking, type BookingStatus, BOOKINGS, bookingToRestaurant, isCurrentlyDining } from "./diningData";
+import {
+  type Booking,
+  type BookingStatus,
+  BOOKINGS,
+  bookingToRestaurant,
+  isCurrentlyDining,
+  persistCheckedInBookingId,
+  readCheckedInBookingIds,
+  removeCheckedInBookingId,
+} from "./diningData";
 
 // Premium Apple/Airbnb style spring animations
 const springTransition = { type: "spring", stiffness: 300, damping: 28 } as const;
@@ -152,12 +161,14 @@ function AddBookingCodeModal({
   open,
   onClose,
   bookings,
+  checkedInIds,
   onAdd,
   onView,
 }: {
   open: boolean;
   onClose: () => void;
   bookings: Booking[];
+  checkedInIds: Set<string>;
   onAdd: (booking: Booking) => void;
   onView: (booking: Booking) => void;
 }) {
@@ -269,6 +280,7 @@ function AddBookingCodeModal({
                 </motion.div>
                 <BookingCard
                   booking={addedBooking}
+                  checkedInIds={checkedInIds}
                   onTap={() => viewAddedBooking(addedBooking)}
                   onManage={() => viewAddedBooking(addedBooking)}
                   onScanQR={() => viewAddedBooking(addedBooking)}
@@ -346,7 +358,8 @@ export function DiningPage() {
   const params = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
   const [bookings, setBookings] = useState(BOOKINGS);
-  
+  const [checkedInIds, setCheckedInIds] = useState<Set<string>>(readCheckedInBookingIds);
+
   const urlSegments = params["*"]?.split("/") ?? [];
   const bookingIdFromUrl = urlSegments[0] || null;
   const subSegment = urlSegments[1] || null;
@@ -357,7 +370,7 @@ export function DiningPage() {
   
   const setSelectedBooking = (b: Booking | null) => {
     if (b) {
-      if (b.status === "confirmed" && isCurrentlyDining(b)) navigate(`/dining/${b.id}/enjoy`);
+      if (b.status === "confirmed" && isCurrentlyDining(b, new Date(), checkedInIds)) navigate(`/dining/${b.id}/enjoy`);
       else if (b.status === "confirmed") navigate(`/dining/${b.id}/upcoming`);
       else navigate(`/dining/${b.id}`);
     } else navigate("/dining");
@@ -400,7 +413,15 @@ export function DiningPage() {
   const handleModify = () => { setShowManage(false); setModifyBooking(manageBooking); setShowModify(true); };
   const handleCancelIntent = () => { setShowManage(false); setCancelBooking(manageBooking); setShowCancel(true); };
   const handleCancelConfirm = () => {
-    if (cancelBooking) setBookings(prev => prev.map(b => b.id === cancelBooking.id ? { ...b, status: "cancelled" as BookingStatus } : b));
+    if (cancelBooking) {
+      removeCheckedInBookingId(cancelBooking.id);
+      setCheckedInIds((prev) => {
+        const next = new Set(prev);
+        next.delete(cancelBooking!.id);
+        return next;
+      });
+      setBookings(prev => prev.map(b => b.id === cancelBooking.id ? { ...b, status: "cancelled" as BookingStatus } : b));
+    }
     setShowCancel(false); setCancelBooking(null); setSelectedBooking(null);
   };
   const handleSaveModify = (updated: Booking) => { setBookings(prev => prev.map(b => b.id === updated.id ? updated : b)); };
@@ -424,7 +445,21 @@ export function DiningPage() {
       <ManageSheet open={showManage} onClose={() => setShowManage(false)} onModify={handleModify} onCancel={handleCancelIntent} />
       <ModifyModal open={showModify} onClose={() => setShowModify(false)} booking={modifyBooking} onSave={handleSaveModify} />
       <CancelConfirmModal open={showCancel} onClose={() => setShowCancel(false)} onConfirm={handleCancelConfirm} restaurantName={cancelBooking?.restaurant ?? ""} />
-      {scanQRBooking && <ScanQRFlow booking={scanQRBooking} initialStep={scanQRInitialStep} onClose={() => { setScanQRBooking(null); setScanQRInitialStep("scan"); }} />}
+      {scanQRBooking && (
+        <ScanQRFlow
+          booking={scanQRBooking}
+          initialStep={scanQRInitialStep}
+          onCheckedIn={() => {
+            const id = scanQRBooking.id;
+            persistCheckedInBookingId(id);
+            setCheckedInIds((prev) => new Set(prev).add(id));
+          }}
+          onClose={() => {
+            setScanQRBooking(null);
+            setScanQRInitialStep("scan");
+          }}
+        />
+      )}
       <ShowQRModal booking={showQRBooking} onClose={() => setShowQRBooking(null)} />
       <InviteFriends
         open={!!inviteBooking}
@@ -441,6 +476,7 @@ export function DiningPage() {
         open={addCodeOpen}
         onClose={() => setAddCodeOpen(false)}
         bookings={bookings}
+        checkedInIds={checkedInIds}
         onAdd={handleAddCodeBooking}
         onView={(booking) => {
           setAddCodeOpen(false);
@@ -457,7 +493,11 @@ export function DiningPage() {
       <>
         <EnjoyMealPage
           booking={latestBooking}
-          mode={isEnjoyView ? "live" : "upcoming"}
+          mode={
+            isEnjoyView && isCurrentlyDining(latestBooking, new Date(), checkedInIds)
+              ? "live"
+              : "upcoming"
+          }
           onBack={() => setSelectedBooking(null)}
           onShowQR={() => setShowQRBooking(latestBooking)}
           onScanQR={() => { setScanQRInitialStep("scan"); setScanQRBooking(latestBooking); }}
@@ -594,7 +634,7 @@ export function DiningPage() {
                   <motion.div variants={staggerContainer} initial="hidden" animate="show" className="space-y-3 md:grid md:grid-cols-2 md:gap-4 md:space-y-0">
                     {scheduled.map(b => (
                       <motion.div key={b.id} variants={itemVariant}>
-                        <BookingCard booking={b} onTap={() => setSelectedBooking(b)} onManage={() => openManage(b)} onScanQR={() => setScanQRBooking(b)} onShowQR={() => setShowQRBooking(b)} onInvite={() => setInviteBooking(b)} onBookAgain={() => handleBookAgain(b)} invitedCount={invitedMap[b.id]?.size ?? 0} />
+                        <BookingCard booking={b} checkedInIds={checkedInIds} onTap={() => setSelectedBooking(b)} onManage={() => openManage(b)} onScanQR={() => setScanQRBooking(b)} onShowQR={() => setShowQRBooking(b)} onInvite={() => setInviteBooking(b)} onBookAgain={() => handleBookAgain(b)} invitedCount={invitedMap[b.id]?.size ?? 0} />
                       </motion.div>
                     ))}
                   </motion.div>

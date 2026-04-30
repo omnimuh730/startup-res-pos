@@ -1,110 +1,219 @@
 /* Step 1: Date/Time selection + Step 2: Details/Occasion */
-import { CalendarDays, Clock, Users, Minus, Plus, Sparkles } from "lucide-react";
+import { CalendarDays, Clock, Minus, Plus, Sparkles, User, Users } from "lucide-react";
+import { motion } from "motion/react";
 import { DragScrollContainer } from "../shared/DragScrollContainer";
-import { TIME_SLOTS, DAYS, OCCASIONS } from "./bookingData";
+import { DAYS, OCCASIONS, TIME_SLOTS } from "./bookingData";
 import { CustomDatePickerModal } from "./BookingWidgets";
 
-export function DateStep({ guests, setGuests, selectedDate, setSelectedDate, customDate, setCustomDate, selectedTime, setSelectedTime, showCustomDatePicker, setShowCustomDatePicker }: {
-  guests: number; setGuests: (v: number) => void;
-  selectedDate: number; setSelectedDate: (v: number) => void;
-  customDate: Date | null; setCustomDate: (v: Date | null) => void;
-  selectedTime: string | null; setSelectedTime: (v: string | null) => void;
-  showCustomDatePicker: boolean; setShowCustomDatePicker: (v: boolean) => void;
+function SectionTitle({
+  icon: Icon,
+  title,
+  subtitle,
+}: {
+  icon: typeof Users;
+  title: string;
+  subtitle?: string;
 }) {
   return (
-    <div className="px-4 py-4 space-y-6">
+    <div className="mb-3 flex items-start gap-2">
+      <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+        <Icon className="h-4 w-4" />
+      </span>
       <div>
-        <label className="text-[0.875rem] mb-3 block" style={{ fontWeight: 600 }}><Users className="w-4 h-4 inline mr-2" /> Number of Guests</label>
-        <div className="flex items-center gap-4 justify-center py-3">
-          <button onClick={() => setGuests(Math.max(1, guests - 1))} className="w-10 h-10 rounded-full border border-border flex items-center justify-center cursor-pointer hover:bg-secondary transition"><Minus className="w-4 h-4" /></button>
-          <span className="text-[1.5rem] w-12 text-center" style={{ fontWeight: 700 }}>{guests}</span>
-          <button onClick={() => setGuests(Math.min(20, guests + 1))} className="w-10 h-10 rounded-full border border-border flex items-center justify-center cursor-pointer hover:bg-secondary transition"><Plus className="w-4 h-4" /></button>
-        </div>
-      </div>
-      <div>
-        <label className="text-[0.875rem] mb-3 block" style={{ fontWeight: 600 }}><CalendarDays className="w-4 h-4 inline mr-2" /> Select Date</label>
-        <div className="flex items-stretch gap-3">
-          <DragScrollContainer className="flex gap-2 pb-1 flex-1 min-w-0">
-            {DAYS.map((d, i) => (
-              <button key={i} onClick={() => setSelectedDate(i)}
-                className={`flex flex-col items-center px-3 py-2.5 rounded-xl shrink-0 cursor-pointer transition-all min-w-[4rem] ${selectedDate === i ? "bg-primary text-primary-foreground shadow-md" : "bg-card border border-border hover:bg-secondary"}`}>
-                <span className="text-[0.6875rem]" style={{ fontWeight: 500 }}>{d.label}</span>
-                <span className="text-[1.125rem] my-0.5" style={{ fontWeight: 700 }}>{d.date}</span>
-                <span className="text-[0.6875rem]">{d.month}</span>
-              </button>
-            ))}
-          </DragScrollContainer>
-          <button onClick={() => { if (customDate) setSelectedDate(-1); else setShowCustomDatePicker(true); }}
-            onDoubleClick={() => setShowCustomDatePicker(true)}
-            className={`flex flex-col items-center justify-center px-3 py-2.5 mb-1 rounded-xl shrink-0 cursor-pointer transition-all min-w-[4rem] ${selectedDate === -1 && customDate ? "bg-primary text-primary-foreground shadow-md" : customDate ? "bg-card border border-border hover:bg-secondary" : "bg-card border border-dashed border-border hover:bg-secondary"}`}>
-            <span className="text-[0.6875rem]" style={{ fontWeight: 500 }}>{customDate ? customDate.toLocaleDateString("en", { weekday: "short" }) : "Custom"}</span>
-            <span className="text-[1.125rem] my-0.5 flex items-center justify-center h-[1.375rem]" style={{ fontWeight: 700 }}>
-              {customDate ? customDate.getDate() : <CalendarDays className="w-4 h-4" />}
-            </span>
-            <span className="text-[0.6875rem]">{customDate ? customDate.toLocaleDateString("en", { month: "short" }) : "Pick"}</span>
-          </button>
-        </div>
-        {showCustomDatePicker && (
-          <CustomDatePickerModal value={customDate} onSelect={(d) => { setCustomDate(d); setSelectedDate(-1); setShowCustomDatePicker(false); }} onClose={() => setShowCustomDatePicker(false)} />
-        )}
-      </div>
-      <div>
-        <label className="text-[0.875rem] mb-3 block" style={{ fontWeight: 600 }}><Clock className="w-4 h-4 inline mr-2" /> Select Time</label>
-        <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
-          {TIME_SLOTS.map((t) => (
-            <button key={t} onClick={() => setSelectedTime(t)}
-              className={`py-2.5 rounded-xl text-[0.8125rem] cursor-pointer transition-all ${selectedTime === t ? "bg-primary text-primary-foreground shadow-md" : "bg-card border border-border hover:bg-secondary"}`}
-              style={{ fontWeight: selectedTime === t ? 600 : 400 }}>{t}</button>
-          ))}
-        </div>
+        <h3 className="text-[1rem] text-foreground" style={{ fontWeight: 900 }}>{title}</h3>
+        {subtitle && <p className="mt-0.5 text-[0.8125rem] text-muted-foreground">{subtitle}</p>}
       </div>
     </div>
   );
 }
 
-export function DetailsStep({ name, phone, notes, setNotes, occasion, setOccasion }: {
-  name: string; setName?: (v: string) => void; phone: string; setPhone?: (v: string) => void;
-  notes: string; setNotes: (v: string) => void; occasion: string | null; setOccasion: (v: string | null) => void;
+export function DateStep({
+  guests,
+  setGuests,
+  selectedDate,
+  setSelectedDate,
+  customDate,
+  setCustomDate,
+  selectedTime,
+  setSelectedTime,
+  showCustomDatePicker,
+  setShowCustomDatePicker,
+}: {
+  guests: number;
+  setGuests: (value: number) => void;
+  selectedDate: number;
+  setSelectedDate: (value: number) => void;
+  customDate: Date | null;
+  setCustomDate: (value: Date | null) => void;
+  selectedTime: string | null;
+  setSelectedTime: (value: string | null) => void;
+  showCustomDatePicker: boolean;
+  setShowCustomDatePicker: (value: boolean) => void;
 }) {
   return (
-    <div className="px-4 py-4 space-y-6">
-      <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <h3 className="text-[0.9375rem]" style={{ fontWeight: 600 }}>Contact Information</h3>
-          <span className="text-[0.6875rem] text-muted-foreground" style={{ fontWeight: 500 }}>From your profile</span>
-        </div>
-        <div className="rounded-xl border border-border bg-secondary/30 divide-y divide-border">
-          <div className="flex items-center justify-between px-4 py-3">
-            <span className="text-[0.75rem] text-muted-foreground" style={{ fontWeight: 500 }}>Full Name</span>
-            <span className="text-[0.875rem]" style={{ fontWeight: 600 }}>{name}</span>
+    <div className="space-y-6 px-5 py-5">
+      <section className="rounded-[1.5rem] border border-border bg-card p-4 shadow-[0_6px_20px_rgba(0,0,0,0.045)]">
+        <SectionTitle icon={Users} title="Party size" subtitle="Choose how many seats you need." />
+        <div className="flex items-center justify-center gap-5 py-2">
+          <button type="button" onClick={() => setGuests(Math.max(1, guests - 1))} className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-full border border-border bg-card transition hover:bg-secondary active:scale-95">
+            <Minus className="h-4 w-4" />
+          </button>
+          <div className="min-w-20 text-center">
+            <div className="text-[2rem] leading-none text-foreground" style={{ fontWeight: 900 }}>{guests}</div>
+            <div className="mt-1 text-[0.75rem] text-muted-foreground">{guests === 1 ? "guest" : "guests"}</div>
           </div>
-          <div className="flex items-center justify-between px-4 py-3">
-            <span className="text-[0.75rem] text-muted-foreground" style={{ fontWeight: 500 }}>Phone Number</span>
-            <span className="text-[0.875rem]" style={{ fontWeight: 600 }}>{phone}</span>
-          </div>
+          <button type="button" onClick={() => setGuests(Math.min(20, guests + 1))} className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-full bg-primary text-primary-foreground shadow-[0_8px_18px_rgba(255,56,92,0.22)] transition active:scale-95">
+            <Plus className="h-4 w-4" />
+          </button>
         </div>
-        <p className="text-[0.6875rem] text-muted-foreground px-1">To change these, edit your profile.</p>
-      </div>
-      <div>
-        <h3 className="text-[0.9375rem] mb-3" style={{ fontWeight: 600 }}><Sparkles className="w-4 h-4 inline mr-2" /> Occasion *</h3>
-        <div className="grid grid-cols-3 gap-2">
-          {OCCASIONS.map((o) => {
-            const Icon = o.icon; const sel = occasion === o.id;
+      </section>
+
+      <section>
+        <SectionTitle icon={CalendarDays} title="Date" subtitle="Swipe to see more available dates." />
+        <div className="flex items-stretch gap-2">
+          <DragScrollContainer className="flex min-w-0 flex-1 gap-2 pb-1">
+            {DAYS.map((day, index) => {
+              const active = selectedDate === index;
+              return (
+                <motion.button
+                  key={`${day.month}-${day.date}`}
+                  type="button"
+                  whileTap={{ scale: 0.96 }}
+                  onClick={() => setSelectedDate(index)}
+                  className={`flex min-w-[4.25rem] shrink-0 cursor-pointer flex-col items-center rounded-[1.15rem] border px-3 py-2.5 transition ${
+                    active ? "border-primary bg-primary text-primary-foreground shadow-[0_8px_18px_rgba(255,56,92,0.22)]" : "border-border bg-card hover:bg-secondary"
+                  }`}
+                >
+                  <span className="text-[0.6875rem]" style={{ fontWeight: 800 }}>{day.label}</span>
+                  <span className="my-0.5 text-[1.125rem]" style={{ fontWeight: 900 }}>{day.date}</span>
+                  <span className="text-[0.6875rem]">{day.month}</span>
+                </motion.button>
+              );
+            })}
+          </DragScrollContainer>
+          <button
+            type="button"
+            onClick={() => { if (customDate) setSelectedDate(-1); else setShowCustomDatePicker(true); }}
+            onDoubleClick={() => setShowCustomDatePicker(true)}
+            className={`mb-1 flex min-w-[4.25rem] shrink-0 cursor-pointer flex-col items-center justify-center rounded-[1.15rem] border px-3 py-2.5 transition ${
+              selectedDate === -1 && customDate ? "border-primary bg-primary text-primary-foreground" : customDate ? "border-border bg-card hover:bg-secondary" : "border-dashed border-border bg-card hover:bg-secondary"
+            }`}
+          >
+            <span className="text-[0.6875rem]" style={{ fontWeight: 800 }}>{customDate ? customDate.toLocaleDateString("en", { weekday: "short" }) : "Custom"}</span>
+            <span className="my-0.5 flex h-[1.375rem] items-center justify-center text-[1.125rem]" style={{ fontWeight: 900 }}>
+              {customDate ? customDate.getDate() : <CalendarDays className="h-4 w-4" />}
+            </span>
+            <span className="text-[0.6875rem]">{customDate ? customDate.toLocaleDateString("en", { month: "short" }) : "Pick"}</span>
+          </button>
+        </div>
+        {showCustomDatePicker && (
+          <CustomDatePickerModal
+            value={customDate}
+            onSelect={(date) => {
+              setCustomDate(date);
+              setSelectedDate(-1);
+              setShowCustomDatePicker(false);
+            }}
+            onClose={() => setShowCustomDatePicker(false)}
+          />
+        )}
+      </section>
+
+      <section>
+        <SectionTitle icon={Clock} title="Time" subtitle="Pick the reservation start time." />
+        <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
+          {TIME_SLOTS.map((time) => {
+            const active = selectedTime === time;
             return (
-              <button key={o.id} onClick={() => setOccasion(o.id)}
-                className={`flex flex-col items-center gap-1.5 py-3 px-2 rounded-xl cursor-pointer transition-all ${sel ? "bg-primary/15 border-primary border-2 text-primary" : "bg-card border border-border hover:bg-secondary"}`}>
-                <Icon className="w-5 h-5" />
-                <span className="text-[0.75rem]" style={{ fontWeight: sel ? 600 : 400 }}>{o.label}</span>
-              </button>
+              <motion.button
+                key={time}
+                type="button"
+                whileTap={{ scale: 0.96 }}
+                onClick={() => setSelectedTime(time)}
+                className={`h-10 cursor-pointer rounded-full text-[0.8125rem] transition ${
+                  active ? "bg-primary text-primary-foreground shadow-[0_8px_18px_rgba(255,56,92,0.22)]" : "border border-border bg-card hover:bg-secondary"
+                }`}
+                style={{ fontWeight: 900 }}
+              >
+                {time}
+              </motion.button>
             );
           })}
         </div>
-      </div>
-      <div>
-        <label className="text-[0.8125rem] mb-1.5 block text-muted-foreground" style={{ fontWeight: 500 }}>Special Requests</label>
-        <textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Allergies, dietary restrictions, celebrations..." rows={3}
-          className="w-full px-4 py-3 rounded-xl border border-border bg-card text-[0.875rem] outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition resize-none" />
-      </div>
+      </section>
+    </div>
+  );
+}
+
+export function DetailsStep({
+  name,
+  phone,
+  notes,
+  setNotes,
+  occasion,
+  setOccasion,
+}: {
+  name: string;
+  setName?: (value: string) => void;
+  phone: string;
+  setPhone?: (value: string) => void;
+  notes: string;
+  setNotes: (value: string) => void;
+  occasion: string | null;
+  setOccasion: (value: string | null) => void;
+}) {
+  return (
+    <div className="space-y-6 px-5 py-5">
+      <section className="rounded-[1.5rem] border border-border bg-card p-4 shadow-[0_6px_20px_rgba(0,0,0,0.045)]">
+        <div className="mb-3 flex items-center justify-between">
+          <SectionTitle icon={User} title="Contact" subtitle="Pulled from your profile." />
+        </div>
+        <div className="grid gap-2">
+          <div className="flex items-center justify-between rounded-[1rem] bg-secondary/65 px-3 py-2.5">
+            <span className="text-[0.75rem] text-muted-foreground" style={{ fontWeight: 800 }}>Full name</span>
+            <span className="text-[0.875rem]" style={{ fontWeight: 900 }}>{name}</span>
+          </div>
+          <div className="flex items-center justify-between rounded-[1rem] bg-secondary/65 px-3 py-2.5">
+            <span className="text-[0.75rem] text-muted-foreground" style={{ fontWeight: 800 }}>Phone</span>
+            <span className="text-[0.875rem]" style={{ fontWeight: 900 }}>{phone}</span>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <SectionTitle icon={Sparkles} title="Occasion" subtitle="This helps the restaurant prepare." />
+        <div className="grid grid-cols-3 gap-2">
+          {OCCASIONS.map((occasionOption) => {
+            const Icon = occasionOption.icon;
+            const active = occasion === occasionOption.id;
+            return (
+              <motion.button
+                key={occasionOption.id}
+                type="button"
+                whileTap={{ scale: 0.96 }}
+                onClick={() => setOccasion(occasionOption.id)}
+                className={`flex cursor-pointer flex-col items-center gap-1.5 rounded-[1.15rem] border px-2 py-3 transition ${
+                  active ? "border-primary bg-primary text-primary-foreground shadow-[0_8px_18px_rgba(255,56,92,0.22)]" : "border-border bg-card hover:bg-secondary"
+                }`}
+              >
+                <Icon className="h-5 w-5" />
+                <span className="text-[0.75rem]" style={{ fontWeight: 800 }}>{occasionOption.label}</span>
+              </motion.button>
+            );
+          })}
+        </div>
+      </section>
+
+      <section>
+        <SectionTitle icon={Sparkles} title="Special requests" subtitle="Allergies, seating, or celebration notes." />
+        <textarea
+          value={notes}
+          onChange={(event) => setNotes(event.target.value)}
+          placeholder="Allergies, dietary restrictions, celebrations..."
+          rows={4}
+          className="w-full resize-none rounded-[1.25rem] border border-border bg-card px-4 py-3 text-[0.875rem] outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/15"
+        />
+      </section>
     </div>
   );
 }

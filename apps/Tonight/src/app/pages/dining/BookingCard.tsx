@@ -18,6 +18,7 @@ import {
   MapPin,
   Armchair,
   CheckCircle2,
+  UtensilsCrossed,
 } from "lucide-react";
 import type { Booking } from "./diningData";
 import { statusConfig, fmtR, isCurrentlyDining } from "./diningData";
@@ -49,10 +50,18 @@ function DetailPill({
   );
 }
 
-function StatusBadge({ booking, className = "" }: { booking: Booking; className?: string }) {
+function StatusBadge({
+  booking,
+  checkedInIds,
+  className = "",
+}: {
+  booking: Booking;
+  checkedInIds?: Set<string>;
+  className?: string;
+}) {
   const sc = statusConfig[booking.status];
   const StatusIcon = sc.icon;
-  const live = booking.status === "confirmed" && isCurrentlyDining(booking);
+  const live = booking.status === "confirmed" && isCurrentlyDining(booking, new Date(), checkedInIds);
 
   if (live) {
     return (
@@ -76,17 +85,36 @@ function StatusBadge({ booking, className = "" }: { booking: Booking; className?
 
 function PrimaryAction({
   booking,
+  isLiveDining,
+  onOpenLive,
   onManage,
   onScanQR,
   onBookAgain,
   onViewReceipt,
 }: {
   booking: Booking;
+  isLiveDining?: boolean;
+  onOpenLive?: () => void;
   onManage?: () => void;
   onScanQR?: () => void;
   onBookAgain?: () => void;
   onViewReceipt?: () => void;
 }) {
+  if (booking.status === "confirmed" && isLiveDining && onOpenLive) {
+    return (
+      <Button
+        variant="primary"
+        size="sm"
+        radius="full"
+        className="min-h-9 px-3 font-bold"
+        leftIcon={<UtensilsCrossed className="h-3.5 w-3.5" />}
+        onClick={stop(onOpenLive)}
+      >
+        Enjoy
+      </Button>
+    );
+  }
+
   if (booking.status === "confirmed") {
     return (
       <Button
@@ -133,6 +161,7 @@ function PrimaryAction({
 
 export function BookingCard({
   booking,
+  checkedInIds,
   onTap,
   onManage,
   onScanQR,
@@ -143,6 +172,8 @@ export function BookingCard({
   invitedCount = 0,
 }: {
   booking: Booking;
+  /** When set, QR check-in from Dining is merged with time-window logic for "live" state. */
+  checkedInIds?: Set<string>;
   onTap: () => void;
   onManage?: () => void;
   onScanQR?: () => void;
@@ -156,7 +187,7 @@ export function BookingCard({
   const isScheduled = booking.status === "confirmed";
   const isVisited = booking.status === "completed";
   const isCancelled = booking.status === "cancelled" || booking.status === "no-show";
-  const isLive = isScheduled && isCurrentlyDining(booking);
+  const isLive = isScheduled && isCurrentlyDining(booking, new Date(), checkedInIds);
   const receiptTotal = booking.receipt ? `$${booking.receipt.total.toFixed(2)}` : null;
 
   useEffect(() => {
@@ -208,7 +239,7 @@ export function BookingCard({
               </Text>
             </div>
           </div>
-          <StatusBadge booking={booking} className="w-full" />
+          <StatusBadge booking={booking} checkedInIds={checkedInIds} className="w-full" />
         </div>
 
         <div className="min-w-0 flex-1">
@@ -345,6 +376,8 @@ export function BookingCard({
         <div className="flex items-center gap-2">
           <PrimaryAction
             booking={booking}
+            isLiveDining={isLive}
+            onOpenLive={onTap}
             onManage={onManage}
             onScanQR={onScanQR}
             onBookAgain={onBookAgain}

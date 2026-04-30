@@ -1,16 +1,22 @@
 /* Forgot Password Flow */
 import { useState } from "react";
-import React from "react";
-import { motion, AnimatePresence } from "motion/react";
-import { ArrowLeft, User, Lock, ShieldQuestion, KeyRound, CheckCircle2, X } from "lucide-react";
+import { AnimatePresence, motion } from "motion/react";
+import { ArrowLeft, CheckCircle2, KeyRound, Lock, ShieldQuestion, User, X } from "lucide-react";
 import { useNavigate } from "react-router";
-import { InputField, FeedbackBanner, MOCK_USERS } from "./authHelpers";
+import { AuthHero, AuthProgress, AuthSurface, FeedbackBanner, IconBadge, InputField, MOCK_USERS } from "./authHelpers";
 
 type ForgotStep = "username" | "security" | "reset" | "done";
 
-export function ForgotPasswordPage() {
+interface ForgotPasswordPageProps {
+  onBack?: () => void;
+}
+
+const STEPS: ForgotStep[] = ["username", "security", "reset", "done"];
+const STEP_LABELS = ["Account", "Verify", "Reset", "Done"];
+
+export function ForgotPasswordPage({ onBack: onBackProp }: ForgotPasswordPageProps = {}) {
   const navigate = useNavigate();
-  const onBack = () => navigate("/auth/login");
+  const onBack = () => onBackProp?.() ?? navigate("/auth/login");
   const [step, setStep] = useState<ForgotStep>("username");
   const [username, setUsername] = useState("");
   const [securityAnswer, setSecurityAnswer] = useState("");
@@ -22,118 +28,163 @@ export function ForgotPasswordPage() {
   const [loading, setLoading] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
+  const stepIndex = STEPS.indexOf(step);
+
   const handleFindAccount = () => {
-    setFeedback(null); setFieldErrors({});
-    if (!username.trim()) { setFieldErrors({ username: "Please enter your username" }); return; }
+    setFeedback(null);
+    setFieldErrors({});
+    if (!username.trim()) {
+      setFieldErrors({ username: "Please enter your username" });
+      return;
+    }
     setLoading(true);
-    setTimeout(() => {
+    window.setTimeout(() => {
       setLoading(false);
       const user = MOCK_USERS[username.toLowerCase()];
-      if (!user) { setFeedback({ type: "error", message: "No account found with this username." }); return; }
-      if (!user.active) { setFeedback({ type: "warning", message: "This account is deactivated. Contact support." }); return; }
-      setFoundUser(user); setRandomQIndex(Math.floor(Math.random() * user.securityQA.length)); setStep("security");
-    }, 600);
+      if (!user) {
+        setFeedback({ type: "error", message: "No account found with this username." });
+        return;
+      }
+      if (!user.active) {
+        setFeedback({ type: "warning", message: "This account is deactivated. Contact support." });
+        return;
+      }
+      setFoundUser(user);
+      setRandomQIndex(Math.floor(Math.random() * user.securityQA.length));
+      setStep("security");
+    }, 550);
   };
 
   const handleVerifySecurity = () => {
     setFeedback(null);
-    if (!securityAnswer.trim()) { setFieldErrors({ security: "Please answer the security question" }); return; }
+    setFieldErrors({});
+    if (!securityAnswer.trim()) {
+      setFieldErrors({ security: "Please answer the security question" });
+      return;
+    }
     setLoading(true);
-    setTimeout(() => {
+    window.setTimeout(() => {
       setLoading(false);
-      if (foundUser && securityAnswer.toLowerCase().trim() === foundUser.securityQA[randomQIndex].a) setStep("reset");
-      else setFeedback({ type: "error", message: "Incorrect answer. Please try again." });
-    }, 600);
+      if (foundUser && securityAnswer.toLowerCase().trim() === foundUser.securityQA[randomQIndex].a) {
+        setStep("reset");
+      } else {
+        setFeedback({ type: "error", message: "Incorrect answer. Please try again." });
+      }
+    }, 550);
   };
 
   const handleResetPassword = () => {
-    setFeedback(null); setFieldErrors({});
-    if (newPassword.length < 6) { setFieldErrors({ newPw: "Password must be at least 6 characters" }); return; }
-    if (newPassword !== confirmPassword) { setFieldErrors({ confirmPw: "Passwords do not match" }); return; }
-    setLoading(true); setTimeout(() => { setLoading(false); setStep("done"); }, 600);
+    setFeedback(null);
+    setFieldErrors({});
+    if (newPassword.length < 6) {
+      setFieldErrors({ newPw: "Password must be at least 6 characters" });
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setFieldErrors({ confirmPw: "Passwords do not match" });
+      return;
+    }
+    setLoading(true);
+    window.setTimeout(() => {
+      setLoading(false);
+      setStep("done");
+    }, 550);
+  };
+
+  const goBack = () => {
+    if (step === "username" || step === "done") onBack();
+    else if (step === "security") setStep("username");
+    else if (step === "reset") setStep("security");
   };
 
   return (
-    <motion.div className="min-h-screen bg-white flex flex-col" initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }} transition={{ duration: 0.3 }}>
-      <div className="flex items-center gap-3 px-4 pt-4 pb-2">
-        <button onClick={onBack} className="p-2 rounded-full hover:bg-[#f5f5f5] cursor-pointer"><ArrowLeft className="w-5 h-5 text-[#222]" /></button>
-        <span className="text-[1rem] text-[#222]" style={{ fontWeight: 600 }}>Forgot Password</span>
-        <button onClick={() => navigate("/discover")} aria-label="Close" className="ml-auto p-2 rounded-full hover:bg-[#f5f5f5] cursor-pointer">
-          <X className="w-5 h-5 text-[#666]" />
+    <AuthSurface>
+      <div className="mb-5 flex items-center gap-3">
+        <button type="button" onClick={goBack} className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full bg-secondary transition active:scale-95" aria-label="Back">
+          <ArrowLeft className="h-5 w-5" />
+        </button>
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-[0.9375rem] text-foreground" style={{ fontWeight: 900 }}>Password recovery</p>
+          <p className="truncate text-[0.75rem] text-muted-foreground">Secure account reset</p>
+        </div>
+        <button type="button" onClick={() => navigate("/discover")} className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full bg-secondary transition active:scale-95" aria-label="Close">
+          <X className="h-5 w-5" />
         </button>
       </div>
-      <div className="flex-1 flex flex-col px-6 sm:px-8 max-w-md mx-auto w-full pt-6">
-        <div className="flex items-center mb-8">
-          {(["username", "security", "reset", "done"] as ForgotStep[]).map((s, i) => {
-            const stepIdx = (["username", "security", "reset", "done"] as ForgotStep[]).indexOf(step);
-            return (
-              <React.Fragment key={s}>
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-[0.75rem] transition-all ${step === s ? "bg-[#FF385C] text-white" : stepIdx > i ? "bg-[#4CAF50] text-white" : "bg-[#f5f5f5] text-[#aaa]"}`} style={{ fontWeight: 600 }}>
-                  {stepIdx > i ? <CheckCircle2 className="w-4 h-4" /> : i + 1}
-                </div>
-                {i < 3 && <div className={`flex-1 h-0.5 mx-2 ${stepIdx > i ? "bg-[#4CAF50]" : "bg-[#eee]"}`} />}
-              </React.Fragment>
-            );
-          })}
-        </div>
-        <AnimatePresence>{feedback && <div className="mb-4"><FeedbackBanner type={feedback.type} message={feedback.message} onDismiss={() => setFeedback(null)} /></div>}</AnimatePresence>
-        {step === "username" && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-            <div className="flex flex-col items-center mb-6">
-              <div className="w-16 h-16 rounded-full bg-[#FFF3F0] flex items-center justify-center mb-3"><User className="w-7 h-7 text-[#FF385C]" /></div>
-              <h2 className="text-[1.25rem] text-[#222]" style={{ fontWeight: 700 }}>Find your account</h2>
-              <p className="text-[0.8125rem] text-[#888] mt-1 text-center">Enter your username to recover your password</p>
-            </div>
-            <InputField icon={User} type="text" placeholder="Username" value={username} onChange={(v) => { setUsername(v); setFieldErrors({}); setFeedback(null); }} error={fieldErrors.username} disabled={loading} />
-            <button onClick={handleFindAccount} disabled={loading} className="w-full h-[52px] mt-5 rounded-2xl text-white text-[0.9375rem] transition hover:opacity-90 cursor-pointer flex items-center justify-center disabled:opacity-60" style={{ fontWeight: 700, background: "#FF385C" }}>
-              {loading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : "Find Account"}
-            </button>
-            <div className="mt-4 p-3 rounded-xl bg-[#f5f5f5] text-[0.75rem] text-[#888]">
-              <p style={{ fontWeight: 600 }} className="text-[#666] mb-1">Test accounts:</p>
-              <p><span className="text-[#222]" style={{ fontWeight: 500 }}>catchtable</span> — answers: fluffy, seoul, pizza</p>
-              <p className="mt-0.5"><span className="text-[#222]" style={{ fontWeight: 500 }}>foodie99</span> — answers: pizza, buddy, foodster</p>
-            </div>
-          </motion.div>
+
+      <AuthProgress labels={STEP_LABELS} activeIndex={stepIndex} />
+
+      <AnimatePresence>
+        {feedback && (
+          <div className="mb-4">
+            <FeedbackBanner type={feedback.type} message={feedback.message} onDismiss={() => setFeedback(null)} />
+          </div>
         )}
-        {step === "security" && foundUser && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-            <div className="flex flex-col items-center mb-6">
-              <div className="w-16 h-16 rounded-full bg-[#FFF3F0] flex items-center justify-center mb-3"><ShieldQuestion className="w-7 h-7 text-[#FF385C]" /></div>
-              <h2 className="text-[1.25rem] text-[#222]" style={{ fontWeight: 700 }}>Security Question</h2>
-              <p className="text-[0.8125rem] text-[#888] mt-1 text-center">Answer your security question to verify identity</p>
-            </div>
-            <div className="p-3 rounded-xl bg-[#f5f5f5] mb-3 text-[0.875rem] text-[#444]" style={{ fontWeight: 500 }}>{foundUser.securityQA[randomQIndex].q}</div>
-            <InputField icon={ShieldQuestion} type="text" placeholder="Your answer" value={securityAnswer} onChange={(v) => { setSecurityAnswer(v); setFieldErrors({}); setFeedback(null); }} error={fieldErrors.security} disabled={loading} />
-            <button onClick={handleVerifySecurity} disabled={loading} className="w-full h-[52px] mt-5 rounded-2xl text-white text-[0.9375rem] transition hover:opacity-90 cursor-pointer flex items-center justify-center disabled:opacity-60" style={{ fontWeight: 700, background: "#FF385C" }}>
-              {loading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : "Verify"}
-            </button>
-          </motion.div>
-        )}
-        {step === "reset" && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-            <div className="flex flex-col items-center mb-6">
-              <div className="w-16 h-16 rounded-full bg-[#FFF3F0] flex items-center justify-center mb-3"><KeyRound className="w-7 h-7 text-[#FF385C]" /></div>
-              <h2 className="text-[1.25rem] text-[#222]" style={{ fontWeight: 700 }}>Set New Password</h2>
-              <p className="text-[0.8125rem] text-[#888] mt-1 text-center">Create a strong password for your account</p>
-            </div>
-            <div className="space-y-3">
-              <InputField icon={Lock} type="password" placeholder="New password" value={newPassword} onChange={(v) => { setNewPassword(v); setFieldErrors({}); }} error={fieldErrors.newPw} disabled={loading} />
-              <InputField icon={Lock} type="password" placeholder="Confirm new password" value={confirmPassword} onChange={(v) => { setConfirmPassword(v); setFieldErrors({}); }} error={fieldErrors.confirmPw} disabled={loading} />
-            </div>
-            <button onClick={handleResetPassword} disabled={loading} className="w-full h-[52px] mt-5 rounded-2xl text-white text-[0.9375rem] transition hover:opacity-90 cursor-pointer flex items-center justify-center disabled:opacity-60" style={{ fontWeight: 700, background: "#FF385C" }}>
-              {loading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : "Reset Password"}
-            </button>
-          </motion.div>
-        )}
-        {step === "done" && (
-          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="flex flex-col items-center pt-8">
-            <div className="w-20 h-20 rounded-full bg-[#E8F5E9] flex items-center justify-center mb-4"><CheckCircle2 className="w-10 h-10 text-[#4CAF50]" /></div>
-            <h2 className="text-[1.25rem] text-[#222]" style={{ fontWeight: 700 }}>Password Reset!</h2>
-            <p className="text-[0.875rem] text-[#888] mt-2 text-center">Your password has been successfully updated. You can now sign in with your new password.</p>
-            <button onClick={onBack} className="w-full h-[52px] mt-8 rounded-2xl text-white text-[0.9375rem] transition hover:opacity-90 cursor-pointer" style={{ fontWeight: 700, background: "#FF385C" }}>Back to Sign In</button>
-          </motion.div>
-        )}
-      </div>
-    </motion.div>
+      </AnimatePresence>
+
+      {step === "username" && (
+        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
+          <AuthHero
+            icon={<IconBadge><User className="h-7 w-7" /></IconBadge>}
+            title="Find your account"
+            subtitle="Enter your username and we will confirm your recovery questions."
+          />
+          <InputField icon={User} type="text" placeholder="Username" value={username} onChange={(value) => { setUsername(value); setFieldErrors({}); setFeedback(null); }} error={fieldErrors.username} disabled={loading} />
+          <button type="button" onClick={handleFindAccount} disabled={loading} className="mt-5 flex h-12 w-full cursor-pointer items-center justify-center rounded-full bg-primary text-[0.9375rem] text-primary-foreground shadow-[0_10px_24px_rgba(255,56,92,0.22)] disabled:opacity-60" style={{ fontWeight: 900 }}>
+            {loading ? <span className="h-5 w-5 rounded-full border-2 border-white/35 border-t-white animate-spin" /> : "Find account"}
+          </button>
+          <div className="mt-4 rounded-[1.25rem] bg-secondary/60 p-3 text-[0.75rem] leading-snug text-muted-foreground">
+            Test accounts: <span className="text-foreground" style={{ fontWeight: 800 }}>catchtable</span> answers with fluffy, seoul, or pizza.
+          </div>
+        </motion.div>
+      )}
+
+      {step === "security" && foundUser && (
+        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
+          <AuthHero
+            icon={<IconBadge><ShieldQuestion className="h-7 w-7" /></IconBadge>}
+            title="Verify identity"
+            subtitle="Answer the security question attached to your account."
+          />
+          <div className="mb-3 rounded-[1.25rem] border border-primary/20 bg-primary/8 p-4">
+            <p className="text-[0.875rem] leading-snug text-foreground" style={{ fontWeight: 800 }}>
+              {foundUser.securityQA[randomQIndex].q}
+            </p>
+          </div>
+          <InputField icon={ShieldQuestion} type="text" placeholder="Your answer" value={securityAnswer} onChange={(value) => { setSecurityAnswer(value); setFieldErrors({}); setFeedback(null); }} error={fieldErrors.security} disabled={loading} />
+          <button type="button" onClick={handleVerifySecurity} disabled={loading} className="mt-5 flex h-12 w-full cursor-pointer items-center justify-center rounded-full bg-primary text-[0.9375rem] text-primary-foreground shadow-[0_10px_24px_rgba(255,56,92,0.22)] disabled:opacity-60" style={{ fontWeight: 900 }}>
+            {loading ? <span className="h-5 w-5 rounded-full border-2 border-white/35 border-t-white animate-spin" /> : "Verify"}
+          </button>
+        </motion.div>
+      )}
+
+      {step === "reset" && (
+        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
+          <AuthHero
+            icon={<IconBadge><KeyRound className="h-7 w-7" /></IconBadge>}
+            title="Set new password"
+            subtitle="Choose a new password for your Tonight account."
+          />
+          <div className="space-y-3">
+            <InputField icon={Lock} type="password" placeholder="New password" value={newPassword} onChange={(value) => { setNewPassword(value); setFieldErrors({}); }} error={fieldErrors.newPw} disabled={loading} />
+            <InputField icon={Lock} type="password" placeholder="Confirm new password" value={confirmPassword} onChange={(value) => { setConfirmPassword(value); setFieldErrors({}); }} error={fieldErrors.confirmPw} disabled={loading} />
+          </div>
+          <button type="button" onClick={handleResetPassword} disabled={loading} className="mt-5 flex h-12 w-full cursor-pointer items-center justify-center rounded-full bg-primary text-[0.9375rem] text-primary-foreground shadow-[0_10px_24px_rgba(255,56,92,0.22)] disabled:opacity-60" style={{ fontWeight: 900 }}>
+            {loading ? <span className="h-5 w-5 rounded-full border-2 border-white/35 border-t-white animate-spin" /> : "Reset password"}
+          </button>
+        </motion.div>
+      )}
+
+      {step === "done" && (
+        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="flex flex-1 flex-col items-center justify-center text-center">
+          <IconBadge tone="success"><CheckCircle2 className="h-8 w-8" /></IconBadge>
+          <h2 className="mt-5 text-[1.5rem] text-foreground" style={{ fontWeight: 900 }}>Password reset</h2>
+          <p className="mt-2 max-w-xs text-[0.875rem] leading-snug text-muted-foreground">You can now sign in with your updated password.</p>
+          <button type="button" onClick={onBack} className="mt-8 flex h-12 w-full cursor-pointer items-center justify-center rounded-full bg-primary text-[0.9375rem] text-primary-foreground shadow-[0_10px_24px_rgba(255,56,92,0.22)]" style={{ fontWeight: 900 }}>
+            Back to sign in
+          </button>
+        </motion.div>
+      )}
+    </AuthSurface>
   );
 }

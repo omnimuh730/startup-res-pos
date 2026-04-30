@@ -33,6 +33,8 @@ interface ScanQRFlowProps {
   booking: BookingInfo;
   onClose: () => void;
   initialStep?: ScanStep;
+  /** Called once the table QR scan succeeds (arrival confirmed). Parent should persist check-in. */
+  onCheckedIn?: () => void;
 }
 
 function formatMoney(value: number) {
@@ -215,7 +217,7 @@ function BillCard({
   );
 }
 
-export function ScanQRFlow({ booking, onClose, initialStep = "scan" }: ScanQRFlowProps) {
+export function ScanQRFlow({ booking, onClose, initialStep = "scan", onCheckedIn }: ScanQRFlowProps) {
   const [step, setStep] = useState<ScanStep>(initialStep);
   const [scanned, setScanned] = useState(false);
   const [tipPercent, setTipPercent] = useState(18);
@@ -248,7 +250,10 @@ export function ScanQRFlow({ booking, onClose, initialStep = "scan" }: ScanQRFlo
 
   const handleSimulateScan = () => {
     setScanned(true);
-    window.setTimeout(() => setStep("arrived"), 1050);
+    window.setTimeout(() => {
+      setStep("arrived");
+      onCheckedIn?.();
+    }, 1050);
   };
 
   const handlePaymentComplete = () => {

@@ -182,8 +182,39 @@ export function parseBookingDateTime(b: Booking): Date | null {
   return new Date(Number(year), monthIdx, Number(day), hh, mm);
 }
 
-/** True when "now" is within [bookingTime - 15min, bookingTime + 2h], OR when booking date is today. */
-export function isCurrentlyDining(b: Booking, now: Date = new Date()): boolean {
+/** Persisted after a successful table QR scan so "live dining" survives navigation and reloads. */
+export const DINING_CHECKED_IN_STORAGE_KEY = "tonight.dining.checkedInBookingIds";
+
+export function readCheckedInBookingIds(): Set<string> {
+  if (typeof window === "undefined") return new Set();
+  try {
+    const raw = window.localStorage.getItem(DINING_CHECKED_IN_STORAGE_KEY);
+    if (!raw) return new Set();
+    const parsed = JSON.parse(raw) as unknown;
+    if (!Array.isArray(parsed)) return new Set();
+    return new Set(parsed.filter((id): id is string => typeof id === "string"));
+  } catch {
+    return new Set();
+  }
+}
+
+export function persistCheckedInBookingId(id: string) {
+  if (typeof window === "undefined") return;
+  const next = readCheckedInBookingIds();
+  next.add(id);
+  window.localStorage.setItem(DINING_CHECKED_IN_STORAGE_KEY, JSON.stringify([...next]));
+}
+
+export function removeCheckedInBookingId(id: string) {
+  if (typeof window === "undefined") return;
+  const next = readCheckedInBookingIds();
+  next.delete(id);
+  window.localStorage.setItem(DINING_CHECKED_IN_STORAGE_KEY, JSON.stringify([...next]));
+}
+
+/** True when "now" is within [bookingTime - 15min, bookingTime + 2h], OR when booking date is today, OR after QR check-in (see `checkedInIds`). */
+export function isCurrentlyDining(b: Booking, now: Date = new Date(), checkedInIds?: Set<string>): boolean {
+  if (checkedInIds?.has(b.id)) return true;
   if (b.status !== "confirmed") return false;
   const dt = parseBookingDateTime(b);
   if (!dt) return false;
