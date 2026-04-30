@@ -6,13 +6,13 @@ import { generateMockTransactions, rangeFromPreset } from "./mockData";
 import { PeriodPicker } from "./PeriodPicker";
 import type { DateRange, TxCategory, TxRecord } from "./types";
 
-const CATEGORY_OPTIONS: { id: "all" | TxCategory; label: string; icon: any; color: string }[] = [
-  { id: "all", label: "Home", icon: Wallet, color: "text-gray-900" },
-  { id: "charge", label: "Charge", icon: Plus, color: "text-gray-900" },
-  { id: "pay", label: "Pay", icon: ShoppingBag, color: "text-gray-900" },
-  { id: "reward", label: "Reward", icon: Star, color: "text-gray-900" },
-  { id: "referral", label: "Referral", icon: Send, color: "text-gray-900" },
-  { id: "gift", label: "Gift", icon: Gift, color: "text-gray-900" },
+const CATEGORY_OPTIONS: { id: "all" | TxCategory; label: string; icon: any; }[] = [
+  { id: "all", label: "Home", icon: Wallet },
+  { id: "charge", label: "Charge", icon: Plus },
+  { id: "pay", label: "Pay", icon: ShoppingBag },
+  { id: "reward", label: "Reward", icon: Star },
+  { id: "referral", label: "Referral", icon: Send },
+  { id: "gift", label: "Gift", icon: Gift },
 ];
 
 const PAGE_SIZE = 20;
@@ -48,10 +48,10 @@ export function HistoryPage({ onBack }: { onBack: () => void }) {
       
       {/* Header */}
       <div className="flex items-center justify-between px-4 pt-12 pb-2 bg-white shrink-0">
-        <button onClick={onBack} className="w-10 h-10 -ml-2 rounded-full hover:bg-gray-100 flex items-center justify-center text-black cursor-pointer transition">
+        <button onClick={onBack} className="w-10 h-10 -ml-2 rounded-full hover:bg-gray-100 flex items-center justify-center cursor-pointer transition">
           <ArrowLeft className="w-5 h-5" />
         </button>
-        <span className="font-bold text-[1rem] tracking-tight">Transaction History</span>
+        <span className="text-[1rem]">Transaction History</span>
         <div className="w-10" />
       </div>
 
@@ -61,50 +61,49 @@ export function HistoryPage({ onBack }: { onBack: () => void }) {
           <PeriodPicker value={range} onChange={setRange} />
         </div>
 
-        {/* ✨ Notion-style Semantic Animated Tabs ✨ */}
+        {/* Category tabs: sliding pill + smooth label width only (no layout jitter on siblings) */}
         <div className="px-4">
-          <div className="flex gap-1.5 overflow-x-auto pb-2 -mb-2 [&::-webkit-scrollbar]:hidden touch-pan-x">
+          {/* Full-width row: space-between absorbs variable active-tab width so no dead zone on the right */}
+          <div className="flex w-full min-w-0 touch-pan-x justify-between gap-x-1 overflow-x-auto pb-2 -mb-2 [&::-webkit-scrollbar]:hidden">
             {CATEGORY_OPTIONS.map((c) => {
               const Icon = c.icon;
               const isActive = category === c.id;
               
               return (
-                <motion.button 
-                  layout
-                  key={c.id} 
-                  onClick={() => setCategory(c.id)} 
-                  className={`relative flex items-center justify-center h-10 rounded-full transition-colors cursor-pointer shrink-0 ${
-                    isActive ? "px-4 text-gray-900" : "w-10 text-gray-500 hover:bg-gray-50"
+                <button
+                  key={c.id}
+                  type="button"
+                  onClick={() => setCategory(c.id)}
+                  className={`relative flex pr-3 pl-3 h-10 shrink-0 items-center rounded-full text-gray-500 transition-colors duration-200 cursor-pointer hover:text-gray-700 ${
+                    isActive ? "min-w-10 text-gray-900 pr-6 pl-6" : "w-10 hover:bg-gray-50"
                   }`}
                 >
-                  {/* Light gray background pill for active state */}
                   {isActive && (
-                    <motion.div 
-                      layoutId="activeCategoryBg" 
-                      className="absolute inset-0 bg-gray-100 rounded-full"
-                      transition={{ type: "spring", stiffness: 500, damping: 35, mass: 0.8 }}
+                    <motion.div
+                      layoutId="activeCategoryBg"
+                      className="absolute inset-0 rounded-full bg-gray-100"
+                      transition={{ type: "tween", duration: 0.28, ease: [0.4, 0, 0.2, 1] }}
                     />
                   )}
-                  
-                  <div className="relative z-10 flex items-center">
-                    <Icon className="w-[18px] h-[18px] shrink-0" strokeWidth={isActive ? 2 : 1.5} />
-                    
-                    {/* Animated Text Reveal */}
-                    <AnimatePresence>
-                      {isActive && (
-                        <motion.span
-                          initial={{ width: 0, opacity: 0, marginLeft: 0 }}
-                          animate={{ width: "auto", opacity: 1, marginLeft: 8 }}
-                          exit={{ width: 0, opacity: 0, marginLeft: 0 }}
-                          transition={{ type: "spring", stiffness: 500, damping: 35, mass: 0.8 }}
-                          className="overflow-hidden whitespace-nowrap text-[0.9375rem] font-medium tracking-tight"
-                        >
-                          {c.label}
-                        </motion.span>
-                      )}
-                    </AnimatePresence>
-                  </div>
-                </motion.button>
+
+                  {/* Fixed-width icon rail (2.5rem) keeps the glyph centered in the same spot for active + inactive */}
+                  <span className="relative z-10 flex min-w-0 flex-1 items-center justify-start">
+                    <span className="flex h-[18px] w-5 shrink-0 items-center justify-center">
+                      <Icon className="h-[18px] w-[18px]" strokeWidth={1.75} />
+                    </span>
+                    <motion.span
+                      aria-hidden={!isActive}
+                      animate={{
+                        maxWidth: isActive ? 120 : 0,
+                        opacity: isActive ? 1 : 0,
+                      }}
+                      transition={{ type: "tween", duration: 0.28, ease: [0.4, 0, 0.2, 1] }}
+                      className="overflow-hidden whitespace-nowrap text-left text-[0.9375rem] pl-1"
+                    >
+                      {c.label}
+                    </motion.span>
+                  </span>
+                </button>
               );
             })}
           </div>
@@ -116,13 +115,13 @@ export function HistoryPage({ onBack }: { onBack: () => void }) {
         
         {/* Results Count & Reset */}
         <div className="flex items-center justify-between mb-4">
-          <span className="text-[0.8125rem] font-medium text-gray-400">
+          <span className="text-[0.8125rem] text-gray-400">
             {filtered.length} transaction{filtered.length === 1 ? "" : "s"}
           </span>
           {(category !== "all" || range.presetId !== "1m") && (
             <button 
               onClick={() => { setCategory("all"); setRange(rangeFromPreset("1m")); }} 
-              className="text-[0.8125rem] font-medium text-black hover:underline cursor-pointer"
+              className="text-[0.8125rem] hover:underline cursor-pointer"
             >
               Reset filters
             </button>
@@ -138,7 +137,7 @@ export function HistoryPage({ onBack }: { onBack: () => void }) {
             <div className="w-16 h-16 rounded-full bg-gray-50 mx-auto flex items-center justify-center mb-4 border border-black/[0.04]">
               <Receipt className="w-6 h-6 text-gray-400" />
             </div>
-            <h3 className="text-[1.125rem] font-bold text-black tracking-tight mb-1">No transactions found</h3>
+            <h3 className="text-[1.125rem] mb-1">No transactions found</h3>
             <p className="text-[0.9375rem] text-gray-500">Try adjusting your filters or date range.</p>
           </motion.div>
         ) : (
@@ -152,13 +151,12 @@ export function HistoryPage({ onBack }: { onBack: () => void }) {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: groupIndex * 0.05 }}
                 >
-                  <h3 className="text-[0.9375rem] font-bold text-black mb-3 pl-1">
+                  <h3 className="text-[0.9375rem] mb-3 pl-1">
                     {g.date}
                   </h3>
                   <div className="bg-white rounded-2xl border border-black/[0.06] shadow-[0_2px_12px_rgba(0,0,0,0.02)] overflow-hidden">
                     {g.items.map((t, idx) => {
                       const opt = CATEGORY_OPTIONS.find(c => c.id === t.category);
-                      const isCredit = t.type !== "debit";
                       
                       return (
                         <button 
@@ -171,29 +169,29 @@ export function HistoryPage({ onBack }: { onBack: () => void }) {
                           <div className="flex items-center gap-4 min-w-0">
                             {/* Icon Circle (Keeping original colors for list items) */}
                             <div className="w-12 h-12 rounded-full bg-[#f3f4f6] flex items-center justify-center shrink-0">
-                              {t.category === "charge" ? <Plus className="w-5 h-5 text-[#008A44]" /> 
-                                : t.category === "gift" ? <Gift className="w-5 h-5 text-[#008A44]" /> 
-                                : t.category === "reward" ? <Star className="w-5 h-5 text-[#FF5A5F]" /> 
+                              {t.category === "charge" ? <Plus className="w-5 h-5"/> 
+                                : t.category === "gift" ? <Gift className="w-5 h-5" /> 
+                                : t.category === "reward" ? <Star className="w-5 h-5" /> 
                                 : t.category === "referral" ? <Send className="w-5 h-5 text-blue-500" /> 
-                                : <ShoppingBag className="w-5 h-5 text-black" />}
+                                : <ShoppingBag className="w-5 h-5" />}
                             </div>
                             
                             {/* Text Info */}
                             <div className="min-w-0 pr-4">
-                              <p className="text-[1rem] font-bold text-black truncate leading-tight mb-1">
+                              <p className="mb-1 text-gray-700">
                                 {t.label}
                               </p>
                               <div className="flex items-center gap-1.5">
-                                <span className="text-[0.8125rem] text-gray-500 font-medium">{t.time}</span>
+                                <span className="text-[0.8125rem] text-gray-500">{t.time}</span>
                                 <span className="text-gray-300">·</span>
-                                <span className="text-[0.8125rem] text-gray-500 font-medium">{opt?.label}</span>
+                                <span className="text-[0.8125rem] text-gray-500">{opt?.label}</span>
                               </div>
                             </div>
                           </div>
                           
                           {/* Amount */}
-                          <div className={`text-[1rem] font-bold shrink-0 tracking-tight ${isCredit ? "text-[#008A44]" : "text-black"}`}>
-                            {isCredit ? "+" : ""}{t.amount}
+                          <div className="text-gray-500">
+                            {t.amount}
                           </div>
                         </button>
                       );
@@ -207,13 +205,13 @@ export function HistoryPage({ onBack }: { onBack: () => void }) {
             {hasMore ? (
               <button 
                 onClick={() => setVisible((v) => v + PAGE_SIZE)} 
-                className="w-full py-4 rounded-[1.25rem] border border-black/[0.08] font-bold text-black text-[0.9375rem] hover:bg-gray-50 transition cursor-pointer"
+                className="w-full py-4 rounded-[1.25rem] border border-black/[0.08] text-[0.9375rem] hover:bg-gray-50 transition cursor-pointer"
               >
                 Load {Math.min(PAGE_SIZE, filtered.length - visible)} more
               </button>
             ) : filtered.length > PAGE_SIZE ? (
               <div className="text-center pb-8 pt-4">
-                <span className="text-[0.875rem] font-medium text-gray-400">You're all caught up.</span>
+                <span className="text-[0.875rem] text-gray-400">You're all caught up.</span>
               </div>
             ) : null}
             
