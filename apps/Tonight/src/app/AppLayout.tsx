@@ -83,7 +83,7 @@ function SparkleEffect({ active }: { active: boolean }) {
   );
 }
 
-function CatchTableIcon({ className, isActive }: { className?: string; isActive?: boolean }) {
+function TonightTabIcon({ className, isActive }: { className?: string; isActive?: boolean }) {
   const color = isActive ? "var(--primary)" : "var(--muted-foreground)";
   return <TonightLogoMark className={className} color={color} title="Tonight" />;
 }
@@ -125,7 +125,7 @@ function TabButton({ tab, isActive, onSelect, badgeCount, showDot }: {
           animate={isActive ? { scale: [1, 0.8, 1.15, 1], y: [0, 2, -2, 0] } : { scale: 1, y: 0 }}
           transition={{ duration: 0.35, ease: "easeOut" }} className="relative z-10">
           {"isLogo" in tab && tab.isLogo ? (
-            <CatchTableIcon className="w-[26px] h-[26px] transition-colors duration-200" isActive={isActive} />
+            <TonightTabIcon className="w-[26px] h-[26px] transition-colors duration-200" isActive={isActive} />
           ) : (
             <tab.icon className={`w-[22px] h-[22px] transition-colors duration-200 ${isActive ? "text-primary fill-primary stroke-primary" : "text-muted-foreground"}`}
               strokeWidth={isActive ? 2.5 : 1.8}
@@ -153,7 +153,7 @@ function SidebarNav({ activeTab, onSelect }: { activeTab: TabId; onSelect: (id: 
             <button key={tab.id} onClick={() => onSelect(tab.id)}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left transition-all ${isActive ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-secondary hover:text-foreground"}`}>
               {"isLogo" in tab && tab.isLogo ? (
-                <CatchTableIcon className="w-5 h-5" isActive={isActive} />
+                <TonightTabIcon className="w-5 h-5" isActive={isActive} />
               ) : (
                 <tab.icon className="w-5 h-5" strokeWidth={isActive ? 2.5 : 1.8} />
               )}

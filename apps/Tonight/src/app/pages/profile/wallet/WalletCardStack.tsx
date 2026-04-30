@@ -1,3 +1,5 @@
+import { TonightLogoMark } from "../../../utils/brand/TonightLogo";
+
 export function WalletCardStack({ showBalance, onToggleBalance }: { showBalance: boolean; onToggleBalance: () => void }) {
   const masked = "••••••";
 
@@ -21,11 +23,8 @@ export function WalletCardStack({ showBalance, onToggleBalance }: { showBalance:
         <div className="relative z-10 p-4">
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-2 text-primary-foreground">
-              <svg viewBox="0 0 28 28" fill="none" className="w-5 h-5">
-                <path d="M14 4.5a9.5 9.5 0 1 0 0 19 9.5 9.5 0 0 0 0-19zm0 6.7a2.8 2.8 0 1 1 0 5.6 2.8 2.8 0 0 1 0-5.6z" fill="currentColor" fillRule="evenodd" />
-                <circle cx="1.8" cy="14" r="1.8" fill="currentColor" />
-              </svg>
-              <span className="text-[0.875rem] tracking-tight" style={{ fontWeight: 700 }}>CatchTable</span>
+              <TonightLogoMark className="h-5 w-5" color="currentColor" />
+              <span className="text-[0.875rem] tracking-tight" style={{ fontWeight: 700 }}>Tonight Wallet</span>
             </div>
             <button
               onClick={(e) => { e.stopPropagation(); onToggleBalance(); }}
@@ -55,13 +54,13 @@ export function WalletCardStack({ showBalance, onToggleBalance }: { showBalance:
               <p className="text-[1.25rem] leading-none mt-1.5" style={{ fontWeight: 700, letterSpacing: "-0.01em" }}>
                 {showBalance ? "$5,000.00" : masked}
               </p>
-              <p className="text-[0.6875rem] mt-2 text-primary-foreground/80">VISA ••4242</p>
+              <p className="text-[0.6875rem] mt-2 text-primary-foreground/80">Tonight Wallet</p>
             </div>
           </div>
 
           <div className="mt-3 flex items-center justify-between">
             <span className="text-[0.8125rem] tracking-[0.15em] tabular-nums text-primary-foreground/95" style={{ fontWeight: 500 }}>
-              {showBalance ? "5282 •••• •••• 1289" : "•••• •••• •••• ••••"}
+              {showBalance ? "TONIGHT WALLET" : masked}
             </span>
           </div>
         </div>

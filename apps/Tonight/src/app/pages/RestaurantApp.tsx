@@ -83,8 +83,8 @@ function SparkleEffect({ active }: { active: boolean }) {
   );
 }
 
-/* ── CatchTable Logo Icon ───────────────────────── */
-function CatchTableIcon({ className, isActive }: { className?: string; isActive?: boolean }) {
+/* Tonight logo icon */
+function TonightTabIcon({ className, isActive }: { className?: string; isActive?: boolean }) {
   const color = isActive ? "var(--primary)" : "var(--muted-foreground)";
   return <TonightLogoMark className={className} color={color} title="Tonight" />;
 }
@@ -154,7 +154,7 @@ function TabButton({
           className="relative z-10"
         >
           {"isLogo" in tab && tab.isLogo ? (
-            <CatchTableIcon
+            <TonightTabIcon
               className="w-[26px] h-[26px] transition-colors duration-200"
               isActive={isActive}
             />
@@ -221,7 +221,7 @@ function SidebarNav({
               }`}
             >
               {"isLogo" in tab && tab.isLogo ? (
-                <CatchTableIcon className="w-5 h-5" isActive={isActive} />
+                <TonightTabIcon className="w-5 h-5" isActive={isActive} />
               ) : (
                 <tab.icon
                   className="w-5 h-5"

@@ -150,7 +150,7 @@ export function DiscoverPage() {
   const [showSearchModal, setShowSearchModal] = useState(false);
   const [searchPlan, setSearchPlan] = useState<SearchPlan | null>(null);
   const [discoverNavCompact, setDiscoverNavCompact] = useState(false);
-  const discoverHeroSentinelRef = useRef<HTMLDivElement>(null);
+  const discoverHeroSectionRef = useRef<HTMLElement>(null);
 
   const toggleSaveRestaurant = toggleSaveRestaurantProp;
   const toggleSaveFood = toggleSaveFoodProp;
@@ -209,17 +209,23 @@ export function DiscoverPage() {
 
   useEffect(() => {
     const main = document.querySelector("main");
-    const el = discoverHeroSentinelRef.current;
-    if (!main || !el || hasSubView) {
+    if (!main || hasSubView) {
       setDiscoverNavCompact(false);
       return undefined;
     }
-    const io = new IntersectionObserver(
-      ([entry]) => setDiscoverNavCompact(!entry.isIntersecting),
-      { root: main, threshold: 0, rootMargin: "0px" },
-    );
-    io.observe(el);
-    return () => io.disconnect();
+    const readThreshold = () => {
+      const hero = discoverHeroSectionRef.current;
+      if (!hero) return 96;
+      return Math.min(180, Math.max(72, Math.round(hero.offsetHeight * 0.28)));
+    };
+    const onScroll = () => setDiscoverNavCompact(main.scrollTop > readThreshold());
+    main.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    onScroll();
+    return () => {
+      main.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+    };
   }, [hasSubView]);
   const prevInlineRef = useRef(false);
   useLayoutEffect(() => {
@@ -273,9 +279,8 @@ export function DiscoverPage() {
       />
     )}
 
-    <div className="overflow-x-clip" style={{ display: hasSubView ? "none" : undefined }}>
-    <div className="relative left-1/2 w-screen max-w-[100vw] -translate-x-1/2 overflow-x-clip -mt-6 sm:-mt-6 lg:-mt-6">
-    <section className="relative">
+    <div style={{ display: hasSubView ? "none" : undefined }}>
+    <section ref={discoverHeroSectionRef} className="relative -mx-4 -mt-6 sm:-mx-6 sm:-mt-6 lg:-mx-8 lg:-mt-6">
       <BannerCarousel
         onBannerClick={(bannerId) => {
           saveScrollPos();
@@ -331,88 +336,70 @@ export function DiscoverPage() {
           </button>
         </div>
       </motion.div>
-      <div
-        ref={discoverHeroSentinelRef}
-        className="pointer-events-none absolute left-0 right-0 top-[min(7.5rem,calc(4.5rem+env(safe-area-inset-top,0px)))] h-px"
-        aria-hidden={true}
-      />
     </section>
     {!hasSubView && (
       <motion.div
         aria-hidden={!discoverNavCompact}
-        className="fixed inset-x-0 top-0 z-50 flex justify-center px-4 pt-[max(0.35rem,env(safe-area-inset-top,0px))] sm:px-6 lg:px-8"
+        className={cn(
+          "sticky top-0 z-50 -mx-4 overflow-hidden bg-background/96 px-4 backdrop-blur-md sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8",
+          discoverNavCompact && "border-b border-border/55 py-2 shadow-[0_10px_36px_-14px_rgba(0,0,0,0.18)]",
+        )}
         initial={false}
         animate={{
+          maxHeight: discoverNavCompact ? 88 : 0,
           opacity: discoverNavCompact ? 1 : 0,
-          y: reduceMotion ? 0 : discoverNavCompact ? 0 : -22,
         }}
         transition={{
-          opacity: glide(discoverNavCompact ? 0.52 : 0.34, reduceMotion ? 0 : discoverNavCompact ? 0.04 : 0),
-          y: glide(discoverNavCompact ? 0.56 : 0.4),
+          maxHeight: glide(discoverNavCompact ? 0.48 : 0.36),
+          opacity: glide(discoverNavCompact ? 0.44 : 0.3),
         }}
         style={{ pointerEvents: discoverNavCompact ? "auto" : "none" }}
       >
-        <motion.div
-          className="mx-auto w-full max-w-3xl overflow-hidden rounded-b-[1.35rem] border border-border/55 bg-background/88 pb-2.5 pt-2 shadow-[0_14px_48px_-12px_rgba(0,0,0,0.22)] backdrop-blur-xl supports-[backdrop-filter]:bg-background/78"
-          initial={false}
-          animate={{
-            scale: discoverNavCompact ? 1 : 0.96,
-            opacity: discoverNavCompact ? 1 : 0,
-          }}
-          transition={{
-            scale: glide(discoverNavCompact ? 0.55 : 0.38, reduceMotion ? 0 : discoverNavCompact ? 0.05 : 0),
-            opacity: glide(discoverNavCompact ? 0.5 : 0.34, reduceMotion ? 0 : discoverNavCompact ? 0.03 : 0),
-          }}
-        >
-          <div className="flex items-center gap-2 px-1">
-            <motion.button
-              type="button"
-              onClick={() => setShowSearchModal(true)}
-              className="flex h-11 min-h-11 flex-1 cursor-pointer items-center gap-2.5 rounded-full border border-border/80 bg-card/95 px-3 text-left shadow-[0_2px_12px_rgba(0,0,0,0.06)]"
-              initial={false}
-              animate={
-                discoverNavCompact
-                  ? { opacity: 1, x: 0 }
-                  : { opacity: 0, x: reduceMotion ? 0 : -10 }
-              }
-              transition={{
-                opacity: glide(0.46, reduceMotion ? 0 : discoverNavCompact ? 0.06 : 0),
-                x: glide(0.52, reduceMotion ? 0 : discoverNavCompact ? 0.06 : 0),
-              }}
-            >
-              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-secondary">
-                <Search className="h-3.5 w-3.5 text-foreground" />
+        <div className="mx-auto flex max-w-3xl items-center gap-2 px-0.5">
+          <motion.button
+            type="button"
+            onClick={() => setShowSearchModal(true)}
+            className="flex h-11 min-h-11 flex-1 cursor-pointer items-center gap-2.5 rounded-full border border-border/80 bg-card px-3 text-left shadow-sm"
+            initial={false}
+            animate={{
+              opacity: discoverNavCompact ? 1 : 0,
+              y: reduceMotion ? 0 : discoverNavCompact ? 0 : -6,
+            }}
+            transition={{
+              opacity: glide(0.42, reduceMotion ? 0 : discoverNavCompact ? 0.04 : 0),
+              y: glide(0.45, reduceMotion ? 0 : discoverNavCompact ? 0.04 : 0),
+            }}
+          >
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-secondary">
+              <Search className="h-3.5 w-3.5 text-foreground" />
+            </span>
+            <span className="min-w-0">
+              <span className="block truncate text-[0.8125rem] leading-tight" style={{ fontWeight: 700 }}>
+                {searchPlan?.query || searchInput || "Find a restaurant"}
               </span>
-              <span className="min-w-0">
-                <span className="block truncate text-[0.8125rem] leading-tight" style={{ fontWeight: 700 }}>
-                  {searchPlan?.query || searchInput || "Find a restaurant"}
-                </span>
-                <span className="block truncate text-[0.625rem] leading-tight text-muted-foreground">
-                  {searchPlan ? formatSearchPlanSummary(searchPlan) : "Tonight, 7:00 PM, 2 people"}
-                </span>
+              <span className="block truncate text-[0.625rem] leading-tight text-muted-foreground">
+                {searchPlan ? formatSearchPlanSummary(searchPlan) : "Tonight, 7:00 PM, 2 people"}
               </span>
-            </motion.button>
-            <motion.button
-              type="button"
-              onClick={handleOpenMapSearch}
-              className="flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-full border border-border/80 bg-card/95 shadow-[0_2px_12px_rgba(0,0,0,0.06)] transition hover:scale-[1.04] active:scale-95"
-              aria-label="Open map search"
-              initial={false}
-              animate={
-                discoverNavCompact
-                  ? { opacity: 1, x: 0, scale: 1 }
-                  : { opacity: 0, x: reduceMotion ? 0 : 10, scale: reduceMotion ? 1 : 0.94 }
-              }
-              transition={{
-                opacity: glide(0.46, reduceMotion ? 0 : discoverNavCompact ? 0.1 : 0),
-                x: glide(0.52, reduceMotion ? 0 : discoverNavCompact ? 0.1 : 0),
-                scale: glide(0.52, reduceMotion ? 0 : discoverNavCompact ? 0.1 : 0),
-              }}
-            >
-              <MapIcon className="h-4 w-4 text-foreground" />
-            </motion.button>
-          </div>
-        </motion.div>
+            </span>
+          </motion.button>
+          <motion.button
+            type="button"
+            onClick={handleOpenMapSearch}
+            className="flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-full border border-border/80 bg-card shadow-sm transition hover:scale-[1.04] active:scale-95"
+            aria-label="Open map search"
+            initial={false}
+            animate={{
+              opacity: discoverNavCompact ? 1 : 0,
+              y: reduceMotion ? 0 : discoverNavCompact ? 0 : -6,
+            }}
+            transition={{
+              opacity: glide(0.42, reduceMotion ? 0 : discoverNavCompact ? 0.08 : 0),
+              y: glide(0.45, reduceMotion ? 0 : discoverNavCompact ? 0.08 : 0),
+            }}
+          >
+            <MapIcon className="h-4 w-4 text-foreground" />
+          </motion.button>
+        </div>
       </motion.div>
     )}
     <BannerGalleryModal
@@ -432,7 +419,7 @@ export function DiscoverPage() {
         bannerMap[bannerId]?.();
       }}
     />
-    <div className="relative z-10 -mt-10 rounded-t-[2rem] bg-background px-4 pb-6 pt-4 shadow-[0_-18px_50px_-24px_rgba(0,0,0,0.18)] sm:px-6 lg:px-8 lg:pb-8">
+    <div className="relative z-10 -mx-4 -mt-10 rounded-t-[2rem] bg-background px-4 pb-6 pt-4 shadow-[0_-18px_50px_-24px_rgba(0,0,0,0.18)] sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8 lg:pb-8">
     <Stagger stagger={0.06} className="pb-0">
       <StaggerItem preset="fadeInUp" className="mt-0"><div className="grid grid-cols-4 gap-y-3 gap-x-1">{QUICK_CATEGORIES.map((cat) => (<button key={cat.id} onClick={() => { if (cat.id === "nearby-me") { if (!requireAuth("/discover/search?q=Gangnam", "Sign in to find restaurants near your current location.")) return; navigate("/discover/search?q=Gangnam"); return; } if (cat.id === "local-fav") { saveScrollPos(); openSection("loved-by-locals"); return; } saveScrollPos(); setSelectedCategory(cat); }} className="flex flex-col items-center gap-1 cursor-pointer group"><div className="group-hover:scale-110 transition-transform"><CategoryIcon id={cat.id} className="w-11 h-11" /></div><span className="text-[0.75rem] text-center whitespace-pre-line leading-tight" style={{ fontWeight: 500 }}>{cat.label}</span></button>))}</div></StaggerItem>
       <StaggerItem preset="fadeInUp" className="mt-8"><SectionHeader title="Where to Eat?" onAction={() => openSection("where-to-eat")} /><DragScrollContainer className="flex gap-3 pb-1">{CITIES.map((city) => (<button key={city.id} onClick={() => openCity(city)} className="relative shrink-0 w-32 h-20 rounded-xl overflow-hidden cursor-pointer group"><ImageWithFallback src={city.image} alt={city.label} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" /><div className="absolute inset-0 bg-black/35 group-hover:bg-black/45 transition-colors" /><span className="absolute inset-0 flex items-center justify-center text-white text-[0.8125rem] tracking-wider" style={{ fontWeight: 700 }}>{city.label}</span></button>))}<button onClick={() => openSection("where-to-eat")} className="shrink-0 w-16 h-20 rounded-xl flex items-center justify-center text-primary cursor-pointer hover:bg-secondary transition"><div className="flex flex-col items-center gap-1"><ChevronRight className="w-6 h-6" /><span className="text-[0.6875rem]" style={{ fontWeight: 500 }}>More</span></div></button></DragScrollContainer></StaggerItem>
@@ -472,7 +459,6 @@ export function DiscoverPage() {
       </StaggerItem>
     </Stagger>
     <RestaurantsByPrice onSelectRestaurant={openRestaurant} onSaveRestaurant={toggleSaveRestaurant} isRestaurantSaved={isRestaurantSaved} />
-    </div>
     </div>
     </div>
     <DiscoverSearchModal open={showSearchModal} initialQuery={searchInput} onClose={() => setShowSearchModal(false)} onSearch={handleSearchPlanSubmit} />
