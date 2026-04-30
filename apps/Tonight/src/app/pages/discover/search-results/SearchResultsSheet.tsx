@@ -19,6 +19,7 @@ type SearchResultsSheetProps = {
   sheetHeight: number;
   peekHeight: number;
   sheetY: number;
+  listPullOffset: number;
   searchHeaderHeight: number;
   peekHeaderHeight: number;
   onListPointerDown: (event: ReactPointerEvent<HTMLDivElement>) => void;
@@ -41,6 +42,7 @@ export function SearchResultsSheet({
   sheetHeight,
   peekHeight,
   sheetY,
+  listPullOffset,
   searchHeaderHeight,
   peekHeaderHeight,
   onListPointerDown,
@@ -52,9 +54,10 @@ export function SearchResultsSheet({
   const isPeek = sheetState === "peek";
   const title = hasResults ? "Over 1,000 results" : "No restaurants found";
   const dragControls = useDragControls();
+  const animatedSheetY = sheetY + listPullOffset;
   const startSheetDrag = (event: ReactPointerEvent<HTMLElement>) => {
     setPreviewIndex(null);
-    dragControls.start(event);
+    dragControls.start(event, { snapToCursor: false });
   };
 
   return (
@@ -73,8 +76,12 @@ export function SearchResultsSheet({
         if (info.velocity.y > 980) return setSheetState(sheetState === "full" ? "half" : "peek");
         setSheetState(getNearestSheetState(projectedY, sheetHeight, peekHeight));
       }}
-      animate={{ y: sheetY }}
-      transition={{ type: "spring", damping: 31, stiffness: 255, mass: 0.86, restDelta: 0.5, restSpeed: 8 }}
+      animate={{ y: animatedSheetY }}
+      transition={
+        listPullOffset > 0
+          ? { type: "spring", damping: 38, stiffness: 420, mass: 0.72, restDelta: 0.5, restSpeed: 10 }
+          : { type: "spring", damping: 31, stiffness: 255, mass: 0.86, restDelta: 0.5, restSpeed: 8 }
+      }
       className="absolute bottom-0 left-0 right-0 z-20 rounded-t-[1.75rem] bg-white shadow-[0_-10px_30px_rgba(0,0,0,0.12)]"
       style={{ top: searchHeaderHeight, touchAction: sheetState === "full" ? "pan-y" : "none", willChange: "transform" }}
     >
@@ -107,7 +114,10 @@ export function SearchResultsSheet({
         <div
           ref={resultsListRef}
           onPointerDown={(event) => {
-            if (sheetState !== "full") startSheetDrag(event);
+            if (sheetState !== "full") {
+              startSheetDrag(event);
+              return;
+            }
             onListPointerDown(event);
           }}
           onPointerMove={onListPointerMove}
@@ -120,7 +130,7 @@ export function SearchResultsSheet({
             }
           }}
           className={`px-4 pb-0 transition-opacity ${
-            isPeek ? "pointer-events-none overflow-hidden opacity-0" : sheetState === "full" ? "overflow-y-auto overscroll-contain opacity-100" : "cursor-grab overflow-hidden opacity-100 active:cursor-grabbing"
+            isPeek ? "pointer-events-none overflow-hidden opacity-0" : sheetState === "full" ? "cursor-grab overflow-y-auto overscroll-contain opacity-100 active:cursor-grabbing" : "cursor-grab overflow-hidden opacity-100 active:cursor-grabbing"
           }`}
           style={{ height: `calc(100% - ${Math.round(peekHeaderHeight)}px)`, paddingBottom: sheetState === "full" ? "5rem" : "1.5rem" }}
         >

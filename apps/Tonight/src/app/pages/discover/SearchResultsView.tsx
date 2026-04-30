@@ -67,9 +67,11 @@ export function SearchResultsView({
     sheetHeight,
   });
 
-  const { handleListPointerDown, handleListPointerMove, handleListPointerEnd, handleListPointerCancel } = useResultsListPull({
+  const { listPullOffset, handleListPointerDown, handleListPointerMove, handleListPointerEnd, handleListPointerCancel } = useResultsListPull({
     sheetState,
     resultsListRef,
+    sheetHeight,
+    peekHeight,
     setPreviewIndex,
     setSheetState,
   });
@@ -117,6 +119,7 @@ export function SearchResultsView({
           sheetHeight={sheetHeight}
           peekHeight={peekHeight}
           sheetY={sheetY}
+          listPullOffset={listPullOffset}
           searchHeaderHeight={searchHeaderHeight}
           peekHeaderHeight={peekHeaderHeight}
           onListPointerDown={handleListPointerDown}
