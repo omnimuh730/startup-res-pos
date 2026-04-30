@@ -21,11 +21,11 @@ export function PreferenceSection({
     <section>
       <div className="mb-3 flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <h3 className="text-[1rem] text-foreground" style={{ fontWeight: 900 }}>{title}</h3>
+          <h3 className="text-[1rem] font-semibold">{title}</h3>
           <p className="mt-0.5 text-[0.8125rem] text-muted-foreground">{subtitle}</p>
         </div>
         {selected.length > 0 && (
-          <span className="rounded-full bg-primary px-2.5 py-1 text-[0.6875rem] text-primary-foreground" style={{ fontWeight: 900 }}>
+          <span className="rounded-full bg-primary px-2.5 py-1 text-[0.6875rem] font-medium text-primary-foreground">
             {selected.length}
           </span>
         )}
@@ -40,9 +40,9 @@ export function PreferenceSection({
               whileTap={{ scale: 0.96 }}
               onClick={() => onToggle(option.id)}
               className={`inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-full border px-3 text-[0.8125rem] transition ${
-                isSelected ? "border-primary bg-primary text-primary-foreground shadow-[0_8px_18px_rgba(255,56,92,0.2)]" : "border-border bg-card text-foreground hover:bg-secondary"
+                isSelected ? "border-primary bg-primary text-primary-foreground shadow-[0_8px_18px_rgba(255,56,92,0.2)]" : "border-border bg-card hover:bg-secondary"
               }`}
-              style={{ fontWeight: 800 }}
+              style={{ fontWeight: isSelected ? 600 : 400 }}
             >
               {option.emoji && <span>{option.emoji}</span>}
               {option.label}
@@ -115,7 +115,7 @@ export function SlideToPayButton({ amount, onComplete }: { amount: number; onCom
       <div className="absolute inset-y-0 left-0 rounded-full bg-primary/18" style={{ width: `${progress * 100}%`, transition: isDragging ? "none" : "width 0.3s ease-out" }} />
       <div className="pointer-events-none absolute inset-0 flex items-center justify-center gap-2" style={{ opacity: 1 - progress * 1.5 }}>
         <Lock className="h-4 w-4 text-muted-foreground" />
-        <span className="text-[0.875rem] text-muted-foreground" style={{ fontWeight: 800 }}>Slide to pay - ${amount.toFixed(2)}</span>
+        <span className="text-[0.875rem] font-medium text-muted-foreground">Slide to pay - ${amount.toFixed(2)}</span>
       </div>
       <div
         className="absolute top-1 flex h-12 w-12 cursor-grab items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg active:cursor-grabbing"
@@ -136,7 +136,7 @@ export function DetailRow({ icon, label, value }: { icon?: ReactNode; label: str
         {icon}
         {label}
       </span>
-      <span className="truncate text-right text-[0.8125rem]" style={{ fontWeight: 800 }}>{value}</span>
+      <span className="truncate text-right text-[0.8125rem] font-medium">{value}</span>
     </div>
   );
 }
@@ -178,13 +178,13 @@ export function CustomDatePickerModal({
           <button type="button" onClick={() => setViewMonth(new Date(year, month - 1, 1))} className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full bg-secondary transition active:scale-95" aria-label="Previous month">
             <ArrowLeft className="h-4 w-4" />
           </button>
-          <span className="text-[0.9375rem]" style={{ fontWeight: 900 }}>{viewMonth.toLocaleDateString("en", { month: "long", year: "numeric" })}</span>
+          <span className="text-[0.9375rem] font-medium">{viewMonth.toLocaleDateString("en", { month: "long", year: "numeric" })}</span>
           <button type="button" onClick={() => setViewMonth(new Date(year, month + 1, 1))} className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full bg-secondary transition active:scale-95" aria-label="Next month">
             <ChevronRight className="h-4 w-4" />
           </button>
         </div>
         <div className="mb-2 grid grid-cols-7 gap-1 text-center">
-          {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map((day) => <span key={day} className="text-[0.6875rem] text-muted-foreground" style={{ fontWeight: 800 }}>{day}</span>)}
+          {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map((day) => <span key={day} className="text-[0.6875rem] font-medium text-muted-foreground">{day}</span>)}
         </div>
         <div className="grid grid-cols-7 gap-1">
           {Array.from({ length: firstDay }).map((_, index) => <div key={`empty-${index}`} />)}
@@ -202,7 +202,7 @@ export function CustomDatePickerModal({
                 className={`h-9 rounded-full text-[0.8125rem] transition ${
                   isSelected ? "bg-primary text-primary-foreground" : isToday ? "border border-primary text-primary" : disabled ? "cursor-not-allowed text-muted-foreground/30" : "hover:bg-secondary"
                 }`}
-                style={{ fontWeight: isSelected ? 900 : 700 }}
+                style={{ fontWeight: isSelected ? 600 : 400 }}
               >
                 {day}
               </button>
@@ -210,8 +210,8 @@ export function CustomDatePickerModal({
           })}
         </div>
         <div className="mt-5 grid grid-cols-2 gap-2">
-          <Button variant="outline" radius="full" className="font-bold" onClick={onClose}>Cancel</Button>
-          <Button variant="primary" radius="full" className="font-bold" disabled={!selected} onClick={() => selected && onSelect(selected)}>Select</Button>
+          <Button variant="outline" radius="full" className="font-medium" onClick={onClose}>Cancel</Button>
+          <Button variant="primary" radius="full" className="font-medium" disabled={!selected} onClick={() => selected && onSelect(selected)}>Select</Button>
         </div>
       </motion.div>
     </div>

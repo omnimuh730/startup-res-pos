@@ -71,7 +71,7 @@ export function LoginPage(props: LoginPageProps = {}) {
           type="button"
           onClick={() => navigate("/discover")}
           aria-label="Close"
-          className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full bg-secondary text-foreground transition active:scale-95"
+          className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full bg-secondary transition active:scale-95"
         >
           <X className="h-5 w-5" />
         </button>
@@ -94,7 +94,7 @@ export function LoginPage(props: LoginPageProps = {}) {
         </div>
 
         <div className="mt-2 flex justify-end">
-          <button type="button" onClick={onForgotPassword} className="cursor-pointer text-[0.8125rem] text-primary transition hover:opacity-75" style={{ fontWeight: 800 }}>
+          <button type="button" onClick={onForgotPassword} className="cursor-pointer text-[0.8125rem] font-medium text-primary transition hover:opacity-75">
             Forgot password?
           </button>
         </div>
@@ -104,8 +104,7 @@ export function LoginPage(props: LoginPageProps = {}) {
           whileTap={{ scale: 0.985 }}
           onClick={handleLogin}
           disabled={loading}
-          className="mt-6 flex h-12 w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-primary text-[0.9375rem] text-primary-foreground shadow-[0_10px_24px_rgba(255,56,92,0.22)] transition disabled:cursor-not-allowed disabled:opacity-60"
-          style={{ fontWeight: 900 }}
+          className="mt-6 flex h-12 w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-primary text-[0.9375rem] font-medium text-primary-foreground shadow-[0_10px_24px_rgba(255,56,92,0.22)] transition disabled:cursor-not-allowed disabled:opacity-60"
         >
           {loading ? <span className="h-5 w-5 rounded-full border-2 border-white/35 border-t-white animate-spin" /> : "Sign in"}
         </motion.button>
@@ -113,16 +112,16 @@ export function LoginPage(props: LoginPageProps = {}) {
         <div className="mt-4 rounded-[1.35rem] border border-border bg-secondary/55 p-3">
           <div className="mb-1 flex items-center gap-1.5">
             <Sparkles className="h-3.5 w-3.5 text-primary" />
-            <p className="text-[0.75rem] text-foreground" style={{ fontWeight: 900 }}>Demo access</p>
+            <p className="text-[0.75rem] font-medium">Demo access</p>
           </div>
           <p className="text-[0.75rem] leading-snug text-muted-foreground">
-            Username <span className="text-foreground" style={{ fontWeight: 800 }}>catchtable</span> / Password <span className="text-foreground" style={{ fontWeight: 800 }}>Pass1234</span>
+            Username <span className="font-medium">catchtable</span> / Password <span className="font-medium">Pass1234</span>
           </p>
         </div>
 
         <p className="mt-8 text-center text-[0.8125rem] text-muted-foreground">
           New to Tonight?{" "}
-          <button type="button" onClick={onGoRegister} className="cursor-pointer text-primary" style={{ fontWeight: 900 }}>
+          <button type="button" onClick={onGoRegister} className="cursor-pointer font-medium text-primary">
             Create account
           </button>
         </p>

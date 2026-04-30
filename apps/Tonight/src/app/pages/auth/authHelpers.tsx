@@ -56,7 +56,7 @@ export function AuthHero({
   return (
     <div className="mb-6 text-center">
       <div className="mb-4 flex justify-center">{icon ?? <Logo />}</div>
-      <h1 className="text-[1.75rem] leading-tight text-foreground" style={{ fontWeight: 900 }}>
+      <h1 className="text-[1.75rem] font-semibold leading-tight">
         {title}
       </h1>
       <p className="mx-auto mt-2 max-w-xs text-[0.875rem] leading-snug text-muted-foreground">{subtitle}</p>
@@ -183,10 +183,10 @@ export function AuthProgress({
   return (
     <div className="mb-6">
       <div className="mb-2 flex items-center justify-between">
-        <span className="text-[0.75rem] text-muted-foreground" style={{ fontWeight: 800 }}>
+        <span className="text-[0.75rem] font-medium text-muted-foreground">
           Progress
         </span>
-        <span className="text-[0.75rem] text-primary" style={{ fontWeight: 900 }}>
+        <span className="text-[0.75rem] font-medium text-primary">
           {labels[Math.min(activeIndex, labels.length - 1)]}
         </span>
       </div>
@@ -197,7 +197,7 @@ export function AuthProgress({
           return (
             <div key={label} className="flex-1">
               <div className={`h-1.5 rounded-full ${complete ? "bg-success" : active ? "bg-primary" : "bg-border"}`} />
-              <div className={`mt-1 truncate text-center text-[0.625rem] ${complete ? "text-success" : active ? "text-foreground" : "text-muted-foreground/55"}`} style={{ fontWeight: active || complete ? 800 : 500 }}>
+              <div className={`mt-1 truncate text-center text-[0.625rem] ${complete ? "font-medium text-success" : active ? "font-medium" : "text-muted-foreground/55"}`}>
                 {label}
               </div>
             </div>

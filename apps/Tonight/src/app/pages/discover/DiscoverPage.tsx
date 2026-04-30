@@ -247,36 +247,70 @@ export function DiscoverPage() {
     )}
 
     <div style={{ display: hasSubView ? "none" : undefined }}>
-    <div className="sticky top-0 z-20 bg-background/95 backdrop-blur-md pb-2 -mx-4 px-4 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8 pt-3 -mt-6">
-      <div className="flex items-center gap-2">
-        <button
-          onClick={() => setShowSearchModal(true)}
-          className="flex-1 h-14 rounded-full bg-card border border-border shadow-[0_6px_20px_rgba(0,0,0,0.08)] px-4 flex items-center gap-3 text-left cursor-pointer"
-        >
-          <span className="w-9 h-9 rounded-full bg-[#F7F7F7] flex items-center justify-center shrink-0">
-            <Search className="w-4 h-4 text-foreground" />
-          </span>
-          <span className="min-w-0">
-            <span className="block text-[0.9375rem] truncate" style={{ fontWeight: 700 }}>
-              {searchPlan?.query || searchInput || "Find a restaurant"}
+    <section className="relative -mx-4 -mt-6 sm:-mx-6 sm:-mt-6 lg:-mx-8 lg:-mt-6">
+      <BannerCarousel
+        onBannerClick={(bannerId) => {
+          saveScrollPos();
+          const bannerMap: Record<string, () => void> = {
+            "1": () => setSelectedCategory({ id: "michelin", label: "Michelin", icon: "" }),
+            "2": () => setSelectedCategory({ id: "best-kbbq", label: "Best K-BBQ", icon: "" }),
+            "3": () => setViewingSection("date-night"),
+            "4": () => setSelectedCategory({ id: "michelin", label: "Chef's Table", icon: "" }),
+            "5": () => setSelectedLocation({ id: "ny", name: "NEW YORK", count: 50 }),
+            "6": () => setSelectedCategory({ id: "banner-sushi", label: "Sushi Masters", icon: "" }),
+          };
+          bannerMap[bannerId]?.();
+        }}
+        onViewAll={() => setShowBannerGallery(true)}
+      />
+      <div className="pointer-events-none absolute inset-x-0 top-0 z-30 px-4 sm:px-6 lg:px-8 pt-[calc(1.35rem+env(safe-area-inset-top,0px))] sm:pt-[calc(1.5rem+env(safe-area-inset-top,0px))]">
+        <div className="pointer-events-auto flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setShowSearchModal(true)}
+            className="flex h-14 flex-1 cursor-pointer items-center gap-3 rounded-full border border-white/30 bg-background/92 px-4 text-left shadow-[0_8px_28px_rgba(0,0,0,0.14)] backdrop-blur-md transition hover:bg-background/98"
+          >
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-secondary/90">
+              <Search className="h-4 w-4 text-foreground" />
             </span>
-            <span className="block text-[0.75rem] text-muted-foreground truncate">
-              {searchPlan ? formatSearchPlanSummary(searchPlan) : "Tonight, 7:00 PM, 2 people"}
+            <span className="min-w-0">
+              <span className="block truncate text-[0.9375rem]" style={{ fontWeight: 700 }}>
+                {searchPlan?.query || searchInput || "Find a restaurant"}
+              </span>
+              <span className="block truncate text-[0.75rem] text-muted-foreground">
+                {searchPlan ? formatSearchPlanSummary(searchPlan) : "Tonight, 7:00 PM, 2 people"}
+              </span>
             </span>
-          </span>
-        </button>
-        <button
-          type="button"
-          onClick={handleOpenMapSearch}
-          className="h-14 w-14 shrink-0 rounded-full bg-card border border-border shadow-[0_6px_20px_rgba(0,0,0,0.08)] flex items-center justify-center cursor-pointer transition hover:scale-[1.03] active:scale-95"
-          aria-label="Open map search"
-        >
-          <MapIcon className="w-5 h-5 text-foreground" />
-        </button>
+          </button>
+          <button
+            type="button"
+            onClick={handleOpenMapSearch}
+            className="flex h-14 w-14 shrink-0 cursor-pointer items-center justify-center rounded-full border border-white/30 bg-background/92 shadow-[0_8px_28px_rgba(0,0,0,0.14)] backdrop-blur-md transition hover:scale-[1.03] hover:bg-background/98 active:scale-95"
+            aria-label="Open map search"
+          >
+            <MapIcon className="h-5 w-5 text-foreground" />
+          </button>
+        </div>
       </div>
-    </div>
+    </section>
+    <BannerGalleryModal
+      open={showBannerGallery}
+      onClose={() => setShowBannerGallery(false)}
+      onSelect={(bannerId) => {
+        setShowBannerGallery(false);
+        saveScrollPos();
+        const bannerMap: Record<string, () => void> = {
+          "1": () => setSelectedCategory({ id: "michelin", label: "Michelin", icon: "" }),
+          "2": () => setSelectedCategory({ id: "best-kbbq", label: "Best K-BBQ", icon: "" }),
+          "3": () => setViewingSection("date-night"),
+          "4": () => setSelectedCategory({ id: "michelin", label: "Chef's Table", icon: "" }),
+          "5": () => setSelectedLocation({ id: "ny", name: "NEW YORK", count: 50 }),
+          "6": () => setSelectedCategory({ id: "banner-sushi", label: "Sushi Masters", icon: "" }),
+        };
+        bannerMap[bannerId]?.();
+      }}
+    />
     <Stagger stagger={0.06} className="pb-6">
-      <StaggerItem preset="fadeInUp" className="mt-4"><BannerCarousel onBannerClick={(bannerId) => { saveScrollPos(); const bannerMap: Record<string, () => void> = { "1": () => setSelectedCategory({ id: "michelin", label: "Michelin", icon: "" }), "2": () => setSelectedCategory({ id: "best-kbbq", label: "Best K-BBQ", icon: "" }), "3": () => setViewingSection("date-night"), "4": () => setSelectedCategory({ id: "michelin", label: "Chef's Table", icon: "" }), "5": () => setSelectedLocation({ id: "ny", name: "NEW YORK", count: 50 }), "6": () => setSelectedCategory({ id: "banner-sushi", label: "Sushi Masters", icon: "" }) }; bannerMap[bannerId]?.(); }} onViewAll={() => setShowBannerGallery(true)} /><BannerGalleryModal open={showBannerGallery} onClose={() => setShowBannerGallery(false)} onSelect={(bannerId) => { setShowBannerGallery(false); saveScrollPos(); const bannerMap: Record<string, () => void> = { "1": () => setSelectedCategory({ id: "michelin", label: "Michelin", icon: "" }), "2": () => setSelectedCategory({ id: "best-kbbq", label: "Best K-BBQ", icon: "" }), "3": () => setViewingSection("date-night"), "4": () => setSelectedCategory({ id: "michelin", label: "Chef's Table", icon: "" }), "5": () => setSelectedLocation({ id: "ny", name: "NEW YORK", count: 50 }), "6": () => setSelectedCategory({ id: "banner-sushi", label: "Sushi Masters", icon: "" }) }; bannerMap[bannerId]?.(); }} /></StaggerItem>
       <StaggerItem preset="fadeInUp" className="mt-6"><div className="grid grid-cols-4 gap-y-3 gap-x-1">{QUICK_CATEGORIES.map((cat) => (<button key={cat.id} onClick={() => { if (cat.id === "nearby-me") { if (!requireAuth("/discover/search?q=Gangnam", "Sign in to find restaurants near your current location.")) return; navigate("/discover/search?q=Gangnam"); return; } if (cat.id === "local-fav") { saveScrollPos(); openSection("loved-by-locals"); return; } saveScrollPos(); setSelectedCategory(cat); }} className="flex flex-col items-center gap-1 cursor-pointer group"><div className="group-hover:scale-110 transition-transform"><CategoryIcon id={cat.id} className="w-11 h-11" /></div><span className="text-[0.75rem] text-center whitespace-pre-line leading-tight" style={{ fontWeight: 500 }}>{cat.label}</span></button>))}</div></StaggerItem>
       <StaggerItem preset="fadeInUp" className="mt-8"><SectionHeader title="Where to Eat?" onAction={() => openSection("where-to-eat")} /><DragScrollContainer className="flex gap-3 pb-1">{CITIES.map((city) => (<button key={city.id} onClick={() => openCity(city)} className="relative shrink-0 w-32 h-20 rounded-xl overflow-hidden cursor-pointer group"><ImageWithFallback src={city.image} alt={city.label} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" /><div className="absolute inset-0 bg-black/35 group-hover:bg-black/45 transition-colors" /><span className="absolute inset-0 flex items-center justify-center text-white text-[0.8125rem] tracking-wider" style={{ fontWeight: 700 }}>{city.label}</span></button>))}<button onClick={() => openSection("where-to-eat")} className="shrink-0 w-16 h-20 rounded-xl flex items-center justify-center text-primary cursor-pointer hover:bg-secondary transition"><div className="flex flex-col items-center gap-1"><ChevronRight className="w-6 h-6" /><span className="text-[0.6875rem]" style={{ fontWeight: 500 }}>More</span></div></button></DragScrollContainer></StaggerItem>
       <StaggerItem preset="fadeInUp" className="mt-8"><SectionHeader title="Top Picks by Food Type" action="More" onAction={() => openSection("top-picks-food")} /><DragScrollContainer className="flex gap-3 pb-1">{FOOD_TYPES.map((f) => (<button key={f.id} onClick={() => openFoodType(f)} className="relative shrink-0 w-28 h-20 rounded-xl overflow-hidden cursor-pointer group"><ImageWithFallback src={f.image} alt={f.label} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" /><div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" /><span className="absolute bottom-2 left-2 right-2 text-white text-[0.75rem]" style={{ fontWeight: 600 }}>{f.label}</span></button>))}</DragScrollContainer></StaggerItem>

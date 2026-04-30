@@ -74,10 +74,10 @@ function StepHeader({
           <ArrowLeft className="h-5 w-5" />
         </button>
         <div className="min-w-0 flex-1">
-          <p className="truncate text-[1rem] text-foreground" style={{ fontWeight: 900 }}>{title}</p>
+          <p className="truncate text-[1rem] font-semibold">{title}</p>
           <p className="truncate text-[0.75rem] text-muted-foreground">{restaurant.name}</p>
         </div>
-        <span className="rounded-full bg-primary/10 px-3 py-1.5 text-[0.75rem] text-primary" style={{ fontWeight: 900 }}>
+        <span className="rounded-full bg-primary/10 px-3 py-1.5 text-[0.75rem] font-medium text-primary">
           {stepIndex + 1}/{STEP_ORDER.length}
         </span>
       </div>
@@ -89,7 +89,7 @@ function StepHeader({
       <div className="mt-3 flex items-center gap-2 rounded-[1.25rem] bg-secondary/65 p-2">
         <img src={restaurant.image} alt="" className="h-10 w-10 rounded-full object-cover" />
         <div className="min-w-0 flex-1">
-          <p className="truncate text-[0.8125rem]" style={{ fontWeight: 900 }}>{restaurant.name}</p>
+          <p className="truncate text-[0.8125rem] font-medium">{restaurant.name}</p>
           <p className="truncate text-[0.6875rem] text-muted-foreground">{restaurant.cuisine}</p>
         </div>
         <ShieldCheck className="h-4 w-4 shrink-0 text-primary" />
@@ -248,34 +248,34 @@ export function BookTableFlow({ restaurant, onBack, onComplete, initialReservati
       {step !== "awaiting" && (
         <div className="shrink-0 border-t border-border bg-card/96 px-5 py-3 backdrop-blur-md">
           {step === "date" && (
-            <Button variant="primary" radius="full" className="h-12 w-full font-bold" disabled={!canProceedDate} onClick={() => setStep("details")}>
+            <Button variant="primary" radius="full" className="h-12 w-full font-medium" disabled={!canProceedDate} onClick={() => setStep("details")}>
               Continue
             </Button>
           )}
           {step === "details" && (
-            <Button variant="primary" radius="full" className="h-12 w-full font-bold" disabled={!canProceedDetails} onClick={() => setStep("preferences")}>
+            <Button variant="primary" radius="full" className="h-12 w-full font-medium" disabled={!canProceedDetails} onClick={() => setStep("preferences")}>
               Set preferences
             </Button>
           )}
           {step === "preferences" && (
             <div className="grid grid-cols-2 gap-2">
-              <Button variant="outline" radius="full" className="h-12 font-bold" onClick={() => setStep("confirm")}>Skip</Button>
-              <Button variant="primary" radius="full" className="h-12 gap-2 font-bold" onClick={() => setStep("confirm")}>
+              <Button variant="outline" radius="full" className="h-12 font-medium" onClick={() => setStep("confirm")}>Skip</Button>
+              <Button variant="primary" radius="full" className="h-12 gap-2 font-medium" onClick={() => setStep("confirm")}>
                 Continue
                 {totalPrefs > 0 && <span className="rounded-full bg-primary-foreground px-1.5 py-0.5 text-[0.625rem] text-primary">{totalPrefs}</span>}
               </Button>
             </div>
           )}
           {step === "confirm" && (
-            <Button variant="primary" radius="full" className="h-12 w-full gap-2 font-bold" onClick={() => setShowPaymentSheet(true)}>
+            <Button variant="primary" radius="full" className="h-12 w-full gap-2 font-medium" onClick={() => setShowPaymentSheet(true)}>
               <Check className="h-4 w-4" />
               Confirm and pay ${totalAmount.toFixed(2)}
             </Button>
           )}
           {step === "success" && (
             <div className="space-y-2">
-              <Button variant="primary" radius="full" className="h-12 w-full font-bold" onClick={onComplete}>View reservations</Button>
-              <Button variant="outline" radius="full" className="h-12 w-full font-bold" onClick={onComplete}>Back to discover</Button>
+              <Button variant="primary" radius="full" className="h-12 w-full font-medium" onClick={onComplete}>View reservations</Button>
+              <Button variant="outline" radius="full" className="h-12 w-full font-medium" onClick={onComplete}>Back to discover</Button>
             </div>
           )}
         </div>
@@ -292,7 +292,7 @@ export function BookTableFlow({ restaurant, onBack, onComplete, initialReservati
         footer={paymentConfirmed ? (
           <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="flex w-full items-center justify-center gap-2 rounded-full bg-success py-3.5">
             <Check className="h-5 w-5 text-success-foreground" />
-            <span className="text-[0.9375rem] text-success-foreground" style={{ fontWeight: 900 }}>Payment confirmed</span>
+            <span className="text-[0.9375rem] font-medium text-success-foreground">Payment confirmed</span>
           </motion.div>
         ) : undefined}
       >

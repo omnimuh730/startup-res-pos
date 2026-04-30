@@ -104,7 +104,7 @@ export function ForgotPasswordPage({ onBack: onBackProp }: ForgotPasswordPagePro
           <ArrowLeft className="h-5 w-5" />
         </button>
         <div className="min-w-0 flex-1">
-          <p className="truncate text-[0.9375rem] text-foreground" style={{ fontWeight: 900 }}>Password recovery</p>
+          <p className="truncate text-[0.9375rem] font-medium">Password recovery</p>
           <p className="truncate text-[0.75rem] text-muted-foreground">Secure account reset</p>
         </div>
         <button type="button" onClick={() => navigate("/discover")} className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full bg-secondary transition active:scale-95" aria-label="Close">
@@ -130,11 +130,11 @@ export function ForgotPasswordPage({ onBack: onBackProp }: ForgotPasswordPagePro
             subtitle="Enter your username and we will confirm your recovery questions."
           />
           <InputField icon={User} type="text" placeholder="Username" value={username} onChange={(value) => { setUsername(value); setFieldErrors({}); setFeedback(null); }} error={fieldErrors.username} disabled={loading} />
-          <button type="button" onClick={handleFindAccount} disabled={loading} className="mt-5 flex h-12 w-full cursor-pointer items-center justify-center rounded-full bg-primary text-[0.9375rem] text-primary-foreground shadow-[0_10px_24px_rgba(255,56,92,0.22)] disabled:opacity-60" style={{ fontWeight: 900 }}>
+          <button type="button" onClick={handleFindAccount} disabled={loading} className="mt-5 flex h-12 w-full cursor-pointer items-center justify-center rounded-full bg-primary text-[0.9375rem] font-medium text-primary-foreground shadow-[0_10px_24px_rgba(255,56,92,0.22)] disabled:opacity-60">
             {loading ? <span className="h-5 w-5 rounded-full border-2 border-white/35 border-t-white animate-spin" /> : "Find account"}
           </button>
           <div className="mt-4 rounded-[1.25rem] bg-secondary/60 p-3 text-[0.75rem] leading-snug text-muted-foreground">
-            Test accounts: <span className="text-foreground" style={{ fontWeight: 800 }}>catchtable</span> answers with fluffy, seoul, or pizza.
+            Test accounts: <span className="font-medium">catchtable</span> answers with fluffy, seoul, or pizza.
           </div>
         </motion.div>
       )}
@@ -147,12 +147,12 @@ export function ForgotPasswordPage({ onBack: onBackProp }: ForgotPasswordPagePro
             subtitle="Answer the security question attached to your account."
           />
           <div className="mb-3 rounded-[1.25rem] border border-primary/20 bg-primary/8 p-4">
-            <p className="text-[0.875rem] leading-snug text-foreground" style={{ fontWeight: 800 }}>
+            <p className="text-[0.875rem] font-medium leading-snug">
               {foundUser.securityQA[randomQIndex].q}
             </p>
           </div>
           <InputField icon={ShieldQuestion} type="text" placeholder="Your answer" value={securityAnswer} onChange={(value) => { setSecurityAnswer(value); setFieldErrors({}); setFeedback(null); }} error={fieldErrors.security} disabled={loading} />
-          <button type="button" onClick={handleVerifySecurity} disabled={loading} className="mt-5 flex h-12 w-full cursor-pointer items-center justify-center rounded-full bg-primary text-[0.9375rem] text-primary-foreground shadow-[0_10px_24px_rgba(255,56,92,0.22)] disabled:opacity-60" style={{ fontWeight: 900 }}>
+          <button type="button" onClick={handleVerifySecurity} disabled={loading} className="mt-5 flex h-12 w-full cursor-pointer items-center justify-center rounded-full bg-primary text-[0.9375rem] font-medium text-primary-foreground shadow-[0_10px_24px_rgba(255,56,92,0.22)] disabled:opacity-60">
             {loading ? <span className="h-5 w-5 rounded-full border-2 border-white/35 border-t-white animate-spin" /> : "Verify"}
           </button>
         </motion.div>
@@ -169,7 +169,7 @@ export function ForgotPasswordPage({ onBack: onBackProp }: ForgotPasswordPagePro
             <InputField icon={Lock} type="password" placeholder="New password" value={newPassword} onChange={(value) => { setNewPassword(value); setFieldErrors({}); }} error={fieldErrors.newPw} disabled={loading} />
             <InputField icon={Lock} type="password" placeholder="Confirm new password" value={confirmPassword} onChange={(value) => { setConfirmPassword(value); setFieldErrors({}); }} error={fieldErrors.confirmPw} disabled={loading} />
           </div>
-          <button type="button" onClick={handleResetPassword} disabled={loading} className="mt-5 flex h-12 w-full cursor-pointer items-center justify-center rounded-full bg-primary text-[0.9375rem] text-primary-foreground shadow-[0_10px_24px_rgba(255,56,92,0.22)] disabled:opacity-60" style={{ fontWeight: 900 }}>
+          <button type="button" onClick={handleResetPassword} disabled={loading} className="mt-5 flex h-12 w-full cursor-pointer items-center justify-center rounded-full bg-primary text-[0.9375rem] font-medium text-primary-foreground shadow-[0_10px_24px_rgba(255,56,92,0.22)] disabled:opacity-60">
             {loading ? <span className="h-5 w-5 rounded-full border-2 border-white/35 border-t-white animate-spin" /> : "Reset password"}
           </button>
         </motion.div>
@@ -178,9 +178,9 @@ export function ForgotPasswordPage({ onBack: onBackProp }: ForgotPasswordPagePro
       {step === "done" && (
         <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="flex flex-1 flex-col items-center justify-center text-center">
           <IconBadge tone="success"><CheckCircle2 className="h-8 w-8" /></IconBadge>
-          <h2 className="mt-5 text-[1.5rem] text-foreground" style={{ fontWeight: 900 }}>Password reset</h2>
+          <h2 className="mt-5 text-[1.5rem] font-semibold">Password reset</h2>
           <p className="mt-2 max-w-xs text-[0.875rem] leading-snug text-muted-foreground">You can now sign in with your updated password.</p>
-          <button type="button" onClick={onBack} className="mt-8 flex h-12 w-full cursor-pointer items-center justify-center rounded-full bg-primary text-[0.9375rem] text-primary-foreground shadow-[0_10px_24px_rgba(255,56,92,0.22)]" style={{ fontWeight: 900 }}>
+          <button type="button" onClick={onBack} className="mt-8 flex h-12 w-full cursor-pointer items-center justify-center rounded-full bg-primary text-[0.9375rem] font-medium text-primary-foreground shadow-[0_10px_24px_rgba(255,56,92,0.22)]">
             Back to sign in
           </button>
         </motion.div>

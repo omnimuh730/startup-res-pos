@@ -1,5 +1,5 @@
-/* Banner Carousel with peek + drag + autoplay */
-import { useState, useRef, useEffect, useCallback } from "react";
+/* Banner Carousel — full-bleed hero, drag + autoplay */
+import { useState, useRef, useEffect, useCallback, useLayoutEffect } from "react";
 import { ImageWithFallback } from "../../components/figma/ImageWithFallback";
 import { BANNERS } from "./discoverData";
 
@@ -10,17 +10,20 @@ interface BannerCarouselProps {
 
 export function BannerCarousel({ onBannerClick, onViewAll }: BannerCarouselProps) {
   const [current, setCurrent] = useState(0);
-  const trackRef = useRef<HTMLDivElement>(null);
+  const viewportRef = useRef<HTMLDivElement>(null);
   const dragStartX = useRef(0);
   const didDrag = useRef(false);
   const [dragging, setDragging] = useState(false);
   const [dragDelta, setDragDelta] = useState(0);
+  const [slideWidth, setSlideWidth] = useState(0);
   const autoPlayRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const total = BANNERS.length;
-  const internalIdx = current + 1;
 
   const stopAutoPlay = useCallback(() => {
-    if (autoPlayRef.current) { clearInterval(autoPlayRef.current); autoPlayRef.current = null; }
+    if (autoPlayRef.current) {
+      clearInterval(autoPlayRef.current);
+      autoPlayRef.current = null;
+    }
   }, []);
 
   const startAutoPlay = useCallback(() => {
@@ -35,13 +38,15 @@ export function BannerCarousel({ onBannerClick, onViewAll }: BannerCarouselProps
     return stopAutoPlay;
   }, [startAutoPlay, stopAutoPlay]);
 
-  const cardWidthPct = 82;
-  const gapPct = 2;
-
-  const getTranslateX = (idx: number, delta = 0) => {
-    const offset = (100 - cardWidthPct) / 2;
-    return -(idx * (cardWidthPct + gapPct)) + offset + delta;
-  };
+  useLayoutEffect(() => {
+    const el = viewportRef.current;
+    if (!el) return undefined;
+    const measure = () => setSlideWidth(el.offsetWidth);
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   const handleDragStart = (clientX: number) => {
     stopAutoPlay();
@@ -52,17 +57,15 @@ export function BannerCarousel({ onBannerClick, onViewAll }: BannerCarouselProps
 
   const handleDragMove = (clientX: number) => {
     if (!dragging) return;
-    const containerW = trackRef.current?.parentElement?.offsetWidth || 400;
     const delta = clientX - dragStartX.current;
     if (Math.abs(delta) > 5) didDrag.current = true;
-    const deltaPct = (delta / containerW) * 100;
-    setDragDelta(deltaPct);
+    setDragDelta(delta);
   };
 
   const handleDragEnd = () => {
     if (!dragging) return;
     setDragging(false);
-    const threshold = 10;
+    const threshold = Math.max(40, slideWidth * 0.08);
     if (dragDelta < -threshold) {
       setCurrent((p) => (p + 1) % total);
     } else if (dragDelta > threshold) {
@@ -72,76 +75,90 @@ export function BannerCarousel({ onBannerClick, onViewAll }: BannerCarouselProps
     startAutoPlay();
   };
 
-  const translateX = getTranslateX(internalIdx, dragging ? dragDelta : 0);
-  const extendedBanners = [BANNERS[total - 1], ...BANNERS, BANNERS[0]];
+  const translatePx =
+    slideWidth > 0 ? -(current * slideWidth) + (dragging ? dragDelta : 0) : 0;
 
   return (
-    <div className="relative overflow-hidden -mx-4 sm:-mx-6 lg:-mx-4">
+    <div ref={viewportRef} className="relative w-full overflow-hidden rounded-b-[1.75rem]">
       <div
-        ref={trackRef}
-        className="flex select-none w-full"
+        className="flex w-full touch-pan-x select-none"
         style={{
-          transform: `translateX(${translateX}%)`,
-          transition: dragging ? "none" : "transform 0.45s cubic-bezier(0.32, 0.72, 0, 1)",
-          gap: `${gapPct}%`,
+          transform: `translate3d(${translatePx}px, 0, 0)`,
+          transition: dragging || slideWidth === 0 ? "none" : "transform 0.45s cubic-bezier(0.32, 0.72, 0, 1)",
         }}
-        onMouseDown={(e) => { e.preventDefault(); handleDragStart(e.clientX); }}
+        onMouseDown={(e) => {
+          e.preventDefault();
+          handleDragStart(e.clientX);
+        }}
         onMouseMove={(e) => handleDragMove(e.clientX)}
         onMouseUp={handleDragEnd}
-        onMouseLeave={() => { if (dragging) handleDragEnd(); }}
+        onMouseLeave={() => {
+          if (dragging) handleDragEnd();
+        }}
         onTouchStart={(e) => handleDragStart(e.touches[0].clientX)}
         onTouchMove={(e) => handleDragMove(e.touches[0].clientX)}
         onTouchEnd={handleDragEnd}
       >
-        {extendedBanners.map((b, i) => {
-          const realIndex = i === 0 ? total - 1 : i === extendedBanners.length - 1 ? 0 : i - 1;
-          return (
-            <div
-              key={`banner-${i}`}
-              className="shrink-0 relative rounded-2xl overflow-hidden cursor-grab active:cursor-grabbing"
-              style={{ width: `${cardWidthPct}%`, aspectRatio: "1.8 / 1" }}
-              onClick={() => { if (didDrag.current) return; onBannerClick?.(b.id); }}
-            >
-              <ImageWithFallback src={b.image} alt={b.title} className="w-full h-full object-cover pointer-events-none" />
-              <div className={`absolute inset-0 bg-gradient-to-t ${b.gradient} pointer-events-none`} />
-              <div className="absolute inset-0 flex flex-col justify-end p-5 pointer-events-none">
-                <h2 className="text-white text-[1.5rem] sm:text-[1.75rem] whitespace-pre-line leading-tight" style={{ fontWeight: 800 }}>
-                  {b.title}
-                </h2>
-                <p className="text-white/90 text-[0.9375rem] sm:text-[1.0625rem] mt-0.5 whitespace-pre-line leading-snug" style={{ fontWeight: 500 }}>
-                  {b.subtitle}
-                </p>
-                {b.cta && (
-                  <p className="text-white/60 text-[0.6875rem] mt-2 uppercase tracking-wider">{b.cta}</p>
-                )}
-              </div>
-              <button
-                type="button"
-                className="absolute top-3 right-3 bg-white/80 backdrop-blur-sm rounded-full px-2.5 py-1 text-[0.6875rem] text-gray-800 cursor-pointer hover:bg-white transition"
-                style={{ fontWeight: 500 }}
-                onClick={(e) => { e.stopPropagation(); if (didDrag.current) return; onViewAll?.(); }}
-                onMouseDown={(e) => e.stopPropagation()}
-                onTouchStart={(e) => e.stopPropagation()}
-              >
-                View All
-              </button>
-              <div className="absolute bottom-3 right-3 bg-black/50 backdrop-blur-sm rounded-full px-2.5 py-1 text-[0.6875rem] text-white pointer-events-none" style={{ fontWeight: 500 }}>
-                {realIndex + 1} / {total}
-              </div>
+        {BANNERS.map((b) => (
+          <div
+            key={b.id}
+            className="relative shrink-0 cursor-grab overflow-hidden active:cursor-grabbing"
+            style={{
+              flex: slideWidth > 0 ? `0 0 ${slideWidth}px` : "0 0 100%",
+              minHeight: "15.5rem",
+              aspectRatio: "1.45 / 1",
+            }}
+            onClick={() => {
+              if (didDrag.current) return;
+              onBannerClick?.(b.id);
+            }}
+          >
+            <ImageWithFallback src={b.image} alt={b.title} className="pointer-events-none h-full w-full object-cover" />
+            <div className={`pointer-events-none absolute inset-0 bg-gradient-to-t ${b.gradient}`} />
+            <div className="pointer-events-none absolute inset-0 flex flex-col justify-end p-5 pb-16 sm:pb-20">
+              <h2 className="whitespace-pre-line text-[1.5rem] leading-tight text-white sm:text-[1.75rem]" style={{ fontWeight: 800 }}>
+                {b.title}
+              </h2>
+              <p className="mt-0.5 whitespace-pre-line text-[0.9375rem] leading-snug text-white/90 sm:text-[1.0625rem]" style={{ fontWeight: 500 }}>
+                {b.subtitle}
+              </p>
+              {b.cta && <p className="mt-2 text-[0.6875rem] uppercase tracking-wider text-white/60">{b.cta}</p>}
             </div>
-          );
-        })}
-      </div>
-      <div className="flex justify-center gap-1.5 mt-3">
-        {BANNERS.map((_, i) => (
-          <button
-            key={i}
-            onClick={() => { setCurrent(i); stopAutoPlay(); startAutoPlay(); }}
-            className={`h-1.5 rounded-full transition-all cursor-pointer ${
-              i === current ? "w-6 bg-primary" : "w-1.5 bg-muted-foreground/30"
-            }`}
-          />
+          </div>
         ))}
+      </div>
+
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 flex flex-col justify-end bg-gradient-to-t from-black/55 via-black/20 to-transparent pb-3 pt-12">
+        <div className="pointer-events-auto flex justify-center gap-1.5 px-24">
+          {BANNERS.map((_, i) => (
+            <button
+              key={i}
+              type="button"
+              onClick={() => {
+                setCurrent(i);
+                stopAutoPlay();
+                startAutoPlay();
+              }}
+              className={`h-1.5 rounded-full transition-all ${
+                i === current ? "w-6 bg-white shadow-sm" : "w-1.5 bg-white/45 hover:bg-white/70"
+              }`}
+              aria-label={`Banner ${i + 1}`}
+            />
+          ))}
+        </div>
+        <button
+          type="button"
+          className="pointer-events-auto absolute bottom-3 right-3 rounded-full bg-white/90 px-2.5 py-1 text-[0.6875rem] text-gray-800 shadow-sm backdrop-blur-sm transition hover:bg-white"
+          style={{ fontWeight: 500 }}
+          onClick={(e) => {
+            e.stopPropagation();
+            onViewAll?.();
+          }}
+          onMouseDown={(e) => e.stopPropagation()}
+          onTouchStart={(e) => e.stopPropagation()}
+        >
+          View All
+        </button>
       </div>
     </div>
   );

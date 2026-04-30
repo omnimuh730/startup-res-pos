@@ -20,7 +20,7 @@ function SectionTitle({
         <Icon className="h-4 w-4" />
       </span>
       <div>
-        <h3 className="text-[1rem] text-foreground" style={{ fontWeight: 900 }}>{title}</h3>
+        <h3 className="text-[1rem] font-semibold">{title}</h3>
         {subtitle && <p className="mt-0.5 text-[0.8125rem] text-muted-foreground">{subtitle}</p>}
       </div>
     </div>
@@ -59,7 +59,7 @@ export function DateStep({
             <Minus className="h-4 w-4" />
           </button>
           <div className="min-w-20 text-center">
-            <div className="text-[2rem] leading-none text-foreground" style={{ fontWeight: 900 }}>{guests}</div>
+            <div className="text-[2rem] font-semibold leading-none">{guests}</div>
             <div className="mt-1 text-[0.75rem] text-muted-foreground">{guests === 1 ? "guest" : "guests"}</div>
           </div>
           <button type="button" onClick={() => setGuests(Math.min(20, guests + 1))} className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-full bg-primary text-primary-foreground shadow-[0_8px_18px_rgba(255,56,92,0.22)] transition active:scale-95">
@@ -84,8 +84,8 @@ export function DateStep({
                     active ? "border-primary bg-primary text-primary-foreground shadow-[0_8px_18px_rgba(255,56,92,0.22)]" : "border-border bg-card hover:bg-secondary"
                   }`}
                 >
-                  <span className="text-[0.6875rem]" style={{ fontWeight: 800 }}>{day.label}</span>
-                  <span className="my-0.5 text-[1.125rem]" style={{ fontWeight: 900 }}>{day.date}</span>
+                  <span className="text-[0.6875rem] font-medium">{day.label}</span>
+                  <span className="my-0.5 text-[1.125rem] font-semibold">{day.date}</span>
                   <span className="text-[0.6875rem]">{day.month}</span>
                 </motion.button>
               );
@@ -99,8 +99,8 @@ export function DateStep({
               selectedDate === -1 && customDate ? "border-primary bg-primary text-primary-foreground" : customDate ? "border-border bg-card hover:bg-secondary" : "border-dashed border-border bg-card hover:bg-secondary"
             }`}
           >
-            <span className="text-[0.6875rem]" style={{ fontWeight: 800 }}>{customDate ? customDate.toLocaleDateString("en", { weekday: "short" }) : "Custom"}</span>
-            <span className="my-0.5 flex h-[1.375rem] items-center justify-center text-[1.125rem]" style={{ fontWeight: 900 }}>
+            <span className="text-[0.6875rem] font-medium">{customDate ? customDate.toLocaleDateString("en", { weekday: "short" }) : "Custom"}</span>
+            <span className="my-0.5 flex h-[1.375rem] items-center justify-center text-[1.125rem] font-semibold">
               {customDate ? customDate.getDate() : <CalendarDays className="h-4 w-4" />}
             </span>
             <span className="text-[0.6875rem]">{customDate ? customDate.toLocaleDateString("en", { month: "short" }) : "Pick"}</span>
@@ -133,7 +133,7 @@ export function DateStep({
                 className={`h-10 cursor-pointer rounded-full text-[0.8125rem] transition ${
                   active ? "bg-primary text-primary-foreground shadow-[0_8px_18px_rgba(255,56,92,0.22)]" : "border border-border bg-card hover:bg-secondary"
                 }`}
-                style={{ fontWeight: 900 }}
+                style={{ fontWeight: active ? 600 : 400 }}
               >
                 {time}
               </motion.button>
@@ -170,12 +170,12 @@ export function DetailsStep({
         </div>
         <div className="grid gap-2">
           <div className="flex items-center justify-between rounded-[1rem] bg-secondary/65 px-3 py-2.5">
-            <span className="text-[0.75rem] text-muted-foreground" style={{ fontWeight: 800 }}>Full name</span>
-            <span className="text-[0.875rem]" style={{ fontWeight: 900 }}>{name}</span>
+            <span className="text-[0.75rem] font-medium text-muted-foreground">Full name</span>
+            <span className="text-[0.875rem]">{name}</span>
           </div>
           <div className="flex items-center justify-between rounded-[1rem] bg-secondary/65 px-3 py-2.5">
-            <span className="text-[0.75rem] text-muted-foreground" style={{ fontWeight: 800 }}>Phone</span>
-            <span className="text-[0.875rem]" style={{ fontWeight: 900 }}>{phone}</span>
+            <span className="text-[0.75rem] font-medium text-muted-foreground">Phone</span>
+            <span className="text-[0.875rem]">{phone}</span>
           </div>
         </div>
       </section>
@@ -197,7 +197,7 @@ export function DetailsStep({
                 }`}
               >
                 <Icon className="h-5 w-5" />
-                <span className="text-[0.75rem]" style={{ fontWeight: 800 }}>{occasionOption.label}</span>
+                <span className="text-[0.75rem] font-medium">{occasionOption.label}</span>
               </motion.button>
             );
           })}

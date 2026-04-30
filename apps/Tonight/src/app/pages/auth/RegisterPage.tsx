@@ -131,7 +131,7 @@ export function RegisterPage(props: RegisterPageProps = {}) {
           <ArrowLeft className="h-5 w-5" />
         </button>
         <div className="min-w-0 flex-1">
-          <p className="truncate text-[0.9375rem] text-foreground" style={{ fontWeight: 900 }}>Create account</p>
+          <p className="truncate text-[0.9375rem] font-medium">Create account</p>
           <p className="truncate text-[0.75rem] text-muted-foreground">Join Tonight dining</p>
         </div>
         <button type="button" onClick={() => navigate("/discover")} className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full bg-secondary transition active:scale-95" aria-label="Close">
@@ -159,7 +159,7 @@ export function RegisterPage(props: RegisterPageProps = {}) {
           {!showScanner ? (
             <>
               <InputField icon={Gift} type="text" placeholder="Referral code (optional)" value={referCode} onChange={(value) => setReferCode(value.toUpperCase().replace(/\s/g, ""))} />
-              <button type="button" onClick={() => setShowScanner(true)} className="mt-3 flex h-12 w-full cursor-pointer items-center justify-center gap-2 rounded-full border border-border bg-card text-[0.9375rem] transition hover:bg-secondary" style={{ fontWeight: 900 }}>
+              <button type="button" onClick={() => setShowScanner(true)} className="mt-3 flex h-12 w-full cursor-pointer items-center justify-center gap-2 rounded-full border border-border bg-card text-[0.9375rem] font-medium transition hover:bg-secondary">
                 <QrCode className="h-4 w-4" />
                 Scan QR code
               </button>
@@ -171,7 +171,7 @@ export function RegisterPage(props: RegisterPageProps = {}) {
                 <motion.div className="absolute left-6 right-6 h-0.5 rounded-full bg-primary" animate={{ top: ["15%", "85%", "15%"] }} transition={{ duration: 2, repeat: Infinity, ease: "linear" }} />
               </div>
               <p className="text-[0.8125rem] text-muted-foreground">Point your camera at a referral QR.</p>
-              <button type="button" onClick={() => { setReferCode(`FRIEND-${Math.random().toString(36).slice(2, 7).toUpperCase()}`); setShowScanner(false); }} className="mt-3 cursor-pointer text-[0.8125rem] text-primary" style={{ fontWeight: 900 }}>
+              <button type="button" onClick={() => { setReferCode(`FRIEND-${Math.random().toString(36).slice(2, 7).toUpperCase()}`); setShowScanner(false); }} className="mt-3 cursor-pointer text-[0.8125rem] font-medium text-primary">
                 Simulate scan
               </button>
               <button type="button" onClick={() => setShowScanner(false)} className="mt-2 block w-full cursor-pointer text-[0.75rem] text-muted-foreground">
@@ -179,11 +179,11 @@ export function RegisterPage(props: RegisterPageProps = {}) {
               </button>
             </div>
           )}
-          <button type="button" onClick={() => setStep("credentials")} className="mt-5 flex h-12 w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-primary text-[0.9375rem] text-primary-foreground shadow-[0_10px_24px_rgba(255,56,92,0.22)]" style={{ fontWeight: 900 }}>
+          <button type="button" onClick={() => setStep("credentials")} className="mt-5 flex h-12 w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-primary text-[0.9375rem] font-medium text-primary-foreground shadow-[0_10px_24px_rgba(255,56,92,0.22)]">
             {referCode ? "Apply and continue" : "Continue"}
             <ChevronRight className="h-4 w-4" />
           </button>
-          <button type="button" onClick={() => { setReferCode(""); setStep("credentials"); }} className="mt-2 h-11 w-full cursor-pointer text-[0.875rem] text-muted-foreground" style={{ fontWeight: 800 }}>
+          <button type="button" onClick={() => { setReferCode(""); setStep("credentials"); }} className="mt-2 h-11 w-full cursor-pointer text-[0.875rem] font-medium text-muted-foreground">
             Skip for now
           </button>
         </motion.div>
@@ -207,7 +207,7 @@ export function RegisterPage(props: RegisterPageProps = {}) {
               <p className="mt-1 text-[0.6875rem] text-muted-foreground">{strengthLabel}</p>
             </div>
           )}
-          <button type="button" onClick={handleCredentialsNext} className="mt-5 flex h-12 w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-primary text-[0.9375rem] text-primary-foreground shadow-[0_10px_24px_rgba(255,56,92,0.22)]" style={{ fontWeight: 900 }}>
+          <button type="button" onClick={handleCredentialsNext} className="mt-5 flex h-12 w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-primary text-[0.9375rem] font-medium text-primary-foreground shadow-[0_10px_24px_rgba(255,56,92,0.22)]">
             Next
             <ChevronRight className="h-4 w-4" />
           </button>
@@ -222,7 +222,7 @@ export function RegisterPage(props: RegisterPageProps = {}) {
             subtitle="Tell us what to call you on reservations and invites."
           />
           <InputField icon={User} type="text" placeholder="Display name" value={displayName} onChange={(value) => { setDisplayName(value); setFieldErrors({}); }} error={fieldErrors.displayName} />
-          <button type="button" onClick={handleProfileNext} className="mt-5 flex h-12 w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-primary text-[0.9375rem] text-primary-foreground shadow-[0_10px_24px_rgba(255,56,92,0.22)]" style={{ fontWeight: 900 }}>
+          <button type="button" onClick={handleProfileNext} className="mt-5 flex h-12 w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-primary text-[0.9375rem] font-medium text-primary-foreground shadow-[0_10px_24px_rgba(255,56,92,0.22)]">
             Next
             <ChevronRight className="h-4 w-4" />
           </button>
@@ -242,7 +242,7 @@ export function RegisterPage(props: RegisterPageProps = {}) {
               const availableQuestions = SECURITY_QUESTIONS.filter((question) => !usedQuestions.includes(question) || question === qa.q);
               return (
                 <div key={index} className="rounded-[1.35rem] border border-border bg-card p-3">
-                  <label className="mb-2 block text-[0.75rem] text-muted-foreground" style={{ fontWeight: 900 }}>
+                  <label className="mb-2 block text-[0.75rem] font-medium text-muted-foreground">
                     Question {index + 1}
                   </label>
                   <select
@@ -275,7 +275,7 @@ export function RegisterPage(props: RegisterPageProps = {}) {
               );
             })}
           </div>
-          <button type="button" onClick={handleSecurityNext} disabled={loading} className="mt-5 flex h-12 w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-primary text-[0.9375rem] text-primary-foreground shadow-[0_10px_24px_rgba(255,56,92,0.22)] disabled:opacity-60" style={{ fontWeight: 900 }}>
+          <button type="button" onClick={handleSecurityNext} disabled={loading} className="mt-5 flex h-12 w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-primary text-[0.9375rem] font-medium text-primary-foreground shadow-[0_10px_24px_rgba(255,56,92,0.22)] disabled:opacity-60">
             {loading ? <span className="h-5 w-5 rounded-full border-2 border-white/35 border-t-white animate-spin" /> : <>Create account <ChevronRight className="h-4 w-4" /></>}
           </button>
         </motion.div>
@@ -284,9 +284,9 @@ export function RegisterPage(props: RegisterPageProps = {}) {
       {step === "done" && (
         <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="flex flex-1 flex-col items-center justify-center text-center">
           <IconBadge tone="success"><CheckCircle2 className="h-8 w-8" /></IconBadge>
-          <h2 className="mt-5 text-[1.5rem] text-foreground" style={{ fontWeight: 900 }}>Welcome, {displayName}</h2>
+          <h2 className="mt-5 text-[1.5rem] font-semibold">Welcome, {displayName}</h2>
           <p className="mt-2 max-w-xs text-[0.875rem] leading-snug text-muted-foreground">Your account is ready. Start discovering memorable restaurants tonight.</p>
-          <button type="button" onClick={onRegister} className="mt-8 flex h-12 w-full cursor-pointer items-center justify-center rounded-full bg-primary text-[0.9375rem] text-primary-foreground shadow-[0_10px_24px_rgba(255,56,92,0.22)]" style={{ fontWeight: 900 }}>
+          <button type="button" onClick={onRegister} className="mt-8 flex h-12 w-full cursor-pointer items-center justify-center rounded-full bg-primary text-[0.9375rem] font-medium text-primary-foreground shadow-[0_10px_24px_rgba(255,56,92,0.22)]">
             Get started
           </button>
         </motion.div>
@@ -295,7 +295,7 @@ export function RegisterPage(props: RegisterPageProps = {}) {
       {(step === "refer" || step === "credentials") && (
         <p className="mt-8 pb-4 text-center text-[0.8125rem] text-muted-foreground">
           Already have an account?{" "}
-          <button type="button" onClick={onGoLogin} className="cursor-pointer text-primary" style={{ fontWeight: 900 }}>
+          <button type="button" onClick={onGoLogin} className="cursor-pointer font-medium text-primary">
             Sign in
           </button>
         </p>
