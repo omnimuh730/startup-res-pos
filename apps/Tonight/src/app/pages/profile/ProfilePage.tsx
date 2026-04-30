@@ -273,7 +273,7 @@ export function ProfilePage() {
                 variant="default"
                 showChevron 
                 hoverable
-                className="[&>button]:px-0 [&>button]:py-5"
+                className="[&>button]:px-0 [&>button]:py-5 [&>div>div]:py-[1.125rem]"
               />
             </div>
           </div>
