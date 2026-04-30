@@ -1,61 +1,42 @@
-**Add your own guidelines here**
-<!--
+# Tonight Build Guidelines
 
-System Guidelines
+Use this file as the active project guideline for app shell behavior, modal behavior, and the Airbnb-inspired visual direction. For deeper Airbnb pattern research, also read `airbnbguideline.md`. For the concise design system rules, read `tonight-ui-system.md`.
 
-Use this file to provide the AI with rules and guidelines you want it to follow.
-This template outlines a few examples of things you can add. You can add your own sections and format it to suit your needs
+## App Chrome Rules
 
-TIP: More context isn't always better. It can confuse the LLM. Try and add the most important rules you need
+- Tonight is a mobile app first. The bottom navigation is app chrome, not page content.
+- Normal tab pages must render inside `AppLayout` content and let the shell reserve the bottom nav row.
+- Do not add fake nav clearance such as `pb-24`, `pb-[calc(...)]`, `bottom-20`, `bottom-36`, or `bottomNavHeight + ...` just to avoid the nav.
+- If a tab-owned fixed full-page surface must stay inside the tab experience, bound it above the nav with `bottom: var(--app-bottom-chrome-height, 0px)`.
+- Full-screen app flows such as auth, QR Pay, booking, scanner, and detail flows may intentionally cover or hide the nav when they act as app-level flows.
 
-# General guidelines
+## Modal Rules
 
-Any general rules you want the AI to follow.
-For example:
+- Pages respect the nav. Modals cover the nav.
+- Modal, dialog, sheet, drawer, and blocking overlay surfaces must cover the whole app, including the bottom nav and center QR button.
+- Prefer existing primitives: `Modal`, `BottomSheet`, `Drawer`, `Dialog`, `Sheet`, `AlertDialog`, and `Overlay`.
+- New modal overlays should use `fixed inset-0 z-[500]`; modal panels/content should use `z-[501]`.
+- Modal-like surfaces that block the app should portal to `document.body` or use a shared primitive that already portals.
+- Do not mount blocking modals inside a scrollable page container if that causes them to be clipped by app chrome.
 
-* Only use absolute positioning when necessary. Opt for responsive and well structured layouts that use flexbox and grid by default
-* Refactor code as you go to keep code clean
-* Keep file sizes small and put helper functions and components in their own files.
+## Design Direction
 
---------------
+- Follow the Airbnb-inspired Tonight style: clean white backgrounds, strong black text, soft gray supporting copy, vivid pink primary actions, rounded mobile sheets, calm shadows, real food/place imagery, and restrained but delightful motion.
+- Use current app examples as the local source of truth: Profile main page, Wishlist page, Discover search modal, Discover search pill with map button, wishlist selection sheet, saved toast, and gathered wishlist confirmation modal.
+- Prefer useful product UI over marketing layout. The first screen should be the working app surface.
+- Keep spacing compact and mobile-dense. Avoid large empty gaps above, beside, or below content.
+- Avoid one-note palettes and decorative gradients/orbs. Let content imagery, clean cards, and precise motion carry the experience.
 
-# Design system guidelines
-Rules for how the AI should make generations look like your company's design system
+## Motion Direction
 
-Additionally, if you select a design system to use in the prompt box, you can reference
-your design system's components, tokens, variables and components.
-For example:
+- Use Framer Motion for visible page, modal, sheet, card, and action transitions.
+- Motion should feel smooth and purposeful: spring sheets, soft fade/scale modals, heart/save pops, selected-state pulses, and small action feedback.
+- Do not add endless decorative animation unless the user explicitly asks for it. One-shot celebratory or reveal animations are preferred.
+- Every destructive or state-changing action should give feedback, such as press scale, fade/slide removal, success check, or toast.
 
-* Use a base font-size of 14px
-* Date formats should always be in the format “Jun 10”
-* The bottom toolbar should only ever have a maximum of 4 items
-* Never use the floating action button with the bottom toolbar
-* Chips should always come in sets of 3 or more
-* Don't use a dropdown if there are 2 or fewer options
+## Verification
 
-You can also create sub sections and add more specific details
-For example:
-
-
-## Button
-The Button component is a fundamental interactive element in our design system, designed to trigger actions or navigate
-users through the application. It provides visual feedback and clear affordances to enhance user experience.
-
-### Usage
-Buttons should be used for important actions that users need to take, such as form submissions, confirming choices,
-or initiating processes. They communicate interactivity and should have clear, action-oriented labels.
-
-### Variants
-* Primary Button
-  * Purpose : Used for the main action in a section or page
-  * Visual Style : Bold, filled with the primary brand color
-  * Usage : One primary button per section to guide users toward the most important action
-* Secondary Button
-  * Purpose : Used for alternative or supporting actions
-  * Visual Style : Outlined with the primary color, transparent background
-  * Usage : Can appear alongside a primary button for less important actions
-* Tertiary Button
-  * Purpose : Used for the least important actions
-  * Visual Style : Text-only with no border, using primary color
-  * Usage : For actions that should be available but not emphasized
--->
+- For layout changes, verify mobile widths first.
+- Check that content does not overlap the bottom nav unless it is a modal or app-level full-screen flow.
+- Check that modal backdrops cover the nav and QR button.
+- Run `pnpm build` in `apps/Tonight` before handing off implementation work when feasible.
