@@ -74,10 +74,10 @@ export function getMenuFor(b: Booking): MenuItem[] {
 }
 
 export const statusConfig: Record<BookingStatus, { label: string; color: string; bg: string; icon: typeof CheckCircle }> = {
-  confirmed: { label: "Booking Confirmed", color: "text-success", bg: "bg-success/10", icon: CheckCircle },
+  confirmed: { label: "Confirmed", color: "text-success", bg: "bg-success/10", icon: CheckCircle },
   completed: { label: "Visited", color: "text-info", bg: "bg-info/10", icon: CheckCircle },
   cancelled: { label: "Cancelled", color: "text-destructive", bg: "bg-destructive/10", icon: XCircle },
-  "no-show": { label: "No-Show", color: "text-destructive", bg: "bg-destructive/10", icon: CircleAlert },
+  "no-show": { label: "No-show", color: "text-destructive", bg: "bg-destructive/10", icon: CircleAlert },
 };
 
 export const BOOKINGS: Booking[] = [

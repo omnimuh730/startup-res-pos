@@ -1,10 +1,11 @@
 /* Main Dining Page — orchestrates booking list, detail, modals */
 import { useState } from "react";
+import type { ComponentType } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router";
 import { motion, AnimatePresence } from "framer-motion";
 import { Text } from "../../components/ds/Text";
-import { Tabs, TabList, TabTrigger, TabPanel } from "../../components/ds/Tabs";
-import { CalendarPlus, CheckCircle, XCircle, MapPin, ChevronRight } from "lucide-react";
+import { Button } from "../../components/ds/Button";
+import { CalendarPlus, CheckCircle, XCircle, MapPin, ChevronRight, Plus, ShieldCheck, TicketCheck } from "lucide-react";
 import type { RestaurantData } from "../detail/restaurantDetailData";
 import { ScanQRFlow } from "./ScanQRFlow";
 import { InviteFriends } from "../shared/InviteFriends";
@@ -29,6 +30,317 @@ const itemVariant = {
   show: { opacity: 1, y: 0, scale: 1, transition: springTransition }
 };
 
+type DiningTabId = "scheduled" | "visited" | "cancel";
+
+type DiningTabOption = {
+  id: DiningTabId;
+  label: string;
+  shortLabel: string;
+  icon: ComponentType<{ className?: string; strokeWidth?: number }>;
+};
+
+const DINING_TABS: DiningTabOption[] = [
+  { id: "scheduled", label: "Scheduled", shortLabel: "Next", icon: CalendarPlus },
+  { id: "visited", label: "Visited", shortLabel: "Past", icon: CheckCircle },
+  { id: "cancel", label: "Cancelled", shortLabel: "Off", icon: XCircle },
+];
+
+const TAB_COPY: Record<DiningTabId, { title: string; description: string }> = {
+  scheduled: {
+    title: "Upcoming reservations",
+    description: "Everything you need before you arrive: party, seating, QR, and confirmation.",
+  },
+  visited: {
+    title: "Visited places",
+    description: "Your completed meals with receipts, ratings, and quick rebooking.",
+  },
+  cancel: {
+    title: "Cancelled bookings",
+    description: "Past cancellations and no-shows, kept here for reference.",
+  },
+};
+
+function isDiningTab(value: string | null): value is DiningTabId {
+  return value === "scheduled" || value === "visited" || value === "cancel";
+}
+
+function DiningTabBar({
+  value,
+  counts,
+  onChange,
+}: {
+  value: DiningTabId;
+  counts: Record<DiningTabId, number>;
+  onChange: (value: DiningTabId) => void;
+}) {
+  return (
+    <div role="tablist" aria-label="Dining booking status" className="sticky top-2 z-10 -mx-1 rounded-[1.5rem] bg-background/90 px-1 py-2 backdrop-blur-md">
+      <div className="grid w-full grid-cols-3 gap-2">
+        {DINING_TABS.map((tab) => {
+          const Icon = tab.icon;
+          const active = value === tab.id;
+          const visualLabel = tab.id === "cancel" ? "Cancelled" : tab.shortLabel;
+
+          return (
+            <motion.button
+              key={tab.id}
+              type="button"
+              role="tab"
+              aria-selected={active}
+              aria-label={`${tab.label}: ${counts[tab.id]} booking${counts[tab.id] === 1 ? "" : "s"}`}
+              onClick={() => onChange(tab.id)}
+              className={`flex h-10 min-w-0 cursor-pointer items-center justify-center gap-1 rounded-full px-1.5 transition active:scale-95 ${
+                active
+                  ? "bg-primary text-primary-foreground shadow-[0_8px_18px_rgba(255,56,92,0.22)]"
+                  : "bg-secondary/75 text-muted-foreground hover:bg-secondary hover:text-foreground"
+              }`}
+              style={{ fontWeight: 800 }}
+              transition={{ type: "spring", stiffness: 520, damping: 38 }}
+            >
+              <Icon className="h-4 w-4 shrink-0" strokeWidth={active ? 2.4 : 2} />
+              <span className="min-w-0 truncate text-[0.75rem]">{visualLabel}</span>
+              <span
+                className={`flex h-4 min-w-4 shrink-0 items-center justify-center rounded-full px-1 text-[0.625rem] ${
+                  active ? "bg-white/20 text-white" : "bg-card text-muted-foreground"
+                }`}
+              >
+                {counts[tab.id]}
+              </span>
+            </motion.button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function DiningListHeader({
+  tab,
+  onAddByCode,
+}: {
+  tab: DiningTabId;
+  onAddByCode: () => void;
+}) {
+  const copy = TAB_COPY[tab];
+
+  return (
+    <div className="mb-4 px-1">
+      <div className="min-w-0">
+        <Text className="text-[1.125rem] leading-tight text-foreground" style={{ fontWeight: 800 }}>
+          {copy.title}
+        </Text>
+        <Text className="mt-1 max-w-[28rem] text-[0.8125rem] leading-snug text-muted-foreground">
+          {copy.description}
+        </Text>
+        {tab === "scheduled" && (
+          <button
+            type="button"
+            onClick={onAddByCode}
+            className="mt-3 inline-flex h-9 cursor-pointer items-center gap-2 rounded-full border border-primary/20 bg-primary/8 px-3 text-[0.8125rem] text-primary transition hover:bg-primary/12 active:scale-95"
+            style={{ fontWeight: 800 }}
+          >
+            <Plus className="h-3.5 w-3.5" />
+            Add by booking code
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function AddBookingCodeModal({
+  open,
+  onClose,
+  bookings,
+  onAdd,
+  onView,
+}: {
+  open: boolean;
+  onClose: () => void;
+  bookings: Booking[];
+  onAdd: (booking: Booking) => void;
+  onView: (booking: Booking) => void;
+}) {
+  const [code, setCode] = useState("");
+  const [candidate, setCandidate] = useState<Booking | null>(null);
+  const [addedBooking, setAddedBooking] = useState<Booking | null>(null);
+  const [error, setError] = useState("");
+  const [done, setDone] = useState(false);
+
+  const reset = () => {
+    setCode("");
+    setCandidate(null);
+    setAddedBooking(null);
+    setError("");
+    setDone(false);
+  };
+
+  const close = () => {
+    reset();
+    onClose();
+  };
+
+  const verifyCode = () => {
+    const normalized = code.trim().toUpperCase();
+    const match = bookings.find((booking) => booking.confirmationNo.toUpperCase() === normalized);
+
+    if (!match) {
+      setError("We couldn't find that booking code. Check the letters and numbers.");
+      setCandidate(null);
+      setAddedBooking(null);
+      return;
+    }
+
+    if (match.status !== "confirmed") {
+      setError("Only active confirmed reservations can be joined by code.");
+      setCandidate(null);
+      setAddedBooking(null);
+      return;
+    }
+
+    const existingInvite = bookings.find((booking) => booking.confirmationNo.toUpperCase() === `${match.confirmationNo}-G`.toUpperCase());
+    const verifiedBooking = match.confirmationNo.endsWith("-G")
+      ? match
+      : existingInvite ?? {
+          ...match,
+          id: `invite-${match.id}-${Date.now()}`,
+          confirmationNo: `${match.confirmationNo}-G`,
+          specialRequest: `Shared invitation from ${match.confirmationNo}`,
+        };
+
+    setError("");
+    setCandidate(match);
+    setAddedBooking(verifiedBooking);
+    if (!existingInvite && !match.confirmationNo.endsWith("-G")) onAdd(verifiedBooking);
+    setDone(true);
+  };
+
+  const viewAddedBooking = (booking: Booking) => {
+    reset();
+    onView(booking);
+  };
+
+  return (
+    <AnimatePresence>
+      {open && (
+        <div className="fixed inset-0 z-[500] flex items-end justify-center bg-black/40 p-0 backdrop-blur-sm sm:items-center sm:p-4" onClick={close}>
+          <motion.div
+            initial={{ opacity: 0, y: 80, scale: 0.97 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 80, scale: 0.97 }}
+            transition={{ type: "spring", damping: 30, stiffness: 420 }}
+            className="w-full max-w-md overflow-hidden rounded-t-[2rem] bg-card shadow-[0_18px_50px_rgba(0,0,0,0.18)] sm:rounded-[2rem]"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="border-b border-border px-5 py-4">
+              <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-border sm:hidden" />
+              <div className="flex items-center gap-3">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                  {done ? <CheckCircle className="h-5 w-5" /> : <TicketCheck className="h-5 w-5" />}
+                </div>
+                <div className="min-w-0">
+                  <Text className="text-[1.125rem]" style={{ fontWeight: 800 }}>
+                    {done ? "Verified reservation" : "Add booking code"}
+                  </Text>
+                  <Text className="mt-0.5 text-[0.8125rem] leading-snug text-muted-foreground">
+                    {done ? "This upcoming card was added to your Dining schedule." : "Use a shared confirmation code to join a reservation."}
+                  </Text>
+                </div>
+              </div>
+            </div>
+
+            {done && addedBooking ? (
+              <div className="space-y-4 px-4 py-5">
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.22, ease: "easeOut" }}
+                  className="flex items-center gap-2 rounded-[1.25rem] border border-primary/20 bg-primary/6 px-3.5 py-3"
+                >
+                  <ShieldCheck className="h-4.5 w-4.5 shrink-0 text-primary" />
+                  <div className="min-w-0">
+                    <Text className="text-[0.8125rem] text-primary" style={{ fontWeight: 800 }}>
+                      Booking code verified
+                    </Text>
+                    <Text className="truncate text-[0.75rem] text-muted-foreground">
+                      {candidate?.confirmationNo} is now a scheduled invitation.
+                    </Text>
+                  </div>
+                </motion.div>
+                <BookingCard
+                  booking={addedBooking}
+                  onTap={() => viewAddedBooking(addedBooking)}
+                  onManage={() => viewAddedBooking(addedBooking)}
+                  onScanQR={() => viewAddedBooking(addedBooking)}
+                  onShowQR={() => viewAddedBooking(addedBooking)}
+                  onInvite={() => viewAddedBooking(addedBooking)}
+                />
+                <div className="grid grid-cols-2 gap-2">
+                  <Button variant="outline" radius="full" fullWidth className="font-bold" onClick={close}>
+                    Done
+                  </Button>
+                  <Button variant="primary" radius="full" fullWidth className="font-bold" onClick={() => viewAddedBooking(addedBooking)}>
+                    View
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-5 px-5 py-5">
+                <div>
+                  <label className="text-[0.75rem] uppercase tracking-[0.08em] text-muted-foreground" style={{ fontWeight: 800 }}>
+                    Booking code
+                  </label>
+                  <div className="mt-2 flex gap-2">
+                    <input
+                      value={code}
+                      onChange={(event) => {
+                        setCode(event.target.value);
+                        setError("");
+                        setCandidate(null);
+                        setAddedBooking(null);
+                      }}
+                      placeholder="CT-2026-0418A"
+                      className="h-12 min-w-0 flex-1 rounded-2xl border border-border bg-secondary/50 px-4 text-[0.9375rem] outline-none transition focus:border-primary focus:bg-card focus:ring-2 focus:ring-primary/15"
+                    />
+                    <Button variant="primary" radius="full" className="h-12 px-4 font-bold" onClick={verifyCode}>
+                      Verify
+                    </Button>
+                  </div>
+                  {error && (
+                    <Text className="mt-2 text-[0.8125rem] text-destructive" style={{ fontWeight: 600 }}>
+                      {error}
+                    </Text>
+                  )}
+                </div>
+
+                {candidate && (
+                  <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
+                    <div className="rounded-[1.25rem] border border-primary/20 bg-primary/6 p-3.5">
+                      <div className="flex items-center gap-2">
+                        <ShieldCheck className="h-4 w-4 text-primary" />
+                        <Text className="text-[0.8125rem] text-primary" style={{ fontWeight: 800 }}>
+                          Code verified
+                        </Text>
+                      </div>
+                      <Text className="mt-2 text-[1rem]" style={{ fontWeight: 800 }}>
+                        {candidate.restaurant}
+                      </Text>
+                      <Text className="mt-0.5 text-[0.8125rem] text-muted-foreground">
+                        {candidate.date} · {candidate.time} · {candidate.seating}
+                      </Text>
+                    </div>
+
+                  </motion.div>
+                )}
+              </div>
+            )}
+          </motion.div>
+        </div>
+      )}
+    </AnimatePresence>
+  );
+}
+
 export function DiningPage() {
   const navigate = useNavigate();
   const params = useParams();
@@ -51,8 +363,9 @@ export function DiningPage() {
     } else navigate("/dining");
   };
   
-  const currentTab = searchParams.get("tab") || "scheduled";
-  const setCurrentTab = (tab: string) => {
+  const tabParam = searchParams.get("tab");
+  const currentTab: DiningTabId = isDiningTab(tabParam) ? tabParam : "scheduled";
+  const setCurrentTab = (tab: DiningTabId) => {
     const next = new URLSearchParams(searchParams);
     if (tab === "scheduled") next.delete("tab"); else next.set("tab", tab);
     setSearchParams(next);
@@ -71,10 +384,16 @@ export function DiningPage() {
   const [bookAgainRestaurant, setBookAgainRestaurant] = useState<RestaurantData | null>(null);
   const [invitedMap, setInvitedMap] = useState<Record<string, Set<string>>>({});
   const [receiptBooking, setReceiptBooking] = useState<Booking | null>(null);
+  const [addCodeOpen, setAddCodeOpen] = useState(false);
 
   const scheduled = bookings.filter(b => b.status === "confirmed");
   const visited = bookings.filter(b => b.status === "completed");
   const cancelled = bookings.filter(b => b.status === "cancelled" || b.status === "no-show");
+  const tabCounts: Record<DiningTabId, number> = {
+    scheduled: scheduled.length,
+    visited: visited.length,
+    cancel: cancelled.length,
+  };
 
   const openManage = (b: Booking) => { setManageBooking(b); setShowManage(true); };
 
@@ -85,6 +404,11 @@ export function DiningPage() {
     setShowCancel(false); setCancelBooking(null); setSelectedBooking(null);
   };
   const handleSaveModify = (updated: Booking) => { setBookings(prev => prev.map(b => b.id === updated.id ? updated : b)); };
+
+  const handleAddCodeBooking = (booking: Booking) => {
+    setBookings(prev => prev.some((item) => item.id === booking.id || item.confirmationNo === booking.confirmationNo) ? prev : [booking, ...prev]);
+    setCurrentTab("scheduled");
+  };
 
   const handleBookAgain = (b: Booking) => {
     const restaurantData = bookingToRestaurant(b);
@@ -113,6 +437,16 @@ export function DiningPage() {
       />
       {bookAgainRestaurant && <BookTableFlow restaurant={bookAgainRestaurant} onBack={() => setBookAgainRestaurant(null)} onComplete={() => setBookAgainRestaurant(null)} />}
       <OrderReceiptModal open={!!receiptBooking} onClose={() => setReceiptBooking(null)} booking={receiptBooking} />
+      <AddBookingCodeModal
+        open={addCodeOpen}
+        onClose={() => setAddCodeOpen(false)}
+        bookings={bookings}
+        onAdd={handleAddCodeBooking}
+        onView={(booking) => {
+          setAddCodeOpen(false);
+          setSelectedBooking(booking);
+        }}
+      />
     </>
   );
 
@@ -243,24 +577,21 @@ export function DiningPage() {
         </motion.div>
 
         {/* Tabs & Content */}
-        <Tabs defaultValue="scheduled" value={currentTab} onValueChange={setCurrentTab} variant="boxed">
-          <TabList className="!flex w-full mb-6 sticky top-2 z-10 bg-background/80 backdrop-blur-md rounded-2xl py-1">
-            <TabTrigger value="scheduled" className="flex-1 justify-center" badge={scheduled.length}>Scheduled</TabTrigger>
-            <TabTrigger value="visited" className="flex-1 justify-center" badge={visited.length}>Visited</TabTrigger>
-            <TabTrigger value="cancel" className="flex-1 justify-center" badge={cancelled.length}>Cancelled</TabTrigger>
-          </TabList>
+        <div className="space-y-4">
+          <DiningTabBar value={currentTab} counts={tabCounts} onChange={setCurrentTab} />
+          <DiningListHeader tab={currentTab} onAddByCode={() => setAddCodeOpen(true)} />
 
           <AnimatePresence mode="wait">
             <motion.div
               key={currentTab}
-              initial={{ opacity: 0, y: 15 }}
+              initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -15 }}
-              transition={{ duration: 0.25, ease: "easeOut" }}
+              exit={{ opacity: 0, y: -12 }}
+              transition={{ duration: 0.22, ease: "easeOut" }}
             >
-              <TabPanel value="scheduled">
-                {scheduled.length > 0 ? (
-                  <motion.div variants={staggerContainer} initial="hidden" animate="show" className="space-y-4 md:grid md:grid-cols-2 md:gap-5 md:space-y-0">
+              {currentTab === "scheduled" && (
+                scheduled.length > 0 ? (
+                  <motion.div variants={staggerContainer} initial="hidden" animate="show" className="space-y-3 md:grid md:grid-cols-2 md:gap-4 md:space-y-0">
                     {scheduled.map(b => (
                       <motion.div key={b.id} variants={itemVariant}>
                         <BookingCard booking={b} onTap={() => setSelectedBooking(b)} onManage={() => openManage(b)} onScanQR={() => setScanQRBooking(b)} onShowQR={() => setShowQRBooking(b)} onInvite={() => setInviteBooking(b)} onBookAgain={() => handleBookAgain(b)} invitedCount={invitedMap[b.id]?.size ?? 0} />
@@ -269,12 +600,12 @@ export function DiningPage() {
                   </motion.div>
                 ) : (
                   <EmptyState icon={CalendarPlus} title="No scheduled bookings" description="You have no upcoming reservations. Discover restaurants and make a booking!" />
-                )}
-              </TabPanel>
+                )
+              )}
 
-              <TabPanel value="visited">
-                {visited.length > 0 ? (
-                  <motion.div variants={staggerContainer} initial="hidden" animate="show" className="space-y-4 md:grid md:grid-cols-2 md:gap-5 md:space-y-0">
+              {currentTab === "visited" && (
+                visited.length > 0 ? (
+                  <motion.div variants={staggerContainer} initial="hidden" animate="show" className="space-y-3 md:grid md:grid-cols-2 md:gap-4 md:space-y-0">
                     {visited.map(b => (
                       <motion.div key={b.id} variants={itemVariant}>
                         <BookingCard booking={b} onTap={() => setSelectedBooking(b)} onBookAgain={() => handleBookAgain(b)} onViewReceipt={() => setReceiptBooking(b)} />
@@ -283,12 +614,12 @@ export function DiningPage() {
                   </motion.div>
                 ) : (
                   <EmptyState icon={CheckCircle} title="No visited places yet" description="Your completed dining experiences will appear here." />
-                )}
-              </TabPanel>
+                )
+              )}
 
-              <TabPanel value="cancel">
-                {cancelled.length > 0 ? (
-                  <motion.div variants={staggerContainer} initial="hidden" animate="show" className="space-y-4 md:grid md:grid-cols-2 md:gap-5 md:space-y-0">
+              {currentTab === "cancel" && (
+                cancelled.length > 0 ? (
+                  <motion.div variants={staggerContainer} initial="hidden" animate="show" className="space-y-3 md:grid md:grid-cols-2 md:gap-4 md:space-y-0">
                     {cancelled.map(b => (
                       <motion.div key={b.id} variants={itemVariant}>
                         <BookingCard booking={b} onTap={() => setSelectedBooking(b)} onBookAgain={() => handleBookAgain(b)} />
@@ -297,11 +628,11 @@ export function DiningPage() {
                   </motion.div>
                 ) : (
                   <EmptyState icon={XCircle} title="No cancellations" description="You haven't cancelled any bookings. Great dining streak!" />
-                )}
-              </TabPanel>
+                )
+              )}
             </motion.div>
           </AnimatePresence>
-        </Tabs>
+        </div>
       </div>
 
       {renderModals()}
