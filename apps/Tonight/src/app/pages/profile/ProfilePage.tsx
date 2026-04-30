@@ -3,14 +3,13 @@ import { useState, useSyncExternalStore } from "react";
 import { useLocation, useNavigate, useOutletContext } from "react-router";
 import { Text } from "../../components/ds/Text";
 import { Button } from "../../components/ds/Button";
-import { Avatar } from "../../components/ds/Avatar";
 import { ListGroup } from "../../components/ds/ListGroup";
 import { Stagger, StaggerItem } from "../../components/ds/Animate";
 import {
   ChevronRight, ArrowUpRight, Gift, Clock,
   Users,
   Settings, Crown, LifeBuoy, MessageCircle,
-  Pencil, Check, X, MapPin, Bell,
+  Check, X, MapPin, Bell,
 } from "lucide-react";
 import { subscribePlan, getPlanSnapshot, getPlan } from "../../stores/subscriptionStore";
 import { subscribeNotifications, getNotificationSnapshot, getUnreadCount } from "../../stores/notificationStore";
@@ -27,7 +26,9 @@ import { SettingsPage } from "./settings/SettingsPage";
 import { SubscriptionPage } from "./subscription/SubscriptionPage";
 import { HelpCenterPage } from "./help-center/HelpCenterPage";
 import { ContactSupportPage } from "./support/ContactSupportPage";
-import { LocationPickerModal } from "../shared/LocationPickerModal";
+import { LocationPage } from "./location/LocationPage";
+import { ProfileTopCard } from "./information/ProfileTopCard";
+import { TierStatusModal } from "./information/TierStatusModal";
 import { NotificationsView } from "./notification/NotificationsView";
 
 const PRESET_AVATARS: { id: string; src: string; label: string }[] = [
@@ -46,6 +47,7 @@ const PAGE_MAP: Record<string, string> = {
   "send-gift": "sendGift",
   history: "history",
   edit: "profileEdit",
+  location: "location",
   refer: "refer",
   friends: "friends",
   settings: "settings",
@@ -82,8 +84,8 @@ export function ProfilePage() {
   const [showBalance, setShowBalance] = useState(false);
   const [selectedAvatar, setSelectedAvatar] = useState<string | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
-  const [locationPickerOpen, setLocationPickerOpen] = useState(false);
   const [pendingAvatar, setPendingAvatar] = useState<string | null>(null);
+  const [tierStatusOpen, setTierStatusOpen] = useState(false);
   const dailyClaimed = useSyncExternalStore(dailyBonusStore.subscribe, dailyBonusStore.getSnapshot);
   const [bonusOpen, setBonusOpen] = useState(false);
   const handleClaimBonus = (reward: DailyBonusReward) => { markDailyBonusClaimed(); console.info("Daily bonus claimed:", reward); };
@@ -96,6 +98,7 @@ export function ProfilePage() {
   if (page === "sendGift") return <SendGiftPage onBack={goBack} />;
   if (page === "history") return <HistoryPage onBack={goBack} />;
   if (page === "profileEdit") return <ProfileEditPage onBack={goBack} />;
+  if (page === "location") return <LocationPage onBack={goBack} currentLocation={userLocation} onSelect={(loc) => outletCtx?.setUserLocation(loc)} />;
   if (page === "refer") return <ReferPage onBack={goBack} />;
   if (page === "friends") return <FriendsPage onBack={goBack} />;
   if (page === "settings") return <SettingsPage onBack={goBack} />;
@@ -133,54 +136,16 @@ export function ProfilePage() {
           </button>
         </div>
 
-        {/* Main Identity Card */}
         <StaggerItem preset="fadeInUp">
-          <div className={`mx-4 bg-white rounded-[2rem] p-6 flex flex-col items-center text-center relative overflow-hidden ${cardShadow}`}>
-            
-            {/* Avatar block */}
-            <div className="relative mb-4">
-              <button
-                type="button"
-                onClick={() => { setPendingAvatar(selectedAvatar); setPickerOpen(true); }}
-                className="relative block rounded-full shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-primary cursor-pointer shrink-0 transition hover:scale-[1.02]"
-              >
-                {selectedAvatar ? (
-                  <Avatar name="Alex Chen" size="2xl" src={selectedAvatar} className="w-24 h-24 text-2xl border border-border/20" />
-                ) : (
-                  <div className="w-24 h-24 rounded-full bg-[#222222] text-white flex items-center justify-center text-[2.5rem] font-semibold tracking-tight shadow-inner">
-                    A
-                  </div>
-                )}
-                
-                {/* Pencil Overlay */}
-                <div className="absolute bottom-0 right-0 w-8 h-8 bg-white text-black rounded-full shadow-md border border-black/5 flex items-center justify-center z-10">
-                  <Pencil className="w-3.5 h-3.5" strokeWidth={2.5} />
-                </div>
-              </button>
-            </div>
-
-            <h2 className="text-[1.5rem] font-bold text-black">Alex Chen</h2>
-            <div className="flex items-center gap-2 mt-1 mb-5">
-              <p className="text-[0.875rem] text-gray-500 font-medium">Guest</p>
-            </div>
-
-            {/* Subtle Tier Progress */}
-            <button
-              onClick={() => setPage("profileEdit")}
-              className="w-full bg-gray-50 hover:bg-gray-100 transition-colors rounded-[1rem] p-3.5 text-left cursor-pointer active:scale-[0.99] border border-gray-100"
-            >
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-1.5">
-                  <Crown className="w-4 h-4 text-amber-500" strokeWidth={2.5} />
-                  <span className="text-[0.8125rem] font-bold text-black">Gold Tier</span>
-                </div>
-                <span className="text-[0.6875rem] text-gray-500 font-medium">660 pts to Platinum</span>
-              </div>
-              <div className="h-1 w-full bg-gray-200 rounded-full overflow-hidden">
-                <div className="h-full bg-amber-500 rounded-full w-[67%]" />
-              </div>
-            </button>
-          </div>
+          <ProfileTopCard
+            selectedAvatar={selectedAvatar}
+            onOpenAvatarPicker={() => {
+              setPendingAvatar(selectedAvatar);
+              setPickerOpen(true);
+            }}
+            onOpenTierDetails={() => setTierStatusOpen(true)}
+            cardShadow={cardShadow}
+          />
         </StaggerItem>
 
         <StaggerItem preset="fadeInUp">
@@ -269,7 +234,7 @@ export function ProfilePage() {
                     label: "Location",
                     description: userLocation.address,
                     icon: <MapPin className="w-6 h-6 text-black/70" strokeWidth={1.5} />,
-                    onClick: () => setLocationPickerOpen(true),
+                    onClick: () => setPage("location"),
                     rightContent: <span className="block max-w-[8.5rem] truncate text-[0.875rem] text-gray-500">{userLocation.name}</span>,
                   },
                   { 
@@ -364,16 +329,8 @@ export function ProfilePage() {
         )}
 
         <DailyBonusModal open={bonusOpen} onClose={() => setBonusOpen(false)} onClaim={handleClaimBonus} />
+        <TierStatusModal open={tierStatusOpen} onClose={() => setTierStatusOpen(false)} />
         
-        <LocationPickerModal
-          open={locationPickerOpen}
-          onClose={() => setLocationPickerOpen(false)}
-          onSelect={(loc) => {
-            outletCtx?.setUserLocation(loc);
-            setLocationPickerOpen(false);
-          }}
-          currentLocation={userLocation}
-        />
       </Stagger>
     </div>
   );
