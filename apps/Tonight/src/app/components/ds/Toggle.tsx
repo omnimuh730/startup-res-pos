@@ -38,16 +38,18 @@ export const Toggle = forwardRef<HTMLInputElement, ToggleProps>(
           checked={checked}
           onChange={(e) => onToggle?.(e.target.checked)}
           disabled={disabled}
-          className="sr-only"
+          className="peer sr-only"
           {...props}
         />
         <div
-          className={`${s.track} rounded-full p-[2px] transition-colors duration-200 shrink-0 flex items-center ${
-            checked ? colorMap[color] : "bg-muted"
+          className={`${s.track} flex shrink-0 items-center rounded-full border p-[2px] transition-colors duration-200 ${
+            checked ? `${colorMap[color]} border-transparent` : "bg-muted border-border/70"
+          } peer-focus-visible:outline-none peer-focus-visible:ring-2 peer-focus-visible:ring-foreground/30 peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-background ${
+            disabled ? "" : "shadow-[inset_0_1px_1px_rgba(0,0,0,0.08)]"
           }`}
         >
           <div
-            className={`${s.thumb} rounded-full bg-white shadow-sm transition-transform duration-200 ${
+            className={`${s.thumb} rounded-full border border-black/10 bg-white shadow-[0_1px_2px_rgba(0,0,0,0.25),0_0_0_1px_rgba(255,255,255,0.65)_inset] transition-transform duration-200 ${
               checked ? s.translate : "translate-x-0"
             }`}
           />
