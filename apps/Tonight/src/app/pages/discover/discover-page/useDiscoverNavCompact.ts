@@ -13,8 +13,8 @@ export function useDiscoverNavCompact(
     }
     const readThreshold = () => {
       const hero = discoverHeroSectionRef.current;
-      if (!hero) return 150;
-      return Math.min(260, Math.max(140, Math.round(hero.offsetHeight * 0.52)));
+      if (!hero) return 64;
+      return Math.min(120, Math.max(56, Math.round(hero.offsetHeight * 0.22)));
     };
     const onScroll = () => setDiscoverNavCompact(main.scrollTop > readThreshold());
     main.addEventListener("scroll", onScroll, { passive: true });

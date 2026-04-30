@@ -1,4 +1,4 @@
-import { motion } from "motion/react";
+import { motion, useDragControls } from "motion/react";
 import { Search } from "lucide-react";
 import type { PointerEvent as ReactPointerEvent, RefObject } from "react";
 import { RestaurantResultCard } from "./ResultCards";
@@ -51,11 +51,18 @@ export function SearchResultsSheet({
   const hasResults = filteredRestaurants.length > 0;
   const isPeek = sheetState === "peek";
   const title = hasResults ? "Over 1,000 results" : "No restaurants found";
+  const dragControls = useDragControls();
+  const startSheetDrag = (event: ReactPointerEvent<HTMLElement>) => {
+    setPreviewIndex(null);
+    dragControls.start(event);
+  };
 
   return (
     <motion.section
       ref={sheetRef}
       drag="y"
+      dragControls={dragControls}
+      dragListener={false}
       dragElastic={0.08}
       dragMomentum={false}
       dragConstraints={{ top: 0, bottom: getSheetY("peek", sheetHeight, peekHeight) }}
@@ -80,6 +87,7 @@ export function SearchResultsSheet({
         }}
         className="block w-full cursor-grab px-5 pb-3 pt-2 active:cursor-grabbing"
         aria-label={isPeek ? "Show results list" : "Move results list"}
+        onPointerDown={(event) => startSheetDrag(event)}
       >
         <span className="mx-auto block h-1 w-10 rounded-full bg-[#D1D1D1]" />
         <span className="mt-3 block text-center text-[1rem] text-[#222222]" style={{ fontWeight: 700 }}>{title}</span>
@@ -98,7 +106,10 @@ export function SearchResultsSheet({
       ) : (
         <div
           ref={resultsListRef}
-          onPointerDown={onListPointerDown}
+          onPointerDown={(event) => {
+            if (sheetState !== "full") startSheetDrag(event);
+            onListPointerDown(event);
+          }}
           onPointerMove={onListPointerMove}
           onPointerUp={onListPointerEnd}
           onPointerCancel={onListPointerCancel}
@@ -109,7 +120,7 @@ export function SearchResultsSheet({
             }
           }}
           className={`px-4 pb-0 transition-opacity ${
-            isPeek ? "pointer-events-none overflow-hidden opacity-0" : sheetState === "full" ? "overflow-y-auto overscroll-contain opacity-100" : "overflow-hidden opacity-100"
+            isPeek ? "pointer-events-none overflow-hidden opacity-0" : sheetState === "full" ? "overflow-y-auto overscroll-contain opacity-100" : "cursor-grab overflow-hidden opacity-100 active:cursor-grabbing"
           }`}
           style={{ height: `calc(100% - ${Math.round(peekHeaderHeight)}px)`, paddingBottom: sheetState === "full" ? "5rem" : "1.5rem" }}
         >

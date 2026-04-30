@@ -32,7 +32,8 @@ export function useSearchResultsLayout({ sheetRef, searchHeaderRef, peekHeaderRe
     const measure = () => {
       const el = peekHeaderRef.current;
       if (!el) return;
-      setPeekHeaderHeight(el.getBoundingClientRect().height || PEEK_CONTENT_HEIGHT);
+      const measured = el.getBoundingClientRect().height || PEEK_CONTENT_HEIGHT;
+      setPeekHeaderHeight(Math.min(76, Math.max(56, measured)));
     };
     const raf = window.requestAnimationFrame(measure);
     const el = peekHeaderRef.current;

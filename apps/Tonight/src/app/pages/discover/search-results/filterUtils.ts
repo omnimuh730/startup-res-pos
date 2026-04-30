@@ -2,7 +2,7 @@ import type { SearchResultRestaurant } from "../discoverTypes";
 import { RESTAURANTS } from "./searchMapData";
 import type { MappedSearchRestaurant, SearchFilterState, SheetState } from "./types";
 
-const HALF_VISIBLE_RATIO = 0.62;
+const HALF_VISIBLE_RATIO = 0.7;
 
 export function getSheetY(state: SheetState, height: number, peekHeight: number) {
   if (state === "full") return 0;
