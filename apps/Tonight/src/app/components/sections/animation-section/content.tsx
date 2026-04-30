@@ -1,6 +1,6 @@
 import { motion } from "motion/react";
-import { Animate, Stagger, StaggerItem, Button } from "../ds";
-import { ComponentCard } from "../section-wrapper";
+import { Animate, Stagger, StaggerItem, Button } from "../../ds";
+import { ComponentCard } from "../../section-wrapper";
 import { RotateCcw, ArrowRight, RefreshCw, ThumbsUp, Share2, Zap } from "lucide-react";
 import { AddToCartButton, BookmarkButton, CopyButton, DeleteButton, DownloadButton, LikeButton, NotifyButton, PlusCounter, SendButton, StarRatingButton } from "./microButtons";
 

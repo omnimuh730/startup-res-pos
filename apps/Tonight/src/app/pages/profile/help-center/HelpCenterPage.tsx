@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { ArrowLeft, ArrowUp, MessageCircle, Printer, Share2 } from "lucide-react";
+import { ArrowLeft, ArrowUp, Printer, Share2 } from "lucide-react";
 import { Heading, Text } from "../../../components/ds/Text";
 import { buildFaqs, buildSections } from "./helpCenterContent";
 import { FaqAndFooter } from "./help-center-page/FaqAndFooter";

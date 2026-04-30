@@ -1,4 +1,4 @@
-/* Main Profile Page — routes to sub-pages */
+/* Main Profile Page ? routes to sub-pages */
 import { useState, useSyncExternalStore } from "react";
 import { useLocation, useNavigate, useOutletContext } from "react-router";
 import { Text } from "../../components/ds/Text";
@@ -7,7 +7,7 @@ import { Stagger, StaggerItem } from "../../components/ds/Animate";
 import { ChevronRight, ArrowUpRight, Gift, Clock, Users, Settings, Crown, LifeBuoy, MessageCircle, MapPin, Bell } from "lucide-react";
 import { subscribePlan, getPlanSnapshot, getPlan } from "../../stores/subscriptionStore";
 import { subscribeNotifications, getNotificationSnapshot, getUnreadCount } from "../../stores/notificationStore";
-import type { AppOutletContext } from "../../AppLayout";
+import type { AppOutletContext } from "../../app-layout/types";
 import { TopUpPage } from "./topup/TopUpPage";
 import { SendGiftPage } from "./gift/SendGiftPage";
 import { HistoryPage } from "./history/HistoryPage";

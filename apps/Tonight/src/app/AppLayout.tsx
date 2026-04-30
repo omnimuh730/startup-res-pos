@@ -19,6 +19,8 @@ import { SidebarNav, pageVariants, type TabId } from "./app-layout/navigation";
 import { QUICK_SAVE_WINDOW_MS, type AppOutletContext, type AppWishlistCollection } from "./app-layout/types";
 import { BottomNav } from "./app-layout/BottomNav";
 
+export type { AppOutletContext } from "./app-layout/types";
+
 export function AppLayout() {
   const location = useLocation();
   const navigate = useNavigate();
