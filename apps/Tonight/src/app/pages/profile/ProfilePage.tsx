@@ -122,7 +122,7 @@ export function ProfilePage() {
       <Stagger stagger={0.04} className="space-y-6">
         
         {/* Header */}
-        <div className="px-6 pt-12 pb-2 flex items-center justify-between sticky top-0 z-30 bg-white/90 backdrop-blur-md">
+        <div className="px-6 pt-6 pb-2 flex items-center justify-between sticky top-0 z-30 bg-white/90 backdrop-blur-md">
           <h1 className="text-[2rem] font-bold">Profile</h1>
           <button 
             onClick={openNotifications} 
@@ -144,6 +144,7 @@ export function ProfilePage() {
               setPickerOpen(true);
             }}
             onOpenTierDetails={() => setTierStatusOpen(true)}
+            planType={currentPlan.type === "pro" ? "pro" : "free"}
             cardShadow={cardShadow}
           />
         </StaggerItem>
