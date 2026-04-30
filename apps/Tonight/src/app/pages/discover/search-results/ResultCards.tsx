@@ -19,11 +19,12 @@ export function RestaurantResultCard({
   const basePrice = restaurant.price || "$$";
 
   return (
-    <article className="cursor-pointer" onClick={onSelect}>
+    <article className="cursor-pointer select-none" onClick={onSelect} onDragStart={(event) => event.preventDefault()}>
       <div className="relative aspect-[4/3] overflow-hidden rounded-2xl bg-[#F7F7F7]">
         <ImageWithFallback
           src={restaurant.image.replace("w=100&h=100", "w=800&h=800")}
           alt={restaurant.name}
+          draggable={false}
           className="h-full w-full object-cover transition-transform duration-500 hover:scale-[1.03]"
         />
         <span className="absolute left-3 top-3 rounded-full bg-white px-3 py-1.5 text-[0.8125rem] text-[#222222] shadow-sm" style={{ fontWeight: 700 }}>
@@ -92,12 +93,14 @@ export function MapPreviewCard({
       className="absolute left-4 right-4 z-40 overflow-hidden rounded-2xl bg-white shadow-[0_12px_30px_rgba(0,0,0,0.28)]"
       style={{ bottom: `${Math.round(bottomOffset)}px` }}
       onClick={onSelect}
+      onDragStart={(event) => event.preventDefault()}
     >
       <div className="relative h-40 bg-[#F7F7F7]">
         <ImageWithFallback
           src={restaurant.mapImage.replace("w=400&h=300", "w=700&h=420")}
           alt={restaurant.name}
-          className="h-full w-full object-cover"
+          draggable={false}
+          className="h-full w-full select-none object-cover"
         />
         <span className="absolute left-3 top-3 rounded-full bg-white px-3 py-1.5 text-[0.8125rem] text-[#222222] shadow-sm" style={{ fontWeight: 700 }}>
           Trophy pick

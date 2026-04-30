@@ -1,6 +1,6 @@
 import { motion, useDragControls } from "motion/react";
 import { Search } from "lucide-react";
-import type { PointerEvent as ReactPointerEvent, RefObject } from "react";
+import { useRef, useState, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent, type RefObject } from "react";
 import { RestaurantResultCard } from "./ResultCards";
 import type { MappedSearchRestaurant, SheetState } from "./types";
 import { getNearestSheetState, getSheetY } from "./filterUtils";
@@ -26,6 +26,14 @@ type SearchResultsSheetProps = {
   onListPointerMove: (event: ReactPointerEvent<HTMLDivElement>) => void;
   onListPointerEnd: (event: ReactPointerEvent<HTMLDivElement>) => void;
   onListPointerCancel: (event: ReactPointerEvent<HTMLDivElement>) => void;
+};
+
+type DragClickGuard = {
+  pointerId: number | null;
+  startX: number;
+  startY: number;
+  moved: boolean;
+  suppressUntil: number;
 };
 
 export function SearchResultsSheet({
@@ -54,10 +62,42 @@ export function SearchResultsSheet({
   const isPeek = sheetState === "peek";
   const title = hasResults ? "Over 1,000 results" : "No restaurants found";
   const dragControls = useDragControls();
+  const [isSheetDragging, setIsSheetDragging] = useState(false);
+  const dragClickGuardRef = useRef<DragClickGuard>({ pointerId: null, startX: 0, startY: 0, moved: false, suppressUntil: 0 });
   const animatedSheetY = sheetY + listPullOffset;
+  const shouldShowResultsList = !isPeek || isSheetDragging;
   const startSheetDrag = (event: ReactPointerEvent<HTMLElement>) => {
     setPreviewIndex(null);
     dragControls.start(event, { snapToCursor: false });
+  };
+  const startDragClickGuard = (event: ReactPointerEvent<HTMLDivElement>) => {
+    dragClickGuardRef.current = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      moved: false,
+      suppressUntil: dragClickGuardRef.current.suppressUntil,
+    };
+  };
+  const updateDragClickGuard = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const guard = dragClickGuardRef.current;
+    if (guard.pointerId !== event.pointerId) return;
+    const movedX = event.clientX - guard.startX;
+    const movedY = event.clientY - guard.startY;
+    if (Math.hypot(movedX, movedY) > 8) guard.moved = true;
+  };
+  const finishDragClickGuard = (event: ReactPointerEvent<HTMLDivElement>) => {
+    updateDragClickGuard(event);
+    if (dragClickGuardRef.current.moved) dragClickGuardRef.current.suppressUntil = performance.now() + 450;
+    dragClickGuardRef.current.pointerId = null;
+  };
+  const cancelDragClickGuard = () => {
+    dragClickGuardRef.current.pointerId = null;
+  };
+  const handleResultsClickCapture = (event: ReactMouseEvent<HTMLDivElement>) => {
+    if (dragClickGuardRef.current.suppressUntil <= performance.now()) return;
+    event.preventDefault();
+    event.stopPropagation();
   };
 
   return (
@@ -69,12 +109,17 @@ export function SearchResultsSheet({
       dragElastic={0.08}
       dragMomentum={false}
       dragConstraints={{ top: 0, bottom: getSheetY("peek", sheetHeight, peekHeight) }}
-      onDragStart={() => setPreviewIndex(null)}
+      onDragStart={() => {
+        setPreviewIndex(null);
+        setIsSheetDragging(true);
+      }}
       onDragEnd={(_, info) => {
         const projectedY = sheetY + info.offset.y + info.velocity.y * 0.22;
-        if (info.velocity.y < -980) return setSheetState("full");
-        if (info.velocity.y > 980) return setSheetState(sheetState === "full" ? "half" : "peek");
-        setSheetState(getNearestSheetState(projectedY, sheetHeight, peekHeight));
+        let nextState = getNearestSheetState(projectedY, sheetHeight, peekHeight);
+        if (info.velocity.y < -980) nextState = "full";
+        if (info.velocity.y > 980) nextState = sheetState === "full" ? "half" : "peek";
+        setSheetState(nextState);
+        setIsSheetDragging(false);
       }}
       animate={{ y: animatedSheetY }}
       transition={
@@ -114,15 +159,26 @@ export function SearchResultsSheet({
         <div
           ref={resultsListRef}
           onPointerDown={(event) => {
+            startDragClickGuard(event);
             if (sheetState !== "full") {
               startSheetDrag(event);
               return;
             }
             onListPointerDown(event);
           }}
-          onPointerMove={onListPointerMove}
-          onPointerUp={onListPointerEnd}
-          onPointerCancel={onListPointerCancel}
+          onPointerMove={(event) => {
+            updateDragClickGuard(event);
+            onListPointerMove(event);
+          }}
+          onPointerUp={(event) => {
+            finishDragClickGuard(event);
+            onListPointerEnd(event);
+          }}
+          onPointerCancel={(event) => {
+            cancelDragClickGuard();
+            onListPointerCancel(event);
+          }}
+          onClickCapture={handleResultsClickCapture}
           onWheel={(event) => {
             if (sheetState === "full" && (resultsListRef.current?.scrollTop ?? 0) <= 1 && event.deltaY < -28) {
               setPreviewIndex(null);
@@ -130,7 +186,7 @@ export function SearchResultsSheet({
             }
           }}
           className={`px-4 pb-0 transition-opacity ${
-            isPeek ? "pointer-events-none overflow-hidden opacity-0" : sheetState === "full" ? "cursor-grab overflow-y-auto overscroll-contain opacity-100 active:cursor-grabbing" : "cursor-grab overflow-hidden opacity-100 active:cursor-grabbing"
+            !shouldShowResultsList ? "pointer-events-none overflow-hidden opacity-0" : sheetState === "full" ? "cursor-grab overflow-y-auto overscroll-contain opacity-100 active:cursor-grabbing" : "cursor-grab overflow-hidden opacity-100 active:cursor-grabbing"
           }`}
           style={{ height: `calc(100% - ${Math.round(peekHeaderHeight)}px)`, paddingBottom: sheetState === "full" ? "5rem" : "1.5rem" }}
         >
