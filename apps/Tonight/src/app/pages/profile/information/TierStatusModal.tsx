@@ -68,18 +68,18 @@ export function TierStatusModal({
               <div className="flex-1 overflow-y-auto px-5 py-5 space-y-4">
                 
                 {/* Current Tier VIP Card */}
-                <div className="rounded-2xl p-4 bg-foreground text-background shadow-lg relative overflow-hidden">
-                  <div className="absolute -top-6 -right-6 opacity-10">
-                    <Crown className="w-32 h-32" />
+                <div className="rounded-2xl p-4 bg-primary text-primary-foreground shadow-lg relative overflow-hidden">
+                  <div className="absolute -top-6 -right-6 opacity-15">
+                    <Crown className="w-32 h-32 text-white" />
                   </div>
-                  <Text className="text-[11px] uppercase text-background/70 font-bold tracking-widest mb-1">Current Tier</Text>
-                  <Text className="text-[22px] font-bold text-background leading-tight">GOLD · Level 2</Text>
+                  <Text className="text-[11px] uppercase text-white/80 font-bold tracking-widest mb-1">Current Tier</Text>
+                  <Text className="text-[22px] font-bold text-white leading-tight">GOLD · Level 2</Text>
                   
                   <div className="flex items-center gap-3 mt-3">
-                    <div className="h-1.5 flex-1 bg-background/20 rounded-full overflow-hidden">
-                      <div className="h-full bg-amber-500 rounded-full w-[67%]" />
+                    <div className="h-1.5 flex-1 bg-white/30 rounded-full overflow-hidden">
+                      <div className="h-full bg-white rounded-full w-[67%]" />
                     </div>
-                    <Text className="text-background/90 text-[12px] font-semibold whitespace-nowrap">660 to Platinum</Text>
+                    <Text className="text-white text-[12px] font-semibold whitespace-nowrap">660 to Platinum</Text>
                   </div>
                 </div>
 
