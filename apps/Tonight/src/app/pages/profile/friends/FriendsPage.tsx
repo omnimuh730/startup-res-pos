@@ -3,8 +3,9 @@ import { Input } from "../../../components/ds/Input";
 import { Button } from "../../../components/ds/Button";
 import { Text } from "../../../components/ds/Text";
 import { Modal, ModalHeader, ModalBody, ModalFooter } from "../../../components/ds/Modal";
+import { useToast } from "../../../components/ds/Toast";
 import { motion, AnimatePresence } from "framer-motion";
-import { Check, X, Trash2, UserPlus, AtSign, Phone } from "lucide-react";
+import { Ban, Check, RotateCcw, X, Trash2, UserPlus, AtSign, Phone } from "lucide-react";
 import { PageHeader } from "../profileHelpers";
 
 interface Contact {
@@ -21,10 +22,16 @@ interface FriendRequest extends Contact {
   note: string;
 }
 
+interface BlockedContact extends Contact {
+  blockedAt: string;
+  reason: string;
+}
+
 export function FriendsPage({ onBack }: { onBack: () => void }) {
   const [showAddForm, setShowAddForm] = useState(false);
   const [confirmModal, setConfirmModal] = useState<string | null>(null);
   const [newContact, setNewContact] = useState({ name: "", identifier: "" });
+  const { toast } = useToast();
   const [friendRequests, setFriendRequests] = useState<FriendRequest[]>([
     {
       id: "req-1",
@@ -53,6 +60,7 @@ export function FriendsPage({ onBack }: { onBack: () => void }) {
     { id: "4", name: "David Park", phone: "+1 (555) 567-8901", initials: "DP", color: "#D97706" },
     { id: "5", name: "Olivia Tran", username: "oliviat", initials: "OT", color: "#7C3AED" },
   ]);
+  const [blockedContacts, setBlockedContacts] = useState<BlockedContact[]>([]);
 
   const handleAddContact = () => {
     if (!newContact.name) return;
@@ -81,6 +89,11 @@ export function FriendsPage({ onBack }: { onBack: () => void }) {
 
     setNewContact({ name: "", identifier: "" });
     setShowAddForm(false);
+    toast({
+      type: "success",
+      title: "Friend added",
+      description: `${newContact.name} was added to your dining circle.`,
+    });
   };
 
   const handleApproveRequest = (request: FriendRequest) => {
@@ -94,10 +107,67 @@ export function FriendsPage({ onBack }: { onBack: () => void }) {
     };
     setContacts((current) => [contact, ...current.filter((c) => c.id !== contact.id)]);
     setFriendRequests((current) => current.filter((r) => r.id !== request.id));
+    toast({
+      type: "success",
+      title: "Friend request approved",
+      description: `${request.name} is now in your dining circle.`,
+    });
   };
 
-  const handleRejectRequest = (requestId: string) => {
-    setFriendRequests((current) => current.filter((r) => r.id !== requestId));
+  const handleRejectRequest = (request: FriendRequest) => {
+    setFriendRequests((current) => current.filter((r) => r.id !== request.id));
+    toast({
+      type: "info",
+      title: "Friend request rejected",
+      description: `${request.name}'s request was dismissed.`,
+    });
+  };
+
+  const handleBlockContact = (contact: Contact, reason = "Blocked from friend requests and invites") => {
+    const blocked: BlockedContact = {
+      ...contact,
+      blockedAt: "Just now",
+      reason,
+    };
+    setBlockedContacts((current) => [blocked, ...current.filter((c) => c.id !== contact.id)]);
+    setContacts((current) => current.filter((c) => c.id !== contact.id));
+    setFriendRequests((current) => current.filter((r) => r.id !== contact.id));
+    toast({
+      type: "warning",
+      title: "Contact blocked",
+      description: `${contact.name} can no longer send friend requests or invites.`,
+    });
+  };
+
+  const handleUnblockContact = (contactId: string) => {
+    const blocked = blockedContacts.find((c) => c.id === contactId);
+    setBlockedContacts((current) => current.filter((c) => c.id !== contactId));
+    if (blocked) {
+      toast({
+        type: "success",
+        title: "Contact unblocked",
+        description: `${blocked.name} can send requests again.`,
+      });
+    }
+  };
+
+  const handleRemoveContact = (contactId: string) => {
+    const removed = contacts.find((c) => c.id === contactId);
+    setContacts((current) => current.filter((c) => c.id !== contactId));
+    setConfirmModal(null);
+    if (removed) {
+      toast({
+        type: "info",
+        title: "Contact removed",
+        description: `${removed.name} was removed from your contacts.`,
+      });
+    }
+  };
+
+  const handleConfirmBlock = (contactId: string) => {
+    const contact = contacts.find((c) => c.id === contactId);
+    if (contact) handleBlockContact(contact, "Blocked from your contacts list");
+    setConfirmModal(null);
   };
 
   return (
@@ -161,19 +231,26 @@ export function FriendsPage({ onBack }: { onBack: () => void }) {
 
                         <div className="mt-3 grid grid-cols-2 gap-2">
                           <button
-                            onClick={() => handleRejectRequest(request.id)}
+                            onClick={() => handleRejectRequest(request)}
                             className="h-10 rounded-full border border-border bg-card text-[13px] font-bold text-foreground transition hover:bg-secondary active:scale-[0.98]"
                           >
                             Reject
                           </button>
                           <button
                             onClick={() => handleApproveRequest(request)}
-                            className="flex h-10 items-center justify-center gap-1.5 rounded-full bg-foreground text-[13px] font-bold text-background shadow-sm transition hover:bg-foreground/90 active:scale-[0.98]"
+                            className="flex h-10 items-center justify-center gap-1.5 rounded-full bg-primary text-[13px] font-bold text-primary-foreground shadow-sm transition hover:bg-primary/90 active:scale-[0.98]"
                           >
                             <Check className="h-4 w-4" strokeWidth={2.5} />
                             Approve
                           </button>
                         </div>
+                        <button
+                          onClick={() => handleBlockContact(request, "Blocked from pending friend requests")}
+                          className="mt-2 flex h-9 w-full items-center justify-center gap-1.5 rounded-full bg-secondary text-[12px] font-bold text-muted-foreground transition hover:bg-destructive/10 hover:text-destructive active:scale-[0.98]"
+                        >
+                          <Ban className="h-3.5 w-3.5" />
+                          Block this person
+                        </button>
                       </motion.div>
                     ))}
                   </AnimatePresence>
@@ -287,8 +364,16 @@ export function FriendsPage({ onBack }: { onBack: () => void }) {
                 <button
                   onClick={() => setConfirmModal(contact.id)}
                   className="w-8 h-8 rounded-full flex items-center justify-center text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
+                  aria-label={`Remove ${contact.name}`}
                 >
                   <Trash2 className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => handleBlockContact(contact, "Blocked from your contacts list")}
+                  className="w-8 h-8 rounded-full flex items-center justify-center text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
+                  aria-label={`Block ${contact.name}`}
+                >
+                  <Ban className="w-4 h-4" />
                 </button>
               </motion.div>
             ))}
@@ -299,6 +384,64 @@ export function FriendsPage({ onBack }: { onBack: () => void }) {
                 <Text className="text-muted-foreground text-[13px] mt-1">Add friends to easily invite them to reservations.</Text>
               </div>
             )}
+          </div>
+
+          {/* Blocklist */}
+          <div className="mt-6">
+            <div className="mb-3 flex items-center justify-between px-1">
+              <Text className="text-[14px] font-bold text-foreground">Blocked list</Text>
+              <span className="rounded-full bg-secondary px-2 py-0.5 text-[11px] font-bold text-muted-foreground">
+                {blockedContacts.length} blocked
+              </span>
+            </div>
+
+            <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
+              <AnimatePresence initial={false}>
+                {blockedContacts.length > 0 ? (
+                  blockedContacts.map((contact, idx) => (
+                    <motion.div
+                      layout
+                      key={contact.id}
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, height: 0 }}
+                      transition={{ type: "spring", bounce: 0, duration: 0.3 }}
+                      className={`flex items-center gap-3.5 p-4 ${
+                        idx !== blockedContacts.length - 1 ? "border-b border-border/60" : ""
+                      }`}
+                    >
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-secondary text-muted-foreground">
+                        <Ban className="h-4 w-4" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <Text className="truncate text-[15px] font-semibold text-foreground">{contact.name}</Text>
+                        <Text className="mt-0.5 truncate text-[12px] text-muted-foreground">
+                          {contact.reason} - {contact.blockedAt}
+                        </Text>
+                      </div>
+                      <button
+                        onClick={() => handleUnblockContact(contact.id)}
+                        className="flex h-9 items-center gap-1.5 rounded-full border border-border px-3 text-[12px] font-bold text-foreground transition hover:bg-secondary active:scale-[0.98]"
+                      >
+                        <RotateCcw className="h-3.5 w-3.5" />
+                        Unblock
+                      </button>
+                    </motion.div>
+                  ))
+                ) : (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="p-5 text-center"
+                  >
+                    <Text className="text-[14px] font-semibold text-foreground">No blocked contacts</Text>
+                    <Text className="mt-1 text-[12px] text-muted-foreground">
+                      Block spammers from friend requests or your contacts list.
+                    </Text>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
           </div>
         </div>
       </div>
@@ -316,13 +459,19 @@ export function FriendsPage({ onBack }: { onBack: () => void }) {
             variant="destructive"
             className="rounded-full font-semibold"
             onClick={() => {
-              if (confirmModal) {
-                setContacts(contacts.filter((c) => c.id !== confirmModal));
-                setConfirmModal(null);
-              }
+              if (confirmModal) handleRemoveContact(confirmModal);
             }}
           >
             Remove
+          </Button>
+          <Button
+            variant="outline"
+            className="rounded-full font-semibold"
+            onClick={() => {
+              if (confirmModal) handleConfirmBlock(confirmModal);
+            }}
+          >
+            Block
           </Button>
         </ModalFooter>
       </Modal>

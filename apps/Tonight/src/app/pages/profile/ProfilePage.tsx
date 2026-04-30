@@ -280,7 +280,7 @@ export function ProfilePage() {
         </StaggerItem>
 
         <StaggerItem preset="fadeInUp">
-          <div className="flex flex-col items-center justify-center pt-8 pb-8">
+          <div className="flex flex-col items-center justify-center pb-4">
             <Text className="text-[0.8125rem] text-gray-400 font-medium">App Version 2.4.1</Text>
             <Text className="text-gray-400/70 text-[0.6875rem] mt-0.5">Last released: April 10, 2026</Text>
           </div>
