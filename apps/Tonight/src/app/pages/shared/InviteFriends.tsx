@@ -25,6 +25,7 @@ const FRIENDS: Friend[] = [
 ];
 
 type InviteView = "notInvited" | "invited";
+type InviteMode = "invite" | "share";
 
 interface InviteFriendsProps {
   open: boolean;
@@ -34,6 +35,7 @@ interface InviteFriendsProps {
   time: string;
   alreadyInvited?: Set<string>;
   onInvited?: (friendIds: Set<string>) => void;
+  mode?: InviteMode;
 }
 
 export function InviteFriends({
@@ -44,6 +46,7 @@ export function InviteFriends({
   time,
   alreadyInvited,
   onInvited,
+  mode = "invite",
 }: InviteFriendsProps) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState("");
@@ -72,6 +75,15 @@ export function InviteFriends({
   const newSelections = alreadyInvited ? new Set([...selected].filter((id) => !alreadyInvited.has(id))) : selected;
   const previousInvites = alreadyInvited ?? new Set<string>();
   const hasChanges = selected.size !== previousInvites.size || [...selected].some((id) => !previousInvites.has(id));
+  const isShare = mode === "share";
+  const title = isShare ? "Share restaurant" : "Invite friends";
+  const subtitle = isShare ? restaurantName : `${restaurantName} - ${date} - ${time}`;
+  const sentTitle = isShare
+    ? `${newSelections.size || selected.size} friend${(newSelections.size || selected.size) === 1 ? "" : "s"} notified`
+    : newSelections.size > 0
+      ? `${newSelections.size} invite${newSelections.size > 1 ? "s" : ""} sent`
+      : "Invites updated";
+  const sentMessage = isShare ? "They will see this restaurant in notifications." : "Your reservation list is up to date.";
 
   const handleSend = () => {
     setSent(true);
@@ -91,9 +103,11 @@ export function InviteFriends({
   };
 
   const sendLabel = newSelections.size > 0
-    ? `Send ${newSelections.size} invite${newSelections.size > 1 ? "s" : ""}`
+    ? isShare
+      ? `Share with ${newSelections.size}`
+      : `Send ${newSelections.size} invite${newSelections.size > 1 ? "s" : ""}`
     : hasChanges
-      ? "Update invites"
+      ? isShare ? "Update shares" : "Update invites"
       : "Select friends";
 
   return (
@@ -104,9 +118,9 @@ export function InviteFriends({
             <UserPlus className="h-5 w-5" />
           </div>
           <div className="min-w-0">
-            <h3 className="text-[1.125rem]" style={{ fontWeight: 900 }}>Invite friends</h3>
+            <h3 className="text-[1.125rem]" style={{ fontWeight: 900 }}>{title}</h3>
             <Text className="mt-0.5 line-clamp-2 text-[0.8125rem] leading-snug text-muted-foreground">
-              {restaurantName} - {date} - {time}
+              {subtitle}
             </Text>
           </div>
         </div>
@@ -129,9 +143,9 @@ export function InviteFriends({
               <Check className="h-8 w-8" />
             </motion.div>
             <Text className="text-[1.0625rem]" style={{ fontWeight: 900 }}>
-              {newSelections.size > 0 ? `${newSelections.size} invite${newSelections.size > 1 ? "s" : ""} sent` : "Invites updated"}
+              {sentTitle}
             </Text>
-            <Text className="mt-1 text-[0.875rem] text-muted-foreground">Your reservation list is up to date.</Text>
+            <Text className="mt-1 text-[0.875rem] text-muted-foreground">{sentMessage}</Text>
           </motion.div>
         ) : (
           <>
@@ -153,8 +167,8 @@ export function InviteFriends({
 
             <div className="mb-4 grid grid-cols-2 gap-2 rounded-full bg-secondary/65 p-1">
               {[
-                { id: "notInvited" as const, label: "Not invited", count: notInvitedFriends.length, icon: UserPlus },
-                { id: "invited" as const, label: "Invited", count: invitedFriends.length, icon: UserCheck },
+                { id: "notInvited" as const, label: isShare ? "Not shared" : "Not invited", count: notInvitedFriends.length, icon: UserPlus },
+                { id: "invited" as const, label: isShare ? "Shared" : "Invited", count: invitedFriends.length, icon: UserCheck },
               ].map((option) => {
                 const Icon = option.icon;
                 const active = view === option.id;
@@ -180,7 +194,7 @@ export function InviteFriends({
 
             <div className="mb-3 flex items-center justify-between px-1">
               <Text className="text-[0.9375rem]" style={{ fontWeight: 900 }}>
-                {view === "invited" ? "Already invited" : "Available friends"}
+                {view === "invited" ? (isShare ? "Already shared" : "Already invited") : "Available friends"}
               </Text>
               <Text className="text-[0.8125rem] text-muted-foreground">{selected.size} selected</Text>
             </div>
@@ -210,7 +224,7 @@ export function InviteFriends({
                           {friend.name}
                         </Text>
                         <Text className={`text-[0.75rem] ${isSelected ? "text-primary" : "text-muted-foreground"}`}>
-                          {wasAlreadyInvited ? "Previously invited" : isSelected ? "Ready to send" : "Not invited"}
+                          {wasAlreadyInvited ? (isShare ? "Previously shared" : "Previously invited") : isSelected ? "Ready to send" : isShare ? "Not shared" : "Not invited"}
                         </Text>
                       </div>
                       <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${isSelected ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground"}`}>
@@ -225,7 +239,7 @@ export function InviteFriends({
             {visibleFriends.length === 0 && (
               <div className="rounded-[1.5rem] bg-secondary/60 px-5 py-8 text-center">
                 <Text className="text-[0.9375rem] text-muted-foreground">
-                  {view === "invited" ? "No invited friends match this search." : "No available friends match this search."}
+                  {view === "invited" ? (isShare ? "No shared friends match this search." : "No invited friends match this search.") : "No available friends match this search."}
                 </Text>
               </div>
             )}

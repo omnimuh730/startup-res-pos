@@ -275,6 +275,7 @@ export function DiscoverPage() {
         toggleSaveRestaurant={toggleSaveRestaurant}
         toggleSaveFood={toggleSaveFood}
         toggleSaveFoodName={toggleSaveFoodName}
+        requireAuth={requireAuth}
         isRestaurantSaved={isRestaurantSaved}
         savedFoodsRef={savedFoodsRef}
         savedFoodNames={savedFoodNames}

@@ -1,8 +1,7 @@
 import type { ComponentType, MouseEvent } from "react";
 import { Button } from "../../../components/ds/Button";
-import { Text } from "../../../components/ds/Text";
 import { statusConfig, isCurrentlyDining, type Booking } from "../diningData";
-import { QrCode, Receipt as ReceiptIcon, RotateCcw, UtensilsCrossed } from "lucide-react";
+import { Clock3, QrCode, Receipt as ReceiptIcon, RotateCcw, UtensilsCrossed } from "lucide-react";
 
 export function compactDate(date: string) {
   const parts = date.split(",").map((part) => part.trim());
@@ -101,6 +100,22 @@ export function PrimaryAction({
     return (
       <Button variant="outline" size="sm" radius="full" className="min-h-9 px-3 font-bold" leftIcon={<ReceiptIcon className="h-3.5 w-3.5" />} onClick={stop(onViewReceipt)}>
         Receipt
+      </Button>
+    );
+  }
+
+  if (booking.status === "pending" && onOpenLive) {
+    return (
+      <Button variant="outline" size="sm" radius="full" className="min-h-9 px-3 font-bold" leftIcon={<Clock3 className="h-3.5 w-3.5" />} onClick={stop(onOpenLive)}>
+        Details
+      </Button>
+    );
+  }
+
+  if (booking.status === "rejected") {
+    return (
+      <Button variant="primary" size="sm" radius="full" className="min-h-9 px-3 font-bold" leftIcon={<RotateCcw className="h-3.5 w-3.5" />} onClick={stop(onBookAgain ?? onManage)}>
+        Request again
       </Button>
     );
   }

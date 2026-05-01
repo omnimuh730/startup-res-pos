@@ -2,10 +2,9 @@
 import { useEffect, useState } from "react";
 import { motion } from "motion/react";
 import { CalendarDays, Check, Clock, Copy, Info, Sparkles, Star, Users, Wallet } from "lucide-react";
-import { Button } from "../../components/ds/Button";
 import { ImageWithFallback } from "../../components/figma/ImageWithFallback";
 import { ConfettiEffect, DetailRow } from "./BookingWidgets";
-import { DEPOSIT_PER_GUEST, OCCASIONS, POINTS_EARN, SERVICE_FEE, fmtR } from "./bookingData";
+import { DEPOSIT_PER_GUEST, OCCASIONS, SERVICE_FEE, fmtR } from "./bookingData";
 import type { RestaurantData } from "../detail/restaurantDetailData";
 
 interface ConfirmProps {
@@ -198,12 +197,12 @@ export function SuccessStep({
         <motion.div initial={{ scale: 0.75, opacity: 0 }} animate={{ scale: [1.1, 0.96, 1], opacity: 1 }} className="mb-4 flex h-20 w-20 items-center justify-center rounded-[1.75rem] bg-success/10 text-success">
           <Check className="h-10 w-10" />
         </motion.div>
-        <h2 className="mb-1 text-[1.5rem] font-semibold">Reservation approved</h2>
-        <p className="text-[0.875rem] text-muted-foreground">{restaurant.name} has confirmed your reservation.</p>
+        <h2 className="mb-1 text-[1.5rem] font-semibold">Reservation request sent</h2>
+        <p className="text-[0.875rem] text-muted-foreground">{restaurant.name} will review and approve or reject your request.</p>
         <div className="mt-3 inline-flex items-center gap-2 rounded-full bg-success/10 px-3 py-1.5 text-success">
           <Check className="h-4 w-4" />
-          <span className="text-[0.8125rem] font-medium">${totalAmount.toFixed(2)} paid</span>
-          <span className="rounded-full bg-warning/10 px-2 py-0.5 text-[0.6875rem] font-medium text-warning">+{POINTS_EARN} pts</span>
+          <span className="text-[0.8125rem] font-medium">${totalAmount.toFixed(2)} deposit paid</span>
+          <span className="rounded-full bg-warning/10 px-2 py-0.5 text-[0.6875rem] font-medium text-warning">Pending</span>
         </div>
       </div>
 
@@ -231,7 +230,7 @@ export function SuccessStep({
             <SummaryTile label="Date" value={dateStr} />
             <SummaryTile label="Time" value={selectedTime || ""} />
             <SummaryTile label="Guests" value={String(guests)} />
-            <SummaryTile label="Status" value="Confirmed" accent />
+            <SummaryTile label="Status" value="Pending" />
           </div>
           {occasion && (
             <div className="flex justify-center">

@@ -41,6 +41,7 @@ export function DiscoverSubViews({
   toggleSaveRestaurant,
   toggleSaveFood,
   toggleSaveFoodName,
+  requireAuth,
   isRestaurantSaved,
   savedFoodsRef,
   savedFoodNames,
@@ -76,6 +77,7 @@ export function DiscoverSubViews({
   toggleSaveRestaurant: (r: RestaurantData) => void;
   toggleSaveFood: (f: SearchResultFood) => void;
   toggleSaveFoodName: (name: string) => void;
+  requireAuth: (redirect: string, message?: string) => boolean;
   isRestaurantSaved: (id: string) => boolean;
   savedFoodsRef: MutableRefObject<{ id: string }[]>;
   savedFoodNames: string[];
@@ -100,6 +102,7 @@ export function DiscoverSubViews({
             onBookTable={(r) => setBookingRestaurant(r)}
             onDirections={(r) => navigate(`/discover/search?q=${encodeURIComponent(r.name)}`)}
             onSave={toggleSaveRestaurant}
+            requireAuth={requireAuth}
             isSaved={isRestaurantSaved(detailRestaurant.id)}
             onSaveFood={toggleSaveFoodName}
             savedFoodNames={savedFoodNames}

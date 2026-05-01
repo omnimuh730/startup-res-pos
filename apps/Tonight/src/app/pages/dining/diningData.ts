@@ -1,5 +1,5 @@
 /* DiningPage types, mock data, status config, helpers */
-import { CheckCircle, XCircle, CircleAlert } from "lucide-react";
+import { CheckCircle, XCircle, CircleAlert, Clock3 } from "lucide-react";
 import type { RestaurantData } from "../detail/restaurantDetailData";
 
 export function fmtR(n: number): string {
@@ -8,7 +8,7 @@ export function fmtR(n: number): string {
   return s.replace(/0+$/, "").replace(/\.$/, "");
 }
 
-export type BookingStatus = "confirmed" | "completed" | "cancelled" | "no-show";
+export type BookingStatus = "pending" | "confirmed" | "rejected" | "completed" | "cancelled" | "no-show";
 export type BookingType = "reservation";
 
 export interface ReceiptItem { name: string; qty: number; price: number; emoji?: string; }
@@ -74,13 +74,30 @@ export function getMenuFor(b: Booking): MenuItem[] {
 }
 
 export const statusConfig: Record<BookingStatus, { label: string; color: string; bg: string; icon: typeof CheckCircle }> = {
+  pending: { label: "Pending", color: "text-warning", bg: "bg-warning/10", icon: Clock3 },
   confirmed: { label: "Confirmed", color: "text-success", bg: "bg-success/10", icon: CheckCircle },
+  rejected: { label: "Rejected", color: "text-destructive", bg: "bg-destructive/10", icon: XCircle },
   completed: { label: "Visited", color: "text-info", bg: "bg-info/10", icon: CheckCircle },
   cancelled: { label: "Cancelled", color: "text-destructive", bg: "bg-destructive/10", icon: XCircle },
   "no-show": { label: "No-show", color: "text-destructive", bg: "bg-destructive/10", icon: CircleAlert },
 };
 
 export const BOOKINGS: Booking[] = [
+  {
+    id: "9", restaurant: "Nami Counter", cuisine: "Japanese · Sashimi",
+    image: "https://images.unsplash.com/photo-1579871494447-9811cf80d66c?w=1080&h=720&fit=crop",
+    date: "Sat, 2 May 2026", time: "20:30", guests: 2, status: "pending", type: "reservation",
+    address: "88 Market Lane, San Francisco, CA 94105", phone: "(415) 555-0188",
+    diningPoints: 0, specialRequest: "Counter seats if available", occasion: "Date", seating: "Counter",
+    confirmationNo: "RQ-2026-0502N",
+  },
+  {
+    id: "10", restaurant: "Riverside Tapas", cuisine: "Spanish · Tapas",
+    image: "https://images.unsplash.com/photo-1544025162-d76694265947?w=1080&h=720&fit=crop",
+    date: "Sun, 3 May 2026", time: "19:00", guests: 4, status: "rejected", type: "reservation",
+    address: "12 Embarcadero Center, San Francisco, CA 94111", phone: "(415) 555-0199",
+    diningPoints: 0, seating: "Outdoor", confirmationNo: "RQ-2026-0503R",
+  },
   {
     id: "1", restaurant: "Sakura Omakase", cuisine: "Japanese · Omakase",
     image: "https://images.unsplash.com/photo-1717838207789-62684e75a770?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxzdXNoaSUyMGphcGFuZXNlJTIwcmVzdGF1cmFudCUyMGZvb2R8ZW58MXx8fHwxNzc2MTc3MzU1fDA&ixlib=rb-4.1.0&q=80&w=1080",
@@ -228,10 +245,11 @@ export function isCurrentlyDining(b: Booking, now: Date = new Date(), checkedInI
 
 export function bookingToRestaurant(b: Booking): RestaurantData {
   const idNum = b.id.charCodeAt(0) + b.restaurant.length;
+  const cuisine = b.cuisine.split(/\s*·\s*/)[0] || b.cuisine;
   return {
     id: b.id,
     name: b.restaurant,
-    cuisine: b.cuisine.split(" · ")[0],
+    cuisine,
     emoji: b.cuisine.includes("Japanese") ? "🍣" : b.cuisine.includes("French") ? "🥐" : b.cuisine.includes("Korean") ? "🥩" : b.cuisine.includes("Italian") ? "🍝" : b.cuisine.includes("Seafood") ? "🦐" : b.cuisine.includes("Brunch") ? "🥞" : b.cuisine.includes("Bar") ? "🍸" : "🍽️",
     rating: b.rating || 4.5,
     reviews: (idNum * 137 + 200) % 800 + 100,

@@ -22,16 +22,16 @@ export function ShowQRModal({ booking, onClose }: { booking: Booking | null; onC
   return (
     <AnimatePresence>
       {booking && (
-        <div className="fixed inset-0 z-[500] flex items-end justify-center bg-black/45 p-0 backdrop-blur-sm sm:items-center sm:p-4" onClick={onClose}>
+        <div className="fixed inset-0 z-[500] flex items-center justify-center bg-black/45 p-4 backdrop-blur-sm" onClick={onClose}>
           <motion.div
-            initial={{ opacity: 0, y: 70, scale: 0.96 }}
+            initial={{ opacity: 0, y: 24, scale: 0.96 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 70, scale: 0.96 }}
+            exit={{ opacity: 0, y: 24, scale: 0.96 }}
             transition={{ type: "spring", stiffness: 420, damping: 32 }}
-            className="w-full max-w-sm rounded-t-[2rem] bg-card p-5 shadow-[0_18px_50px_rgba(0,0,0,0.18)] sm:rounded-[2rem]"
+            className="max-h-[calc(100dvh-2rem)] w-full max-w-sm overflow-y-auto rounded-[2rem] bg-card p-5 shadow-[0_18px_50px_rgba(0,0,0,0.18)]"
             onClick={(event) => event.stopPropagation()}
           >
-            <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-border sm:hidden" />
+            <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-border" />
             <div className="mb-4 flex items-center justify-between">
               <div>
                 <Text className="text-[1.125rem]" style={{ fontWeight: 800 }}>Arrival QR</Text>

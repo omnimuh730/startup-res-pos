@@ -21,7 +21,7 @@ export function DiningListHeader({
         <Text className="mt-1 max-w-[28rem] text-[0.8125rem] leading-snug text-muted-foreground">
           {copy.description}
         </Text>
-        {tab === "scheduled" && (
+        {tab === "approved" && (
           <button
             type="button"
             onClick={onAddByCode}

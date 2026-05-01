@@ -1,4 +1,4 @@
-import { Utensils, Tag, Gift, Sparkles, MessageCircle } from "lucide-react";
+import { Utensils, Tag, Gift, Sparkles, MessageCircle, Share2 } from "lucide-react";
 import type { Notification } from "../../../../stores/notificationStore";
 
 export const iconMap: Record<
@@ -45,5 +45,12 @@ export const iconMap: Record<
     surface: "bg-[#F1F2FF]",
     tint: "text-[#4B4FB8]",
     label: "Review",
+  },
+  share: {
+    Icon: Share2,
+    ring: "ring-[#0EA5E9]/15",
+    surface: "bg-[#EAF6FF]",
+    tint: "text-[#0284C7]",
+    label: "Shared",
   },
 };

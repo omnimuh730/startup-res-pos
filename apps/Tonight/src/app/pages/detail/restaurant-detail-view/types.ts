@@ -6,6 +6,7 @@ export interface RestaurantDetailProps {
   onBookTable: (restaurant: RestaurantData) => void;
   onDirections?: (restaurant: RestaurantData) => void;
   onSave?: (restaurant: RestaurantData) => void;
+  requireAuth?: (redirect: string, message?: string) => boolean;
   isSaved?: boolean;
   onSaveFood?: (foodName: string) => void;
   savedFoodNames?: string[];

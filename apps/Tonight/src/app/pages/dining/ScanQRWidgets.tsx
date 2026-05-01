@@ -17,17 +17,7 @@ export function StepProgressBar({ currentStep, complete = false }: { currentStep
         const completed = complete || i < currentIdx; const active = !complete && i === currentIdx;
         return (
           <div key={step.id} className="flex-1">
-            <div className={`h-1.5 w-full overflow-hidden rounded-full transition-colors duration-300 ${completed ? "bg-success" : active ? "bg-primary/22" : "bg-border/70"}`}>
-              {active && (
-                <motion.div
-                  layoutId="active-step-progress"
-                  className="h-full rounded-full bg-primary"
-                  initial={{ width: "25%" }}
-                  animate={{ width: "68%" }}
-                  transition={{ duration: 0.6, repeat: Infinity, repeatType: "reverse", ease: "easeInOut" }}
-                />
-              )}
-            </div>
+            <div className={`h-1.5 w-full rounded-full transition-colors duration-300 ${completed ? "bg-success" : active ? "bg-primary" : "bg-border/70"}`} />
             <span className={`mt-1 block truncate text-center text-[0.625rem] transition-colors ${completed ? "text-success" : active ? "text-primary" : "text-muted-foreground/45"}`} style={{ fontWeight: active || completed ? 800 : 500 }}>{step.label}</span>
           </div>
         );

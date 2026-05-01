@@ -42,10 +42,11 @@ export function DiningPage() {
   };
 
   const tabParam = searchParams.get("tab");
-  const currentTab: DiningTabId = isDiningTab(tabParam) ? tabParam : "scheduled";
+  const normalizedTabParam = tabParam === "scheduled" ? "approved" : tabParam;
+  const currentTab: DiningTabId = isDiningTab(normalizedTabParam) ? normalizedTabParam : "approved";
   const setCurrentTab = (tab: DiningTabId) => {
     const next = new URLSearchParams(searchParams);
-    if (tab === "scheduled") next.delete("tab");
+    if (tab === "approved") next.delete("tab");
     else next.set("tab", tab);
     setSearchParams(next);
   };
@@ -65,11 +66,15 @@ export function DiningPage() {
   const [receiptBooking, setReceiptBooking] = useState<Booking | null>(null);
   const [addCodeOpen, setAddCodeOpen] = useState(false);
 
-  const scheduled = bookings.filter((b) => b.status === "confirmed");
+  const pending = bookings.filter((b) => b.status === "pending");
+  const approved = bookings.filter((b) => b.status === "confirmed");
+  const rejected = bookings.filter((b) => b.status === "rejected");
   const visited = bookings.filter((b) => b.status === "completed");
   const cancelled = bookings.filter((b) => b.status === "cancelled" || b.status === "no-show");
   const tabCounts: Record<DiningTabId, number> = {
-    scheduled: scheduled.length,
+    pending: pending.length,
+    approved: approved.length,
+    rejected: rejected.length,
     visited: visited.length,
     cancel: cancelled.length,
   };
@@ -111,7 +116,12 @@ export function DiningPage() {
     setBookings((prev) =>
       prev.some((item) => item.id === booking.id || item.confirmationNo === booking.confirmationNo) ? prev : [booking, ...prev],
     );
-    setCurrentTab("scheduled");
+    setCurrentTab("approved");
+  };
+
+  const handleDeleteRequest = (booking: Booking) => {
+    setBookings((prev) => prev.filter((item) => item.id !== booking.id));
+    if (selectedBooking?.id === booking.id) setSelectedBooking(null);
   };
 
   const handleBookAgain = (b: Booking) => {
@@ -213,6 +223,7 @@ export function DiningPage() {
           onShowQR={() => setShowQRBooking(latestBooking)}
           onInvite={() => setInviteBooking(latestBooking)}
           onBookAgain={() => handleBookAgain(latestBooking)}
+          onDeleteRequest={() => handleDeleteRequest(latestBooking)}
           onViewReceipt={() => setReceiptBooking(latestBooking)}
         />
         {modals}
@@ -220,7 +231,7 @@ export function DiningPage() {
     );
   }
 
-  const nextBooking = scheduled.length > 0 ? scheduled[0] : null;
+  const nextBooking = approved.length > 0 ? approved[0] : null;
 
   return (
     <>
@@ -228,7 +239,9 @@ export function DiningPage() {
         currentTab={currentTab}
         setCurrentTab={setCurrentTab}
         tabCounts={tabCounts}
-        scheduled={scheduled}
+        pending={pending}
+        approved={approved}
+        rejected={rejected}
         visited={visited}
         cancelled={cancelled}
         nextBooking={nextBooking}
@@ -238,6 +251,7 @@ export function DiningPage() {
         setShowQRBooking={setShowQRBooking}
         setInviteBooking={setInviteBooking}
         handleBookAgain={handleBookAgain}
+        handleDeleteRequest={handleDeleteRequest}
         setReceiptBooking={setReceiptBooking}
         checkedInIds={checkedInIds}
         invitedMap={invitedMap}

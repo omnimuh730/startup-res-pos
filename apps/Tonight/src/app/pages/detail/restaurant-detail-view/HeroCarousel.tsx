@@ -1,4 +1,4 @@
-import { ArrowLeft, Heart, Share } from "lucide-react";
+import { ArrowLeft, Heart, Share2 } from "lucide-react";
 import type { RefObject } from "react";
 import { ImageWithFallback } from "../../../components/figma/ImageWithFallback";
 import type { RestaurantData } from "../restaurantDetailData";
@@ -12,9 +12,10 @@ interface HeroCarouselProps {
   onBack: () => void;
   onHeroScroll: () => void;
   onSave?: (restaurant: RestaurantData) => void;
+  onShare?: (restaurant: RestaurantData) => void;
 }
 
-export function HeroCarousel({ restaurant, galleryImages, heroIdx, heroRef, isSaved, onBack, onHeroScroll, onSave }: HeroCarouselProps) {
+export function HeroCarousel({ restaurant, galleryImages, heroIdx, heroRef, isSaved, onBack, onHeroScroll, onSave, onShare }: HeroCarouselProps) {
   return (
     <div className="relative shrink-0 h-[24rem] sm:h-[28rem] overflow-hidden select-none">
       <div
@@ -36,8 +37,17 @@ export function HeroCarousel({ restaurant, galleryImages, heroIdx, heroRef, isSa
           <ArrowLeft className="w-5 h-5 text-foreground" />
         </button>
         <div className="flex items-center gap-2">
-          <button type="button" className="w-10 h-10 rounded-full bg-white/90 flex items-center justify-center cursor-pointer">
-            <Share className="w-4 h-4 text-foreground" />
+          <button
+            type="button"
+            onClick={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              onShare?.(restaurant);
+            }}
+            className="w-10 h-10 rounded-full bg-white/90 flex items-center justify-center cursor-pointer"
+            aria-label="Share restaurant"
+          >
+            <Share2 className="w-4 h-4 text-foreground" />
           </button>
           {onSave && (
             <button

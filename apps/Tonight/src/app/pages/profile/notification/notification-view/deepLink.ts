@@ -20,12 +20,23 @@ function findRestaurantTarget(notification: Notification) {
 }
 
 function findBookingTarget(notification: Notification) {
+  if (notification.bookingId) {
+    const explicitBooking = BOOKINGS.find((booking) => booking.id === notification.bookingId);
+    if (explicitBooking) return explicitBooking;
+  }
   const haystack = getNotificationHaystack(notification);
   return BOOKINGS.find((booking) => haystack.includes(normalizeText(booking.restaurant))) ?? null;
 }
 
 export function getNotificationDeepLink(notification: Notification): DeepLinkTarget {
   const haystack = getNotificationHaystack(notification);
+
+  if (notification.restaurant) {
+    return {
+      to: `/discover/restaurant/${notification.restaurant.id}`,
+      state: { restaurant: notification.restaurant },
+    };
+  }
 
   if (notification.icon === "reservation") {
     const booking = findBookingTarget(notification);
@@ -34,7 +45,16 @@ export function getNotificationDeepLink(notification: Notification): DeepLinkTar
         to: booking.status === "confirmed" ? `/dining/${booking.id}/upcoming` : `/dining/${booking.id}`,
       };
     }
+    if (notification.tab) return { to: `/dining?tab=${encodeURIComponent(notification.tab)}` };
     return { to: "/dining" };
+  }
+
+  if (notification.icon === "share") {
+    const restaurant = findRestaurantTarget(notification);
+    if (restaurant) {
+      return { to: `/discover/restaurant/${restaurant.id}`, state: { restaurant } };
+    }
+    return { to: "/discover" };
   }
 
   if (notification.icon === "review") {

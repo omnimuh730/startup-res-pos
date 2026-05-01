@@ -3,7 +3,7 @@ import { Button } from "../../../components/ds/Button";
 import { Heading, Text } from "../../../components/ds/Text";
 import { ImageWithFallback } from "../../../components/figma/ImageWithFallback";
 import { MapView } from "../../shared/MapView";
-import { Calendar, Check, Clock, Copy, Heart, MapPin, Navigation, Phone, QrCode, Receipt as ReceiptIcon, RotateCcw, Share2, Sparkles, Star, Timer, UserPlus, Users, UtensilsCrossed } from "lucide-react";
+import { Calendar, Check, Clock, Copy, Heart, MapPin, Navigation, Phone, QrCode, Receipt as ReceiptIcon, RotateCcw, Sparkles, Star, Timer, Trash2, UserPlus, Users, UtensilsCrossed } from "lucide-react";
 import type { Booking } from "../diningData";
 import { fmtR } from "../diningData";
 import { ActionRow, InfoTile } from "./BookingDetailParts";
@@ -24,6 +24,7 @@ export function BookingDetailMainContent({
   onShowQR,
   onInvite,
   onBookAgain,
+  onDeleteRequest,
   onViewReceipt,
 }: {
   booking: Booking;
@@ -41,6 +42,7 @@ export function BookingDetailMainContent({
   onShowQR: () => void;
   onInvite: () => void;
   onBookAgain: () => void;
+  onDeleteRequest?: () => void;
   onViewReceipt?: () => void;
 }) {
   const day = booking.date.split(",")[0] ?? booking.date;
@@ -109,6 +111,32 @@ export function BookingDetailMainContent({
         </motion.div>
       )}
 
+      {booking.status === "pending" && (
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.28, delay: 0.05 }} className="mt-4 rounded-[1.5rem] border border-warning/20 bg-warning/10 p-4">
+          <Text className="text-[1rem] text-warning" style={{ fontWeight: 900 }}>Pending approval</Text>
+          <Text className="mt-1 text-[0.875rem] leading-snug text-muted-foreground">
+            The restaurant is reviewing your reservation request. You will get a notification when it is approved or rejected.
+          </Text>
+          <div className="mt-3 rounded-[1rem] bg-card px-3 py-2">
+            <Text className="text-[0.6875rem] tracking-[0.08em] text-muted-foreground uppercase" style={{ fontWeight: 800 }}>Request code</Text>
+            <Text className="mt-0.5 truncate text-[0.9375rem]" style={{ fontWeight: 800 }}>{booking.confirmationNo}</Text>
+          </div>
+        </motion.div>
+      )}
+
+      {booking.status === "rejected" && (
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.28, delay: 0.05 }} className="mt-4 rounded-[1.5rem] border border-destructive/20 bg-destructive/10 p-4">
+          <Text className="text-[1rem] text-destructive" style={{ fontWeight: 900 }}>Request rejected</Text>
+          <Text className="mt-1 text-[0.875rem] leading-snug text-muted-foreground">
+            This time was not approved. You can request another time or delete the request from your dining list.
+          </Text>
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            <Button variant="primary" radius="full" className="font-bold" leftIcon={<RotateCcw className="h-4 w-4" />} onClick={onBookAgain}>Request again</Button>
+            <Button variant="outline" radius="full" className="font-bold text-destructive" leftIcon={<Trash2 className="h-4 w-4" />} onClick={onDeleteRequest}>Delete</Button>
+          </div>
+        </motion.div>
+      )}
+
       <div className="mt-5 space-y-3">
         <Text className="px-1 text-[1rem] text-foreground" style={{ fontWeight: 800 }}>Restaurant</Text>
         <ActionRow icon={UtensilsCrossed} title="Browse menu" subtitle="Preview dishes before you arrive" tone="primary" />
@@ -165,7 +193,7 @@ export function BookingDetailMainContent({
         </div>
       )}
 
-      {booking.status !== "completed" && !isCancelled && (
+      {isScheduled && (
         <div className="mt-5 flex items-center gap-2 rounded-[1.25rem] bg-secondary/70 px-3 py-3">
           <Sparkles className="h-4 w-4 shrink-0 text-primary" />
           <Text className="text-[0.8125rem] text-muted-foreground">Keep this code handy. You can share it with friends so they can join the reservation.</Text>

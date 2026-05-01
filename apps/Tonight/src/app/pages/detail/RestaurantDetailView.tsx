@@ -1,6 +1,8 @@
 /* Main restaurant detail view */
 import { useEffect, useMemo, useRef, useState } from "react";
 import { FoodDetailPage } from "./FoodDetailPage";
+import { addNotification } from "../../stores/notificationStore";
+import { InviteFriends } from "../shared/InviteFriends";
 import {
   type RestaurantData,
   type ReviewEntry,
@@ -37,6 +39,7 @@ export function RestaurantDetailView({
   onBookTable,
   onDirections,
   onSave,
+  requireAuth,
   isSaved: _isSavedProp,
   onSaveFood,
   savedFoodNames = [],
@@ -46,6 +49,8 @@ export function RestaurantDetailView({
   const [selectedMenuItem, setSelectedMenuItem] = useState<MenuItemWithCategory | null>(null);
   const [showReviewsPage, setShowReviewsPage] = useState(false);
   const [showMenuPage, setShowMenuPage] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
+  const [sharedFriendIds, setSharedFriendIds] = useState<Set<string>>(new Set());
   const [heroIdx, setHeroIdx] = useState(0);
   const heroRef = useRef<HTMLDivElement>(null);
   const guestReviewsRef = useRef<HTMLDivElement>(null);
@@ -82,6 +87,21 @@ export function RestaurantDetailView({
   );
 
   const openAllReviews = () => setShowReviewsPage(true);
+  const openShareModal = () => {
+    if (requireAuth && !requireAuth(`/discover/restaurant/${restaurant.id}`, "Sign in to share restaurants with friends.")) return;
+    setShareOpen(true);
+  };
+  const handleShared = (friendIds: Set<string>) => {
+    setSharedFriendIds(friendIds);
+    const newShareCount = [...friendIds].filter((id) => !sharedFriendIds.has(id)).length;
+    if (newShareCount === 0) return;
+    addNotification({
+      title: `${restaurant.name} shared`,
+      message: `${newShareCount} friend${newShareCount === 1 ? "" : "s"} received this restaurant in notifications.`,
+      icon: "share",
+      restaurant,
+    });
+  };
   const onHeroScroll = () => {
     const el = heroRef.current;
     if (!el) return;
@@ -101,6 +121,7 @@ export function RestaurantDetailView({
           onBack={onBack}
           onHeroScroll={onHeroScroll}
           onSave={onSave}
+          onShare={openShareModal}
         />
 
         <HeaderSummary restaurant={restaurant} ext={ext} />
@@ -147,6 +168,17 @@ export function RestaurantDetailView({
           }}
         />
       )}
+
+      <InviteFriends
+        open={shareOpen}
+        onClose={() => setShareOpen(false)}
+        restaurantName={restaurant.name}
+        date=""
+        time=""
+        alreadyInvited={sharedFriendIds}
+        onInvited={handleShared}
+        mode="share"
+      />
     </div>
   );
 }

@@ -1,7 +1,6 @@
 /* Full-page booking detail view */
 import { useEffect, useState } from "react";
 import { Animate } from "../../components/ds/Animate";
-import { Button } from "../../components/ds/Button";
 import { Text } from "../../components/ds/Text";
 import { ChevronLeft, Share2 } from "lucide-react";
 import type { Booking } from "./diningData";
@@ -16,10 +15,11 @@ interface Props {
   onShowQR: () => void;
   onInvite: () => void;
   onBookAgain: () => void;
+  onDeleteRequest?: () => void;
   onViewReceipt?: () => void;
 }
 
-export function BookingDetailPage({ booking, onBack, onManage, onScanQR, onShowQR, onInvite, onBookAgain, onViewReceipt }: Props) {
+export function BookingDetailPage({ booking, onBack, onManage, onScanQR, onShowQR, onInvite, onBookAgain, onDeleteRequest, onViewReceipt }: Props) {
   const [saved, setSaved] = useState(false);
   const [copied, setCopied] = useState(false);
   const sc = statusConfig[booking.status];
@@ -50,7 +50,7 @@ export function BookingDetailPage({ booking, onBack, onManage, onScanQR, onShowQ
             <ChevronLeft className="h-5 w-5" />
           </button>
           <Text className="text-[0.9375rem]" style={{ fontWeight: 800 }}>Reservation</Text>
-          <button type="button" className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full bg-secondary text-foreground transition hover:bg-secondary/80 active:scale-95" aria-label="Share reservation">
+          <button type="button" onClick={onInvite} className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full bg-secondary text-foreground transition hover:bg-secondary/80 active:scale-95" aria-label="Share reservation">
             <Share2 className="h-4 w-4" />
           </button>
         </div>
@@ -71,6 +71,7 @@ export function BookingDetailPage({ booking, onBack, onManage, onScanQR, onShowQ
           onShowQR={onShowQR}
           onInvite={onInvite}
           onBookAgain={onBookAgain}
+          onDeleteRequest={onDeleteRequest}
           onViewReceipt={onViewReceipt}
         />
       </div>

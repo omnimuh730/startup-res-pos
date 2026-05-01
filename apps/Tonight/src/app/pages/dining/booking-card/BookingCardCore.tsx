@@ -3,7 +3,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Text } from "../../../components/ds/Text";
 import { Button } from "../../../components/ds/Button";
 import { ImageWithFallback } from "../../../components/figma/ImageWithFallback";
-import { Armchair, Calendar, CheckCircle2, Clock, Copy, MapPin, QrCode, RotateCcw, Star, UserPlus, Users } from "lucide-react";
+import { Armchair, Calendar, CheckCircle2, Clock, Copy, MapPin, QrCode, RotateCcw, Star, Trash2, UserPlus, Users } from "lucide-react";
 import type { Booking } from "../diningData";
 import { fmtR, isCurrentlyDining } from "../diningData";
 import { compactDate, DetailPill, PrimaryAction, StatusBadge, stop } from "./BookingCardParts";
@@ -17,6 +17,7 @@ export function BookingCard({
   onShowQR,
   onInvite,
   onBookAgain,
+  onDeleteRequest,
   onViewReceipt,
   invitedCount = 0,
 }: {
@@ -28,11 +29,14 @@ export function BookingCard({
   onShowQR?: () => void;
   onInvite?: () => void;
   onBookAgain?: () => void;
+  onDeleteRequest?: () => void;
   onViewReceipt?: () => void;
   invitedCount?: number;
 }) {
   const [copied, setCopied] = useState(false);
   const isScheduled = booking.status === "confirmed";
+  const isPending = booking.status === "pending";
+  const isRejected = booking.status === "rejected";
   const isVisited = booking.status === "completed";
   const isCancelled = booking.status === "cancelled" || booking.status === "no-show";
   const isLive = isScheduled && isCurrentlyDining(booking, new Date(), checkedInIds);
@@ -79,7 +83,7 @@ export function BookingCard({
             <ImageWithFallback src={booking.image} alt={booking.restaurant} className="h-full w-full object-cover object-center transition duration-500 group-hover:scale-105" />
             <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/55 to-transparent p-2">
               <Text className="truncate text-[0.6875rem] text-white/90" style={{ fontWeight: 800 }}>
-                {booking.cuisine.split("·")[0].trim()}
+                {booking.cuisine.split(/\s*Â·\s*/)[0].trim()}
               </Text>
             </div>
           </div>
@@ -162,6 +166,28 @@ export function BookingCard({
           </div>
         )}
 
+        {isPending && (
+          <div className="mb-3 rounded-[1rem] bg-warning/10 px-3 py-2">
+            <Text className="text-[0.6875rem] uppercase tracking-[0.08em] text-warning" style={{ fontWeight: 800 }}>
+              Waiting for approval
+            </Text>
+            <Text className="mt-0.5 text-[0.8125rem] leading-snug text-muted-foreground">
+              The restaurant is reviewing this reservation request.
+            </Text>
+          </div>
+        )}
+
+        {isRejected && (
+          <div className="mb-3 rounded-[1rem] bg-destructive/10 px-3 py-2">
+            <Text className="text-[0.6875rem] uppercase tracking-[0.08em] text-destructive" style={{ fontWeight: 800 }}>
+              Request not approved
+            </Text>
+            <Text className="mt-0.5 text-[0.8125rem] leading-snug text-muted-foreground">
+              Try a new time or remove this request from your list.
+            </Text>
+          </div>
+        )}
+
         {isCancelled && (
           <div className="mb-3 flex items-start gap-2 rounded-[1rem] bg-secondary/65 px-3 py-2">
             <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
@@ -188,6 +214,12 @@ export function BookingCard({
           {isVisited && (
             <Button variant="outline" size="sm" radius="full" className="min-h-9 px-3 font-bold" leftIcon={<RotateCcw className="h-3.5 w-3.5" />} onClick={stop(onBookAgain)}>
               Book again
+            </Button>
+          )}
+
+          {isRejected && onDeleteRequest && (
+            <Button variant="outline" size="sm" radius="full" className="min-h-9 px-3 font-bold text-destructive" leftIcon={<Trash2 className="h-3.5 w-3.5" />} onClick={stop(onDeleteRequest)}>
+              Delete
             </Button>
           )}
         </div>
