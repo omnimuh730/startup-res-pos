@@ -1,0 +1,27 @@
+/* Route wrapper components that bridge URL to existing page components */
+import { useNavigate, useOutletContext } from "react-router";
+import { SavedListView } from "./pages/discover/SavedListView";
+import { QRPayPage } from "./pages/qrpay/QRPayPage";
+import type { AppOutletContext } from "./AppLayout";
+
+export function SavedRoute() {
+  const navigate = useNavigate();
+  const ctx = useOutletContext<AppOutletContext>();
+  return (
+    <SavedListView
+      savedRestaurantsRef={ctx.savedRestaurantsRef}
+      savedFoodsRef={ctx.savedFoodsRef}
+      wishlistCollections={ctx.wishlistCollections}
+      onBack={() => navigate(-1)}
+      onSelectRestaurant={(r) => navigate(`/discover/restaurant/${r.id}`, { state: { restaurant: r } })}
+      onSelectFood={(f) => navigate(`/discover/food/${f.id}`, { state: { food: f } })}
+      onRemoveRestaurant={ctx.removeSavedRestaurant}
+      onRemoveFood={ctx.toggleSaveFood}
+    />
+  );
+}
+
+export function QRPayRoute() {
+  const navigate = useNavigate();
+  return <QRPayPage onClose={() => navigate("/discover")} />;
+}

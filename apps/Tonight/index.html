@@ -1,0 +1,61 @@
+
+  <!DOCTYPE html>
+  <html lang="en">
+    <head>
+      <meta charset="UTF-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+      <meta name="color-scheme" content="light dark" />
+      <meta name="theme-color" content="#FF385C" />
+      <title>Reservation Design(Startup Project)</title>
+      <script>
+        (function () {
+          var storageKey = "catchtable-theme";
+          var preference = "light";
+          try {
+            var stored = window.localStorage.getItem(storageKey);
+            if (stored === "dark" || stored === "system") preference = stored;
+          } catch (_) {}
+
+          var dark = preference === "dark";
+          if (preference === "system") {
+            dark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+          }
+
+          var root = document.documentElement;
+          root.classList.toggle("dark", dark);
+          root.classList.toggle("light", !dark);
+          root.dataset.theme = dark ? "dark" : "light";
+          root.dataset.themePreference = preference;
+          root.style.colorScheme = dark ? "dark" : "light";
+          root.style.backgroundColor = dark ? "#0E0E11" : "#FFFFFF";
+
+          var themeColor = document.querySelector('meta[name="theme-color"]');
+          if (themeColor) themeColor.setAttribute("content", dark ? "#0E0E11" : "#FF385C");
+        })();
+      </script>
+      <style>
+        html,
+        body,
+        #root {
+          min-height: 100%;
+          height: 100%;
+          margin: 0;
+          background: #ffffff;
+          color: #222222;
+        }
+
+        html.dark,
+        html.dark body,
+        html.dark #root {
+          background: #0E0E11;
+          color: #F8F8FA;
+        }
+      </style>
+    </head>
+
+    <body>
+      <div id="root"></div>
+      <script type="module" src="/src/main.tsx"></script>
+    </body>
+  </html>
+  
