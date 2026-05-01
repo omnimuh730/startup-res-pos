@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { CalendarCheck, CalendarPlus, CheckCircle, ChevronRight, Clock3, MapPin, XCircle } from "lucide-react";
+import { CalendarPlus, CheckCircle, ChevronRight, MapPin, XCircle } from "lucide-react";
 import { Text } from "../../../components/ds/Text";
 import { BookingCard, EmptyState } from "../BookingCard";
 import type { Booking } from "../diningData";
@@ -12,9 +12,7 @@ export function DiningListView({
   currentTab,
   setCurrentTab,
   tabCounts,
-  pending,
-  approved,
-  rejected,
+  upcoming,
   visited,
   cancelled,
   nextBooking,
@@ -24,7 +22,6 @@ export function DiningListView({
   setShowQRBooking,
   setInviteBooking,
   handleBookAgain,
-  handleDeleteRequest,
   setReceiptBooking,
   checkedInIds,
   invitedMap,
@@ -33,9 +30,7 @@ export function DiningListView({
   currentTab: DiningTabId;
   setCurrentTab: (tab: DiningTabId) => void;
   tabCounts: Record<DiningTabId, number>;
-  pending: Booking[];
-  approved: Booking[];
-  rejected: Booking[];
+  upcoming: Booking[];
   visited: Booking[];
   cancelled: Booking[];
   nextBooking: Booking | null;
@@ -45,7 +40,6 @@ export function DiningListView({
   setShowQRBooking: (b: Booking | null) => void;
   setInviteBooking: (b: Booking | null) => void;
   handleBookAgain: (b: Booking) => void;
-  handleDeleteRequest: (b: Booking) => void;
   setReceiptBooking: (b: Booking | null) => void;
   checkedInIds: Set<string>;
   invitedMap: Record<string, Set<string>>;
@@ -92,8 +86,8 @@ export function DiningListView({
               <CalendarPlus className="h-4 w-4 text-muted-foreground" />
               <Text className="text-[12px] font-bold tracking-wider text-muted-foreground uppercase">No Upcoming Plans</Text>
             </div>
-              <Text className="text-[22px] leading-tight font-bold text-foreground">0 Approved</Text>
-              <Text className="mt-1 text-[14px] text-muted-foreground">Time to discover a new favorite spot.</Text>
+            <Text className="text-[22px] leading-tight font-bold text-foreground">0 Upcoming</Text>
+            <Text className="mt-1 text-[14px] text-muted-foreground">Time to discover a new favorite spot.</Text>
           </motion.div>
         )}
 
@@ -103,7 +97,7 @@ export function DiningListView({
             <Text className="mt-1 text-[13px] font-semibold text-muted-foreground">Places Visited</Text>
           </motion.div>
           <motion.div variants={itemVariant} className="rounded-[24px] border border-border/60 bg-card p-5 shadow-sm">
-            <Text className="text-[28px] leading-none font-bold text-foreground">{pending.length + approved.length + rejected.length + visited.length + cancelled.length}</Text>
+            <Text className="text-[28px] leading-none font-bold text-foreground">{upcoming.length + visited.length + cancelled.length}</Text>
             <Text className="mt-1 text-[13px] font-semibold text-muted-foreground">Total Bookings</Text>
           </motion.div>
         </div>
@@ -121,39 +115,19 @@ export function DiningListView({
             exit={{ opacity: 0, y: -12 }}
             transition={{ duration: 0.22, ease: "easeOut" }}
           >
-            {currentTab === "pending" &&
-              (pending.length > 0 ? (
+            {currentTab === "upcoming" &&
+              (upcoming.length > 0 ? (
                 <motion.div variants={staggerContainer} initial="hidden" animate="show" className="space-y-3 md:grid md:grid-cols-2 md:gap-4 md:space-y-0">
-                  {pending.map((b) => (
-                    <motion.div key={b.id} variants={itemVariant}>
-                      <BookingCard
-                        booking={b}
-                        onTap={() => setSelectedBooking(b)}
-                      />
-                    </motion.div>
-                  ))}
-                </motion.div>
-              ) : (
-                <EmptyState
-                  icon={Clock3}
-                  title="No pending requests"
-                  description="New reservation requests will stay here until the restaurant approves them."
-                />
-              ))}
-
-            {currentTab === "approved" &&
-              (approved.length > 0 ? (
-                <motion.div variants={staggerContainer} initial="hidden" animate="show" className="space-y-3 md:grid md:grid-cols-2 md:gap-4 md:space-y-0">
-                  {approved.map((b) => (
+                  {upcoming.map((b) => (
                     <motion.div key={b.id} variants={itemVariant}>
                       <BookingCard
                         booking={b}
                         checkedInIds={checkedInIds}
                         onTap={() => setSelectedBooking(b)}
-                        onManage={() => openManage(b)}
-                        onScanQR={() => setScanQRBooking(b)}
-                        onShowQR={() => setShowQRBooking(b)}
-                        onInvite={() => setInviteBooking(b)}
+                        onManage={b.status === "confirmed" ? () => openManage(b) : undefined}
+                        onScanQR={b.status === "confirmed" ? () => setScanQRBooking(b) : undefined}
+                        onShowQR={b.status === "confirmed" ? () => setShowQRBooking(b) : undefined}
+                        onInvite={b.status === "confirmed" ? () => setInviteBooking(b) : undefined}
                         onBookAgain={() => handleBookAgain(b)}
                         invitedCount={invitedMap[b.id]?.size ?? 0}
                       />
@@ -162,28 +136,10 @@ export function DiningListView({
                 </motion.div>
               ) : (
                 <EmptyState
-                  icon={CalendarCheck}
-                  title="No approved reservations"
-                  description="Approved requests will appear here with arrival QR and confirmation actions."
+                  icon={CalendarPlus}
+                  title="No upcoming reservations"
+                  description="Pending and confirmed reservations will appear here."
                 />
-              ))}
-
-            {currentTab === "rejected" &&
-              (rejected.length > 0 ? (
-                <motion.div variants={staggerContainer} initial="hidden" animate="show" className="space-y-3 md:grid md:grid-cols-2 md:gap-4 md:space-y-0">
-                  {rejected.map((b) => (
-                    <motion.div key={b.id} variants={itemVariant}>
-                      <BookingCard
-                        booking={b}
-                        onTap={() => setSelectedBooking(b)}
-                        onBookAgain={() => handleBookAgain(b)}
-                        onDeleteRequest={() => handleDeleteRequest(b)}
-                      />
-                    </motion.div>
-                  ))}
-                </motion.div>
-              ) : (
-                <EmptyState icon={XCircle} title="No rejected requests" description="Rejected requests can be requested again or removed from this list." />
               ))}
 
             {currentTab === "visited" &&

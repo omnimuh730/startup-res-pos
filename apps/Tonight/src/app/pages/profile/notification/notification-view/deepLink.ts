@@ -41,6 +41,7 @@ export function getNotificationDeepLink(notification: Notification): DeepLinkTar
   if (notification.icon === "reservation") {
     const booking = findBookingTarget(notification);
     if (booking) {
+      if (booking.status === "rejected") return { to: "/profile/notifications" };
       return {
         to: booking.status === "confirmed" ? `/dining/${booking.id}/upcoming` : `/dining/${booking.id}`,
       };
