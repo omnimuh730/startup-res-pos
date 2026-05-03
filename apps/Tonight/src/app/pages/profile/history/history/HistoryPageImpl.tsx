@@ -138,8 +138,8 @@ function SemanticCategoryTabs({
   onChange: (value: CategoryId) => void;
 }) {
   return (
-    <div role="tablist" aria-label="Transaction categories" className="mx-8">
-      <DragScrollContainer className="mt-5 flex min-w-full items-center justify-between gap-2 pb-2">
+    <div role="tablist" aria-label="Transaction categories" className="-mx-4 sm:-mx-6">
+      <DragScrollContainer className="mt-5 flex min-w-full items-center justify-between gap-2 px-4 pb-2 sm:px-6">
         {CATEGORY_OPTIONS.map((option) => (
           <SemanticTabButton
             key={option.id}

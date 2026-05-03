@@ -20,6 +20,17 @@ val keystoreProperties = Properties().apply {
     }
 }
 
+val keystoreStoreFilePath = keystoreProperties.getProperty("storeFile")?.trim()?.takeIf { it.isNotEmpty() }
+val keystoreStorePassword = keystoreProperties.getProperty("password")?.trim()?.takeIf { it.isNotEmpty() }
+val keystoreKeyAlias = keystoreProperties.getProperty("keyAlias")?.trim()?.takeIf { it.isNotEmpty() }
+val keystoreFile = keystoreStoreFilePath?.let { path -> file(path) }
+val isReleaseUploadSigningConfigured =
+    keystoreStoreFilePath != null &&
+        keystoreStorePassword != null &&
+        keystoreKeyAlias != null &&
+        keystoreFile != null &&
+        keystoreFile.isFile
+
 android {
     compileSdk = 36
     ndkVersion = "30.0.14904198"
@@ -39,14 +50,13 @@ android {
     }
     signingConfigs {
         create("release") {
-            val storeFilePath = keystoreProperties.getProperty("storeFile")
-            val storePasswordValue = keystoreProperties.getProperty("password")
-            val keyAliasValue = keystoreProperties.getProperty("keyAlias")
-            if (!storeFilePath.isNullOrBlank() && !storePasswordValue.isNullOrBlank() && !keyAliasValue.isNullOrBlank()) {
-                storeFile = file(storeFilePath)
-                storePassword = storePasswordValue
-                keyAlias = keyAliasValue
-                keyPassword = keystoreProperties.getProperty("keyPassword", storePasswordValue)
+            if (isReleaseUploadSigningConfigured) {
+                storeFile = keystoreFile
+                storePassword = keystoreStorePassword
+                keyAlias = keystoreKeyAlias
+                keyPassword =
+                    keystoreProperties.getProperty("keyPassword")?.trim()?.takeIf { it.isNotEmpty() }
+                        ?: keystoreStorePassword
             }
         }
     }
@@ -63,7 +73,16 @@ android {
             }
         }
         getByName("release") {
-            signingConfig = signingConfigs.getByName("release")
+            signingConfig =
+                if (isReleaseUploadSigningConfigured) {
+                    signingConfigs.getByName("release")
+                } else {
+                    logger.lifecycle(
+                        "[tonight] No valid keystore.properties (or .jks missing); release APK uses debug signing. " +
+                            "For Play upload signing see README-android-release.md."
+                    )
+                    signingConfigs.getByName("debug")
+                }
             isMinifyEnabled = true
             proguardFiles(
                 *fileTree(".") { include("**/*.pro") }

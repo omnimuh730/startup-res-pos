@@ -19,7 +19,7 @@ export function MenuCategorySection({ category, items, onSelectItem }: MenuCateg
         className="overflow-x-auto scrollbar-hide overscroll-x-contain snap-x snap-mandatory scroll-smooth"
         style={{ WebkitOverflowScrolling: "touch", scrollBehavior: "smooth" }}
       >
-        <div className="grid grid-rows-2 grid-flow-col auto-cols-[11.75rem] gap-2.5 pb-2 pr-4">
+        <div className="grid grid-rows-2 grid-flow-col auto-cols-[41%] gap-2.5 pb-2 pr-4 sm:auto-cols-[10rem]">
           {items.map((item) => (
             <MenuDishCard
               key={item.name}
@@ -38,16 +38,21 @@ function MenuDishCard({ item, onSelect }: { item: Omit<MenuItemWithCategory, "ca
     <article
       role="button"
       tabIndex={0}
+      aria-label={item.name}
       onClick={onSelect}
-      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") onSelect(); }}
-      className="h-[12.25rem] rounded-2xl border border-border p-2.5 cursor-pointer bg-card shadow-[0_4px_14px_rgba(0,0,0,0.08)] hover:shadow-[0_6px_18px_rgba(0,0,0,0.12)] transition-shadow snap-start"
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onSelect();
+        }
+      }}
+      className="aspect-[1.12/1] rounded-2xl border border-border p-2 cursor-pointer bg-card shadow-[0_4px_14px_rgba(0,0,0,0.08)] hover:shadow-[0_6px_18px_rgba(0,0,0,0.12)] transition-shadow snap-start"
     >
       <ImageWithFallback
         src={MENU_IMAGES[item.name] || buildMenuFallbackSvg(item.name)}
         alt={item.name}
-        className="w-full h-32 rounded-xl object-cover"
+        className="h-full w-full rounded-xl object-cover"
       />
-      <p className="text-[0.92rem] leading-5 line-clamp-2 mt-2" style={{ fontWeight: 600 }}>{item.name}</p>
     </article>
   );
 }
