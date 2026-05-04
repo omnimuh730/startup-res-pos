@@ -1,22 +1,24 @@
 import { useEffect, useRef, useState } from "react";
 import { MENU_DATA, type RestaurantData } from "../restaurantDetailData";
 import { MenuBanner } from "./MenuBanner";
-import { MenuCategorySection } from "./MenuCategorySection";
-import type { MenuItemWithCategory } from "./types";
+
+type MenuCategoryName = keyof typeof MENU_DATA;
+
+const MENU_CATEGORIES = Object.keys(MENU_DATA) as MenuCategoryName[];
 
 export function MenuPage({
   restaurant: _restaurant,
   onBack,
-  onSelectItem,
 }: {
   restaurant: RestaurantData;
   onBack: () => void;
-  onSelectItem: (item: MenuItemWithCategory) => void;
 }) {
   const [entered, setEntered] = useState(false);
   const [closing, setClosing] = useState(false);
   const [compactBanner, setCompactBanner] = useState(false);
+  const [activeCategory, setActiveCategory] = useState<MenuCategoryName>(MENU_CATEGORIES[0]);
   const menuScrollRef = useRef<HTMLDivElement>(null);
+  const activeItems = MENU_DATA[activeCategory];
 
   useEffect(() => {
     const id = window.requestAnimationFrame(() => setEntered(true));
@@ -52,16 +54,49 @@ export function MenuPage({
       >
         <MenuBanner compactBanner={compactBanner} onBack={handleBack} />
 
-        {/* Added min-h block so that a small menu doesn't force a scrollTop glitch on shrink */}
-        <div className="px-5 py-5 min-h-[calc(100vh-4.5rem)]">
-          {Object.entries(MENU_DATA).map(([category, items]) => (
-            <MenuCategorySection
-              key={category}
-              category={category}
-              items={items}
-              onSelectItem={onSelectItem}
-            />
-          ))}
+        <div className="sticky top-[4.5rem] z-10 border-b border-border bg-background/95 backdrop-blur-xl">
+          <div className="overflow-x-auto scrollbar-hide">
+            <div className="flex w-max gap-2 px-5 py-3">
+              {MENU_CATEGORIES.map((category) => {
+                const isActive = activeCategory === category;
+                return (
+                  <button
+                    key={category}
+                    type="button"
+                    onClick={() => setActiveCategory(category)}
+                    className={`h-10 shrink-0 cursor-pointer rounded-full px-4 text-[0.875rem] transition active:scale-95 ${
+                      isActive ? "bg-primary text-primary-foreground shadow-[0_8px_18px_rgba(255,56,92,0.22)]" : "bg-secondary text-muted-foreground hover:bg-secondary/80 hover:text-foreground"
+                    }`}
+                    style={{ fontWeight: 800 }}
+                  >
+                    {category}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
+        <div className="min-h-[calc(100vh-9rem)] px-5 py-5">
+          <ul className="space-y-3">
+            {activeItems.map((item) => (
+              <li
+                key={item.name}
+                className="rounded-2xl border border-border bg-card px-4 py-4 text-center shadow-[0_4px_14px_rgba(0,0,0,0.05)]"
+              >
+                <span
+                  className="block break-words text-[2rem] leading-tight text-foreground sm:text-[2.25rem]"
+                  style={{
+                    fontFamily: `"Old English Text MT", "Blackadder ITC", "UnifrakturCook", "UnifrakturMaguntia", Georgia, fantasy`,
+                    fontWeight: 700,
+                    letterSpacing: 0,
+                  }}
+                >
+                  {item.name}
+                </span>
+              </li>
+            ))}
+          </ul>
         </div>
       </div>
     </div>

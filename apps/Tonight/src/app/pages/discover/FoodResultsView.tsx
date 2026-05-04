@@ -1,13 +1,11 @@
 /* Food Category Results Page */
-import { useState } from "react";
-import { ArrowLeft, Heart, ChevronRight } from "lucide-react";
+import { ArrowLeft, Heart } from "lucide-react";
 import { ImageWithFallback } from "../../components/figma/ImageWithFallback";
 import { FoodNameSaveBtn } from "./SaveButtons";
 import { generateDishesForFoodType } from "./discoverDishData";
-import { FoodDetailPage } from "../detail/RestaurantDetailView";
 import type { SearchResultFood } from "./discoverTypes";
 
-export function FoodResultsView({ food, onBack, onSaveFood, isFoodSaved, onSaveFoodName, savedFoodNames = [] }: {
+export function FoodResultsView({ food, onBack, onSaveFood, isFoodSaved, onSaveFoodName }: {
   food: SearchResultFood;
   onBack: () => void;
   onSaveFood?: (f: SearchResultFood) => void;
@@ -16,26 +14,6 @@ export function FoodResultsView({ food, onBack, onSaveFood, isFoodSaved, onSaveF
   savedFoodNames?: string[];
 }) {
   const dishes = generateDishesForFoodType(food.id, food.name);
-  const [selectedDish, setSelectedDish] = useState<typeof dishes[0] | null>(null);
-
-  if (selectedDish) {
-    return (
-      <FoodDetailPage
-        item={{
-          name: selectedDish.name,
-          desc: selectedDish.desc,
-          price: selectedDish.price,
-          popular: selectedDish.popular,
-          category: food.name,
-          image: selectedDish.image,
-        }}
-        restaurantName={selectedDish.restaurant}
-        onBack={() => setSelectedDish(null)}
-        onSave={onSaveFood ? () => onSaveFood(food) : undefined}
-        isSaved={isFoodSaved}
-      />
-    );
-  }
 
   return (
     <div className="min-h-full">
@@ -79,8 +57,8 @@ export function FoodResultsView({ food, onBack, onSaveFood, isFoodSaved, onSaveF
       )}
       <div className="space-y-3">
         {dishes.map((dish, i) => (
-          <div key={`${dish.name}-${i}`} onClick={() => setSelectedDish(dish)}
-            className="w-full flex items-center gap-3 p-3 rounded-2xl border border-border bg-card hover:bg-secondary/30 active:bg-secondary/50 transition cursor-pointer text-left">
+          <div key={`${dish.name}-${i}`}
+            className="w-full flex items-center gap-3 p-3 rounded-2xl border border-border bg-card text-left">
             <div className="w-20 h-20 rounded-xl overflow-hidden shrink-0">
               <ImageWithFallback src={dish.image || food.image || ""} alt={dish.name} className="w-full h-full object-cover" />
             </div>
@@ -99,9 +77,7 @@ export function FoodResultsView({ food, onBack, onSaveFood, isFoodSaved, onSaveF
             </div>
             {onSaveFoodName ? (
               <FoodNameSaveBtn name={dish.name} onToggle={onSaveFoodName} />
-            ) : (
-              <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
-            )}
+            ) : null}
           </div>
         ))}
       </div>

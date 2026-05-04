@@ -1,7 +1,6 @@
 /* Main restaurant detail view */
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, Heart, Share2 } from "lucide-react";
-import { FoodDetailPage } from "./FoodDetailPage";
 import { addNotification } from "../../stores/notificationStore";
 import { InviteFriends } from "../shared/InviteFriends";
 import {
@@ -25,12 +24,12 @@ import { PopularMenuSection } from "./restaurant-detail-view/PopularMenuSection"
 import { ReviewsPage } from "./restaurant-detail-view/ReviewsPage";
 import { getHostProfile } from "./restaurant-detail-view/hostProfile";
 import { snapToNearestCard } from "./restaurant-detail-view/scrollUtils";
-import type { MenuItemWithCategory, RestaurantDetailProps } from "./restaurant-detail-view/types";
+import type { RestaurantDetailProps } from "./restaurant-detail-view/types";
 import { useHorizontalDrag } from "./restaurant-detail-view/useHorizontalDrag";
 
 // Re-export for consumers
 export type { RestaurantData, ReviewEntry };
-export { FoodDetailPage, fmtR };
+export { fmtR };
 export { WriteReviewModal } from "./ReviewComponents";
 export { FOOD_DETAILS } from "./restaurantDetailData";
 
@@ -42,12 +41,9 @@ export function RestaurantDetailView({
   onSave,
   requireAuth,
   isSaved: _isSavedProp,
-  onSaveFood,
-  savedFoodNames = [],
 }: RestaurantDetailProps) {
   useSavedVersion();
   const isSaved = _savedRIds.has(restaurant.id);
-  const [selectedMenuItem, setSelectedMenuItem] = useState<MenuItemWithCategory | null>(null);
   const [showReviewsPage, setShowReviewsPage] = useState(false);
   const [showMenuPage, setShowMenuPage] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
@@ -155,16 +151,11 @@ export function RestaurantDetailView({
         <CancellationPolicySection />
         <PopularMenuSection
           menuItems={menuItems}
-          onSelectMenuItem={setSelectedMenuItem}
           onShowMenu={() => setShowMenuPage(true)}
         />
       </div>
 
       <BookingBar restaurant={restaurant} onBookTable={onBookTable} />
-
-      {selectedMenuItem && (
-        <FoodDetailPage item={selectedMenuItem} restaurantName={restaurant.name} onBack={() => setSelectedMenuItem(null)} onSave={() => onSaveFood?.(selectedMenuItem.name)} isSaved={savedFoodNames.includes(selectedMenuItem.name)} />
-      )}
 
       {showReviewsPage && (
         <ReviewsPage
@@ -177,10 +168,6 @@ export function RestaurantDetailView({
         <MenuPage
           restaurant={restaurant}
           onBack={() => setShowMenuPage(false)}
-          onSelectItem={(item) => {
-            setShowMenuPage(false);
-            setSelectedMenuItem(item);
-          }}
         />
       )}
 
